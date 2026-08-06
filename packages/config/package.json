@@ -1,0 +1,14 @@
+{
+  "name": "@hrtech/config",
+  "version": "0.0.0",
+  "private": true,
+  "files": ["typescript", "eslint"],
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "eslint": "^9.17.0",
+    "typescript-eslint": "^8.18.0",
+    "eslint-config-prettier": "^9.1.0",
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.17.0"
+  }
+}
