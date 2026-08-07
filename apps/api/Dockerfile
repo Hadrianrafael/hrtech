@@ -18,6 +18,7 @@ COPY --from=installer /app/ .
 COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter @hrtech/api prisma:generate
 RUN pnpm turbo run build --filter=@hrtech/api
+RUN pnpm prune --prod
 
 FROM base AS runner
 WORKDIR /app
