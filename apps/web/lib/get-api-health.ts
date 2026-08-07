@@ -1,4 +1,6 @@
-import { isHealthStatus, type HealthStatus } from '@hrtech/types';
+import { isHealthStatus } from '@hrtech/types';
+import type { HealthStatus as _HealthStatus } from '@hrtech/types';
+type HealthStatus = _HealthStatus;
 
 export async function getApiHealth(): Promise<HealthStatus> {
   const apiUrl = process.env.API_URL ?? 'http://localhost:3001';
