@@ -24,7 +24,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup -S hrtech && adduser -S hrtech -G hrtech
-COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=hrtech:hrtech /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=hrtech:hrtech /app/apps/web/.next/static ./apps/web/.next/static
 USER hrtech
