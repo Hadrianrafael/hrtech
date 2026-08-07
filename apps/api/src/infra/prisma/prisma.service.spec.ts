@@ -15,4 +15,17 @@ describe('PrismaService', () => {
 
     await expect(service.isHealthy()).resolves.toBe(false);
   });
+
+  it('onModuleInit does not throw when $connect() fails', async () => {
+    const service = new PrismaService();
+    const warnSpy = vi.spyOn(service['logger'], 'warn');
+    vi.spyOn(service, '$connect').mockRejectedValue(
+      new Error('Can\'t reach database server at `localhost:5432`'),
+    );
+
+    await expect(service.onModuleInit()).resolves.not.toThrow();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to connect to database at startup'),
+    );
+  });
 });
