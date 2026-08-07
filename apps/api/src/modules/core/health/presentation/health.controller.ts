@@ -1,7 +1,9 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { GetReadinessUseCase } from '../application/get-readiness.use-case';
 import { buildHealthStatus } from '../domain/health-check';
 
+@SkipThrottle()
 @Controller('health')
 export class HealthController {
   constructor(private readonly getReadiness: GetReadinessUseCase) {}

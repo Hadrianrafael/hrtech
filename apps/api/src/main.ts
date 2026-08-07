@@ -8,6 +8,8 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
+  app.enableShutdownHooks();
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
   app.use(
     helmet({
@@ -36,4 +38,8 @@ async function bootstrap() {
   await app.listen(port);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  // eslint-disable-next-line no-console
+  console.error('Fatal error during bootstrap:', error);
+  process.exit(1);
+});
