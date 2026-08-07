@@ -26,3 +26,6 @@ jobs:
         run: pnpm --filter @hrtech/api prisma:generate
 
       - run: pnpm turbo run lint typecheck test build
+
+      - name: Run e2e tests
+        run: pnpm turbo run test:e2e
