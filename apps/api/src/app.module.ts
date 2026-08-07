@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
+import { PrismaModule } from './infra/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { LoggerModule } from 'nestjs-pino';
       },
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    PrismaModule,
   ],
   providers: [
     {
