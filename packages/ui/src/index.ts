@@ -19,3 +19,7 @@ export * from './components/Container';
 export * from './components/Reveal';
 export * from './components/SectionHeading';
 export * from './components/MockupFrame';
+export * from './components/LogoMark';
+export * from './components/AnimatedLogo';
+export * from './components/Marquee';
+export * from './components/NetworkVisual';

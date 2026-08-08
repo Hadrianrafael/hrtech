@@ -20,7 +20,6 @@ import {
 import {
   Badge,
   Button,
-  Card,
   SectionHeading,
   Reveal,
   Container,
@@ -227,20 +226,22 @@ export default function SolucaoJuridicaPage() {
 
       <Section className="border-t border-border">
         <Container>
-          <SectionHeading eyebrow="Recursos planejados" title="Tudo que o escritório precisa, em um só produto." />
-          <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Reveal className="max-w-xl">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">Recursos planejados</span>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">
+              Tudo que o escritório precisa, em um só produto.
+            </h2>
+          </Reveal>
+          <div className="mt-14 grid grid-cols-1 gap-x-10 border-t border-border sm:grid-cols-2">
             {features.map((feature, index) => (
-              <Reveal key={feature.title} delay={(index % 4) * 0.05}>
-                <Card padding="lg" hoverable className="h-full">
-                  <div
-                    className="flex h-11 w-11 items-center justify-center rounded-xl"
-                    style={{ background: 'linear-gradient(135deg, rgba(233,32,52,0.15) 0%, rgba(255,135,31,0.15) 100%)' }}
-                  >
-                    <feature.icon size={20} className="text-brand-orange" />
+              <Reveal key={feature.title} delay={(index % 4) * 0.04}>
+                <div className="flex items-start gap-4 border-b border-border py-7">
+                  <feature.icon size={20} className="mt-0.5 shrink-0 text-brand-orange" />
+                  <div>
+                    <h3 className="text-base font-medium text-white">{feature.title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-white/50">{feature.description}</p>
                   </div>
-                  <h3 className="mt-4 text-base font-semibold text-white">{feature.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">{feature.description}</p>
-                </Card>
+                </div>
               </Reveal>
             ))}
           </div>
@@ -271,18 +272,16 @@ export default function SolucaoJuridicaPage() {
 
       <Section className="border-t border-border">
         <Container>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
             {[
               { icon: IconShieldLock, title: 'Segurança', description: 'Controle de acesso, criptografia e boas práticas desde a concepção.' },
               { icon: IconTrendingUp, title: 'Escalabilidade', description: 'Arquitetura multi-tenant preparada para crescer com o escritório.' },
               { icon: IconBolt, title: 'Automações', description: 'Tarefas repetitivas automatizadas para a equipe focar no jurídico.' },
             ].map((item, index) => (
               <Reveal key={item.title} delay={index * 0.06}>
-                <Card padding="lg" className="h-full text-center">
-                  <item.icon size={26} className="mx-auto text-brand-orange" />
-                  <h3 className="mt-4 text-base font-semibold text-white">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">{item.description}</p>
-                </Card>
+                <item.icon size={22} className="text-brand-orange" />
+                <h3 className="mt-3 text-base font-semibold text-white">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/50">{item.description}</p>
               </Reveal>
             ))}
           </div>
@@ -298,10 +297,15 @@ export default function SolucaoJuridicaPage() {
         </Container>
       </Section>
 
-      <Section className="border-t border-border">
-        <Container>
-          <Reveal className="flex flex-col items-center rounded-3xl border border-border bg-brand-gradient-soft px-6 py-16 text-center">
-            <h2 className="max-w-xl text-2xl font-semibold tracking-[-0.02em] text-white md:text-3xl">
+      <Section size="lg" className="relative overflow-hidden border-t border-border">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'linear-gradient(135deg, rgba(233,32,52,0.10) 0%, rgba(255,135,31,0.10) 100%)' }}
+          aria-hidden
+        />
+        <Container className="relative">
+          <Reveal className="flex flex-col items-center text-center">
+            <h2 className="max-w-xl text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
               Quer acompanhar o lançamento da solução jurídica?
             </h2>
             <p className="mt-4 max-w-md text-sm text-white/55">

@@ -11,7 +11,7 @@ import {
   IconArrowRight,
   IconCheck,
 } from '@tabler/icons-react';
-import { Button, Badge, Card, SectionHeading, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
+import { Button, Badge, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
 
 export const metadata: Metadata = {
   title: 'Serviços',
@@ -93,27 +93,32 @@ export default function ServicosPage() {
 
       <Section className="border-t border-border">
         <Container>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="border-t border-border">
             {services.map((service, index) => (
-              <Reveal key={service.title} delay={(index % 2) * 0.08}>
-                <Card padding="lg" hoverable className="h-full">
-                  <div
-                    className="flex h-11 w-11 items-center justify-center rounded-xl"
-                    style={{ background: 'linear-gradient(135deg, rgba(233,32,52,0.15) 0%, rgba(255,135,31,0.15) 100%)' }}
-                  >
-                    <service.icon size={22} className="text-brand-orange" />
+              <Reveal key={service.title} delay={index * 0.03}>
+                <div className="group grid grid-cols-1 gap-4 border-b border-border py-9 lg:grid-cols-12 lg:gap-8">
+                  <div className="flex items-start gap-4 lg:col-span-4">
+                    <service.icon
+                      size={22}
+                      className="mt-0.5 shrink-0 text-brand-orange transition-transform duration-300 group-hover:scale-110"
+                    />
+                    <h2 className="text-xl font-medium text-white">{service.title}</h2>
                   </div>
-                  <h2 className="mt-5 text-lg font-semibold text-white">{service.title}</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">{service.description}</p>
-                  <ul className="mt-5 flex flex-col gap-2.5 border-t border-border pt-5">
-                    {service.items.map((item) => (
-                      <li key={item} className="flex items-start gap-2.5 text-sm text-white/55">
-                        <IconCheck size={16} className="mt-0.5 shrink-0 text-brand-orange" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
+                  <div className="lg:col-span-8">
+                    <p className="max-w-xl text-sm leading-relaxed text-white/50">{service.description}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {service.items.map((item) => (
+                        <span
+                          key={item}
+                          className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-white/45"
+                        >
+                          <IconCheck size={12} className="text-brand-orange" />
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </Reveal>
             ))}
           </div>

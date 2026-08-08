@@ -10,7 +10,7 @@ import {
   IconArrowRight,
   IconInfoCircle,
 } from '@tabler/icons-react';
-import { Badge, Button, Card, SectionHeading, Reveal, Container, Section, Breadcrumb, Tabs } from '@hrtech/ui';
+import { Badge, Button, Reveal, Container, Section, Breadcrumb, Tabs } from '@hrtech/ui';
 
 export const metadata: Metadata = {
   title: 'Portfólio',
@@ -28,7 +28,7 @@ const stack = [
 ];
 
 const methodologyContent = (
-  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+  <div className="divide-y divide-border border-t border-border">
     {[
       {
         title: 'Descoberta e escopo',
@@ -47,10 +47,10 @@ const methodologyContent = (
         description: 'Acompanhamento pós-entrega e evolução junto ao negócio.',
       },
     ].map((item) => (
-      <Card key={item.title} padding="lg">
-        <h3 className="text-base font-semibold text-white">{item.title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-white/50">{item.description}</p>
-      </Card>
+      <div key={item.title} className="flex flex-col gap-1.5 py-5 sm:flex-row sm:items-baseline sm:gap-8">
+        <h3 className="text-sm font-medium text-white sm:w-56 sm:shrink-0">{item.title}</h3>
+        <p className="text-sm leading-relaxed text-white/50">{item.description}</p>
+      </div>
     ))}
   </div>
 );
@@ -88,14 +88,11 @@ const designSystemContent = (
 );
 
 const stackContent = (
-  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+  <div className="flex flex-wrap gap-x-8 gap-y-4">
     {stack.map((tech) => (
-      <div
-        key={tech.label}
-        className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3.5"
-      >
-        <tech.icon size={20} className="text-white/70" />
-        <span className="text-sm text-white/75">{tech.label}</span>
+      <div key={tech.label} className="flex items-center gap-2.5">
+        <tech.icon size={18} className="text-white/50" />
+        <span className="text-sm text-white/70">{tech.label}</span>
       </div>
     ))}
   </div>
@@ -139,26 +136,32 @@ export default function PortfolioPage() {
 
       <Section className="border-t border-border">
         <Container>
-          <SectionHeading eyebrow="Demonstrações" title="Projetos de demonstração da HR Tech." />
-          <Reveal delay={0.1} className="mt-10">
-            <Card padding="lg" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <IconInfoCircle size={20} className="mt-0.5 shrink-0 text-brand-orange" />
-                <p className="text-sm leading-relaxed text-white/60">
-                  Este site institucional é, hoje, a nossa principal demonstração pública: Design System próprio,
-                  arquitetura em monorepo e engenharia aplicada de ponta a ponta. Não representamos projetos de
-                  clientes como cases sem autorização — quando existirem, aparecerão aqui identificados como tal.
-                </p>
-              </div>
-            </Card>
+          <Reveal className="max-w-xl">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">Demonstrações</span>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">
+              Projetos de demonstração da HR Tech.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.1} className="mt-8 flex items-start gap-3 border-t border-border pt-8">
+            <IconInfoCircle size={20} className="mt-0.5 shrink-0 text-brand-orange" />
+            <p className="max-w-2xl text-sm leading-relaxed text-white/50">
+              Este site institucional é, hoje, a nossa principal demonstração pública: Design System próprio,
+              arquitetura em monorepo e engenharia aplicada de ponta a ponta. Não representamos projetos de
+              clientes como cases sem autorização — quando existirem, aparecerão aqui identificados como tal.
+            </p>
           </Reveal>
         </Container>
       </Section>
 
-      <Section className="border-t border-border">
-        <Container>
-          <Reveal className="flex flex-col items-center rounded-3xl border border-border bg-surface px-6 py-16 text-center">
-            <h2 className="max-w-xl text-2xl font-semibold tracking-[-0.02em] text-white md:text-3xl">
+      <Section size="lg" className="relative overflow-hidden border-t border-border">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'linear-gradient(135deg, rgba(233,32,52,0.10) 0%, rgba(255,135,31,0.10) 100%)' }}
+          aria-hidden
+        />
+        <Container className="relative">
+          <Reveal className="flex flex-col items-center text-center">
+            <h2 className="max-w-xl text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
               Quer ver esse padrão aplicado ao seu sistema?
             </h2>
             <div className="mt-8">

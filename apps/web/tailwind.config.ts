@@ -39,9 +39,18 @@ export default {
           '0%, 100%': { opacity: '0.5' },
           '50%': { opacity: '1' },
         },
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-100%)' },
+        },
+        drift: {
+          '0%, 100%': { transform: 'translate(0, 0)' },
+          '50%': { transform: 'translate(10px, -14px)' },
+        },
       },
       animation: {
         'pulse-slow': 'pulseSlow 3s ease-in-out infinite',
+        drift: 'drift 8s ease-in-out infinite',
       },
     },
   },

@@ -13,7 +13,7 @@ import {
   IconArrowRight,
   IconLock,
 } from '@tabler/icons-react';
-import { Badge, Button, Card, SectionHeading, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
+import { Badge, Button, Card, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
 
 export const metadata: Metadata = {
   title: 'Soluções',
@@ -85,22 +85,19 @@ export default function SolucoesPage() {
 
       <Section className="border-t border-border">
         <Container>
-          <SectionHeading eyebrow="Roadmap" title="Próximas soluções" description="Ainda em desenvolvimento — sem data de lançamento definida." />
-          <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3">
+          <Reveal className="max-w-xl">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">Roadmap</span>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">
+              Próximas soluções
+            </h2>
+            <p className="mt-3 text-sm text-white/50">Ainda em desenvolvimento — sem data de lançamento definida.</p>
+          </Reveal>
+          <div className="mt-12 flex flex-wrap gap-x-10 gap-y-6 border-t border-border pt-10">
             {upcoming.map((item, index) => (
-              <Reveal key={item.label} delay={index * 0.04}>
-                <div className="flex flex-col items-start gap-4 rounded-2xl border border-border bg-surface p-6 opacity-70">
-                  <div className="flex w-full items-center justify-between">
-                    <item.icon size={24} className="text-white/50" />
-                    <IconLock size={14} className="text-white/25" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white/80">{item.label}</h3>
-                    <Badge variant="outline" className="mt-2">
-                      Em desenvolvimento
-                    </Badge>
-                  </div>
-                </div>
+              <Reveal key={item.label} delay={index * 0.03} className="flex items-center gap-2.5 opacity-60">
+                <item.icon size={18} className="text-white/50" />
+                <span className="text-sm text-white/70">{item.label}</span>
+                <IconLock size={12} className="text-white/25" />
               </Reveal>
             ))}
           </div>
