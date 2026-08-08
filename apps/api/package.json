@@ -16,6 +16,7 @@
     "schema": "prisma/schema"
   },
   "dependencies": {
+    "@azure/communication-email": "^1.0.0",
     "@hrtech/types": "workspace:*",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",
