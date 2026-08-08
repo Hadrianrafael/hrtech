@@ -53,7 +53,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               exit={{ opacity: 0, y: 8, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               className={cn(
-                'pointer-events-auto flex items-center gap-3 rounded-full border border-border bg-surface-elevated px-5 py-3 shadow-xl',
+                'pointer-events-auto flex items-center gap-3 rounded-md border border-dark-border bg-dark-bg px-5 py-3 shadow-xl',
               )}
             >
               {icons[toast.variant]}

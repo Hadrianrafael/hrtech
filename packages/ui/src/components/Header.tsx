@@ -43,8 +43,8 @@ export function Header({ items, activeHref, ctaLabel = 'Solicitar Orçamento', c
               key={item.href}
               href={item.href}
               className={cn(
-                'rounded-full px-4 py-2 text-sm font-medium text-white/65 transition-colors hover:text-white',
-                activeHref === item.href && 'text-white',
+                'rounded-md px-4 py-2 text-sm font-medium text-ink/60 transition-colors hover:text-ink',
+                activeHref === item.href && 'text-ink',
               )}
             >
               {item.label}
@@ -61,7 +61,7 @@ export function Header({ items, activeHref, ctaLabel = 'Solicitar Orçamento', c
         <button
           onClick={() => setMenuOpen(true)}
           aria-label="Abrir menu"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 hover:bg-white/10 lg:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-md text-ink/70 hover:bg-ink/[0.05] lg:hidden"
         >
           <IconMenu2 size={22} />
         </button>

@@ -14,17 +14,14 @@ export function SectionHeading({ eyebrow, title, description, align = 'left', cl
   return (
     <Reveal className={cn('max-w-2xl', align === 'center' && 'mx-auto text-center', className)}>
       {eyebrow && (
-        <span
-          className="text-xs font-semibold uppercase tracking-[0.16em] bg-clip-text text-transparent"
-          style={{ backgroundImage: 'linear-gradient(135deg, #E92034 0%, #FF871F 100%)' }}
-        >
+        <span className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-brand-orange">
           {eyebrow}
         </span>
       )}
-      <h2 className={cn('mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl md:text-[2.75rem]')}>
+      <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl md:text-[2.75rem]">
         {title}
       </h2>
-      {description && <p className="mt-4 text-base leading-relaxed text-white/55 md:text-lg">{description}</p>}
+      {description && <p className="mt-4 text-base leading-relaxed text-ink/55 md:text-lg">{description}</p>}
     </Reveal>
   );
 }

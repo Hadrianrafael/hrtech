@@ -9,10 +9,10 @@ export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'text-white bg-[linear-gradient(135deg,#E92034_0%,#FF871F_100%)] shadow-[0_0_0_1px_rgba(255,255,255,0.06)] hover:shadow-[0_8px_30px_-8px_rgba(233,32,52,0.55)]',
-  secondary: 'text-white bg-surface-elevated border border-border hover:border-white/20 hover:bg-white/[0.06]',
-  outline: 'text-white bg-transparent border border-border hover:border-brand-orange/60 hover:bg-white/[0.03]',
-  ghost: 'text-white/80 bg-transparent hover:text-white hover:bg-white/[0.06]',
+    'text-white bg-[linear-gradient(135deg,#E92034_0%,#FF871F_100%)] hover:shadow-[0_10px_30px_-10px_rgba(233,32,52,0.45)]',
+  secondary: 'text-ink bg-white border border-border hover:border-ink/25',
+  outline: 'text-ink bg-transparent border border-border hover:border-brand-orange/60',
+  ghost: 'text-ink/70 bg-transparent hover:text-ink hover:bg-ink/[0.04]',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -44,7 +44,7 @@ type ButtonAsLink = BaseProps &
 export type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const base =
-  'inline-flex items-center justify-center rounded-full font-medium tracking-[-0.01em] transition-all duration-200 ease-out disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap select-none';
+  'inline-flex items-center justify-center rounded-md font-medium tracking-[-0.01em] transition-all duration-200 ease-out disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap select-none';
 
 export function Button({
   variant = 'primary',

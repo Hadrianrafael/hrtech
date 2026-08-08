@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Badge, Container, Section, Breadcrumb, Reveal } from '@hrtech/ui';
+import { Container, Section, Breadcrumb, Reveal } from '@hrtech/ui';
 import { siteConfig } from '@/lib/site-config';
 
 export const metadata: Metadata = {
@@ -40,13 +40,13 @@ export default function PrivacidadePage() {
       <Container>
         <Reveal className="max-w-3xl">
           <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Privacidade' }]} />
-          <Badge variant="outline" className="mt-6">
+          <span className="mt-6 block font-mono text-xs uppercase tracking-[0.2em] text-ink/35">
             Última atualização: 2026
-          </Badge>
-          <h1 className="mt-5 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">
+          </span>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
             Política de Privacidade
           </h1>
-          <p className="mt-4 text-sm leading-relaxed text-white/50">
+          <p className="mt-4 text-sm leading-relaxed text-ink/50">
             Esta política descreve como a HR Tech coleta, utiliza e protege os dados pessoais fornecidos através
             deste site.
           </p>
@@ -54,8 +54,8 @@ export default function PrivacidadePage() {
           <div className="mt-12 flex flex-col gap-8">
             {sections.map((section) => (
               <div key={section.title}>
-                <h2 className="text-lg font-semibold text-white">{section.title}</h2>
-                <p className="mt-2 text-sm leading-relaxed text-white/55">{section.body}</p>
+                <h2 className="text-lg font-semibold text-ink">{section.title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-ink/55">{section.body}</p>
               </div>
             ))}
           </div>

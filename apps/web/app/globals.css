@@ -5,17 +5,17 @@
 @layer base {
   html {
     scroll-behavior: smooth;
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   body {
-    @apply bg-bg text-white antialiased;
+    @apply bg-bg text-ink antialiased;
     font-feature-settings: 'ss01' 1, 'cv01' 1;
   }
 
   ::selection {
-    background-color: rgba(233, 32, 52, 0.35);
-    color: #fff;
+    background-color: rgba(233, 32, 52, 0.18);
+    color: #0d0d0d;
   }
 
   ::-webkit-scrollbar {
@@ -23,16 +23,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #0d0d0d;
+    background: #fafafa;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #262626;
+    background: #d4d4d4;
     border-radius: 999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #333;
+    background: #b8b8b8;
   }
 
   :focus-visible {

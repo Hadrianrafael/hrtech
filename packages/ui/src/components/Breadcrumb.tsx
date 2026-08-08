@@ -17,13 +17,13 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
         const isLast = index === items.length - 1;
         return (
           <React.Fragment key={`${item.label}-${index}`}>
-            {index > 0 && <IconChevronRight size={14} className="text-white/25" />}
+            {index > 0 && <IconChevronRight size={14} className="text-ink/25" />}
             {item.href && !isLast ? (
-              <a href={item.href} className="text-white/45 transition-colors hover:text-white">
+              <a href={item.href} className="text-ink/45 transition-colors hover:text-ink">
                 {item.label}
               </a>
             ) : (
-              <span className={isLast ? 'text-white/85' : 'text-white/45'} aria-current={isLast ? 'page' : undefined}>
+              <span className={isLast ? 'text-ink/80' : 'text-ink/45'} aria-current={isLast ? 'page' : undefined}>
                 {item.label}
               </span>
             )}

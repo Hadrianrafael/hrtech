@@ -41,11 +41,11 @@ export function Accordion({ items, className, allowMultiple = false }: Accordion
               aria-expanded={isOpen}
               className="flex w-full items-center justify-between gap-4 py-5 text-left"
             >
-              <span className="text-[15px] font-medium text-white">{item.question}</span>
+              <span className="text-[15px] font-medium text-ink">{item.question}</span>
               <motion.span
                 animate={{ rotate: isOpen ? 45 : 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border text-white/70"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-ink/60"
               >
                 <IconPlus size={14} />
               </motion.span>
@@ -59,7 +59,7 @@ export function Accordion({ items, className, allowMultiple = false }: Accordion
                   transition={{ duration: 0.25, ease: 'easeInOut' }}
                   className="overflow-hidden"
                 >
-                  <p className="pb-5 pr-10 text-sm leading-relaxed text-white/55">{item.answer}</p>
+                  <p className="pb-5 pr-10 text-sm leading-relaxed text-ink/55">{item.answer}</p>
                 </motion.div>
               )}
             </AnimatePresence>

@@ -33,14 +33,14 @@ export function Menu({ open, onClose, items, cta, activeHref }: MenuProps) {
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-bg/80 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-sm lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
           <motion.nav
-            className="fixed inset-y-0 right-0 z-50 flex w-[86%] max-w-sm flex-col bg-surface border-l border-border p-6 lg:hidden"
+            className="fixed inset-y-0 right-0 z-50 flex w-[86%] max-w-sm flex-col bg-white border-l border-border p-6 lg:hidden"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -51,7 +51,7 @@ export function Menu({ open, onClose, items, cta, activeHref }: MenuProps) {
               <button
                 onClick={onClose}
                 aria-label="Fechar menu"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-md text-ink/60 hover:bg-ink/[0.05] hover:text-ink transition-colors"
               >
                 <IconX size={20} />
               </button>
@@ -63,8 +63,8 @@ export function Menu({ open, onClose, items, cta, activeHref }: MenuProps) {
                     href={item.href}
                     onClick={onClose}
                     className={cn(
-                      'block rounded-lg px-3 py-3 text-lg font-medium text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white',
-                      activeHref === item.href && 'text-white bg-white/[0.06]',
+                      'block rounded-md px-3 py-3 text-lg font-medium text-ink/70 transition-colors hover:bg-ink/[0.04] hover:text-ink',
+                      activeHref === item.href && 'text-ink bg-ink/[0.04]',
                     )}
                   >
                     {item.label}

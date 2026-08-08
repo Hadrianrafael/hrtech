@@ -14,7 +14,7 @@ export interface CardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
 
 const variantStyles = {
   surface: 'bg-surface border border-border',
-  elevated: 'bg-surface-elevated border border-border',
+  elevated: 'bg-white border border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)]',
   ghost: 'bg-transparent border border-border/60',
 };
 
@@ -40,7 +40,7 @@ export function Card({
         'relative rounded-2xl transition-colors duration-300',
         variantStyles[variant],
         paddingStyles[padding],
-        hoverable && 'hover:border-white/20 cursor-default',
+        hoverable && 'hover:border-ink/20 cursor-default',
         className,
       )}
       {...(hoverable ? { whileHover: { y: -4 } } : {})}

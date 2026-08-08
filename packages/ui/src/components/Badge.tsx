@@ -4,12 +4,12 @@ import { cn } from '../lib/cn';
 export type BadgeVariant = 'default' | 'gradient' | 'outline' | 'success' | 'warning' | 'info';
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: 'bg-white/[0.06] text-white/80 border border-white/10',
+  default: 'bg-surface-alt text-ink/70 border border-border',
   gradient: 'text-white bg-[linear-gradient(135deg,#E92034_0%,#FF871F_100%)]',
-  outline: 'text-white/70 border border-border bg-transparent',
-  success: 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/20',
-  warning: 'bg-amber-400/10 text-amber-400 border border-amber-400/20',
-  info: 'bg-sky-400/10 text-sky-400 border border-sky-400/20',
+  outline: 'text-ink/60 border border-border bg-transparent',
+  success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  warning: 'bg-amber-50 text-amber-700 border border-amber-200',
+  info: 'bg-sky-50 text-sky-700 border border-sky-200',
 };
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {

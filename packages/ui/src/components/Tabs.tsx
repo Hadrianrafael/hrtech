@@ -38,7 +38,7 @@ export function Tabs({ items, defaultValue, className }: TabsProps) {
               onClick={() => setActive(item.value)}
               className={cn(
                 'relative shrink-0 whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors',
-                isActive ? 'text-white' : 'text-white/45 hover:text-white/75',
+                isActive ? 'text-ink' : 'text-ink/45 hover:text-ink/70',
               )}
             >
               {item.label}

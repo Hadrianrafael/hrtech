@@ -18,7 +18,6 @@ import {
   IconAlertTriangle,
 } from '@tabler/icons-react';
 import {
-  Badge,
   Button,
   SectionHeading,
   Reveal,
@@ -117,24 +116,22 @@ const faqs = [
 export default function SolucaoJuridicaPage() {
   return (
     <>
-      <Section size="lg" className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-radial-glow" />
-        <Container className="relative">
+      <Section size="lg">
+        <Container>
           <Reveal>
             <Breadcrumb
               items={[{ label: 'Home', href: '/' }, { label: 'Soluções', href: '/solucoes' }, { label: 'Jurídico' }]}
             />
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Badge variant="gradient" dot>
-                <IconScale size={13} className="mr-1" />
-                Soluções para Advocacia
-              </Badge>
-              <Badge variant="outline">Apresentação conceitual — em desenvolvimento</Badge>
+            <div className="mt-6 flex items-center gap-2">
+              <IconScale size={16} className="text-brand-orange" />
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">
+                Apresentação conceitual — em desenvolvimento
+              </span>
             </div>
-            <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl md:text-6xl">
+            <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-ink sm:text-5xl md:text-6xl">
               O futuro SaaS jurídico da HR Tech.
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/55 md:text-lg">
+            <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink/55 md:text-lg">
               Uma plataforma para escritórios de advocacia gerirem processos, clientes, agenda, documentos e
               financeiro em um só lugar — com Inteligência Artificial aplicada ao fluxo jurídico.
             </p>
@@ -167,13 +164,13 @@ export default function SolucaoJuridicaPage() {
                 <div>
                   <div className="grid grid-cols-3 gap-3">
                     {['Processos ativos', 'Prazos esta semana', 'Audiências hoje'].map((label) => (
-                      <div key={label} className="rounded-xl border border-border bg-surface p-4">
+                      <div key={label} className="rounded-xl border border-dark-border bg-dark-surface p-4">
                         <span className="text-[11px] text-white/40">{label}</span>
                         <Skeleton className="mt-3 h-6 w-12" />
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 rounded-xl border border-border bg-surface p-4">
+                  <div className="mt-4 rounded-xl border border-dark-border bg-dark-surface p-4">
                     <span className="text-[11px] text-white/40">Processos recentes</span>
                     <div className="mt-3 space-y-2.5">
                       {[0, 1, 2, 3].map((i) => (
@@ -201,7 +198,7 @@ export default function SolucaoJuridicaPage() {
               <SectionHeading eyebrow="O problema" title="O que a maioria dos escritórios ainda enfrenta." align="left" />
               <ul className="mt-8 flex flex-col gap-4">
                 {problems.map((problem) => (
-                  <li key={problem} className="flex items-start gap-3 text-sm text-white/60">
+                  <li key={problem} className="flex items-start gap-3 text-sm text-ink/60">
                     <IconAlertTriangle size={16} className="mt-0.5 shrink-0 text-brand-orange" />
                     {problem}
                   </li>
@@ -210,12 +207,12 @@ export default function SolucaoJuridicaPage() {
             </Reveal>
             <Reveal delay={0.1}>
               <SectionHeading eyebrow="A solução" title="Tudo em uma única plataforma." align="left" />
-              <p className="mt-8 text-sm leading-relaxed text-white/55">
+              <p className="mt-8 text-sm leading-relaxed text-ink/55">
                 A proposta da solução jurídica da HR Tech é reunir processos, clientes, agenda, documentos e
                 financeiro em uma plataforma única, com automações e Inteligência Artificial aplicadas ao dia a
                 dia do escritório — reduzindo retrabalho e risco de prazo perdido.
               </p>
-              <div className="mt-6 flex items-center gap-2 text-sm text-emerald-400">
+              <div className="mt-6 flex items-center gap-2 text-sm text-emerald-700">
                 <IconCircleCheck size={16} />
                 Conceito desenhado a partir do fluxo real de trabalho jurídico
               </div>
@@ -227,8 +224,8 @@ export default function SolucaoJuridicaPage() {
       <Section className="border-t border-border">
         <Container>
           <Reveal className="max-w-xl">
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">Recursos planejados</span>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">Recursos planejados</span>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
               Tudo que o escritório precisa, em um só produto.
             </h2>
           </Reveal>
@@ -238,8 +235,8 @@ export default function SolucaoJuridicaPage() {
                 <div className="flex items-start gap-4 border-b border-border py-7">
                   <feature.icon size={20} className="mt-0.5 shrink-0 text-brand-orange" />
                   <div>
-                    <h3 className="text-base font-medium text-white">{feature.title}</h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-white/50">{feature.description}</p>
+                    <h3 className="text-base font-medium text-ink">{feature.title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink/50">{feature.description}</p>
                   </div>
                 </div>
               </Reveal>
@@ -261,8 +258,8 @@ export default function SolucaoJuridicaPage() {
                   >
                     {item.step}
                   </span>
-                  <h3 className="mt-3 text-base font-semibold text-white">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">{item.description}</p>
+                  <h3 className="mt-3 text-base font-semibold text-ink">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-ink/50">{item.description}</p>
                 </div>
               </Reveal>
             ))}
@@ -280,8 +277,8 @@ export default function SolucaoJuridicaPage() {
             ].map((item, index) => (
               <Reveal key={item.title} delay={index * 0.06}>
                 <item.icon size={22} className="text-brand-orange" />
-                <h3 className="mt-3 text-base font-semibold text-white">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/50">{item.description}</p>
+                <h3 className="mt-3 text-base font-semibold text-ink">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink/50">{item.description}</p>
               </Reveal>
             ))}
           </div>
@@ -297,18 +294,13 @@ export default function SolucaoJuridicaPage() {
         </Container>
       </Section>
 
-      <Section size="lg" className="relative overflow-hidden border-t border-border">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: 'linear-gradient(135deg, rgba(233,32,52,0.10) 0%, rgba(255,135,31,0.10) 100%)' }}
-          aria-hidden
-        />
-        <Container className="relative">
+      <Section size="lg" className="border-t border-border bg-dark-bg">
+        <Container>
           <Reveal className="flex flex-col items-center text-center">
             <h2 className="max-w-xl text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
               Quer acompanhar o lançamento da solução jurídica?
             </h2>
-            <p className="mt-4 max-w-md text-sm text-white/55">
+            <p className="mt-4 max-w-md text-sm text-white/50">
               Entre em contato e fique por dentro das novidades sobre o SaaS para escritórios de advocacia.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">

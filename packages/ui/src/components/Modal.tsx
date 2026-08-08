@@ -33,7 +33,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <motion.div
-            className="absolute inset-0 bg-bg/85 backdrop-blur-sm"
+            className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -44,7 +44,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             aria-modal="true"
             aria-label={title}
             className={cn(
-              'relative w-full max-w-lg rounded-2xl border border-border bg-surface-elevated p-7 shadow-2xl',
+              'relative w-full max-w-lg rounded-lg border border-border bg-white p-7 shadow-2xl',
               className,
             )}
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -55,11 +55,11 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             <button
               onClick={onClose}
               aria-label="Fechar"
-              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-md text-ink/50 transition-colors hover:bg-ink/[0.05] hover:text-ink"
             >
               <IconX size={18} />
             </button>
-            {title && <h2 className="pr-10 text-lg font-semibold text-white">{title}</h2>}
+            {title && <h2 className="pr-10 text-lg font-semibold text-ink">{title}</h2>}
             <div className={title ? 'mt-4' : ''}>{children}</div>
           </motion.div>
         </div>
