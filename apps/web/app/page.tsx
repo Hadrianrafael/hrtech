@@ -51,21 +51,21 @@ export default function HomePage() {
         </Container>
       </Section>
 
-      {/* O que a HR Tech desenvolve */}
-      <Section className="border-b border-border">
+      {/* O que a HR Tech desenvolve — seção de contraste em preto */}
+      <Section className="bg-dark-bg">
         <Container>
           <Reveal className="max-w-xl">
             <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">
               O que a HR Tech desenvolve
             </span>
           </Reveal>
-          <div className="mt-10 border-t border-border">
+          <div className="mt-10 border-t border-dark-border">
             {capabilities.map((item, index) => (
               <Reveal key={item.n} delay={index * 0.03}>
-                <div className="flex flex-col gap-2 border-b border-border py-7 sm:flex-row sm:items-baseline sm:gap-8">
-                  <span className="font-mono text-sm text-ink/30 sm:w-10 sm:shrink-0">{item.n}</span>
-                  <h3 className="text-lg font-medium text-ink sm:w-72 sm:shrink-0">{item.title}</h3>
-                  <p className="text-sm leading-relaxed text-ink/50">{item.description}</p>
+                <div className="flex flex-col gap-2 border-b border-dark-border py-7 sm:flex-row sm:items-baseline sm:gap-8">
+                  <span className="font-mono text-sm text-white/30 sm:w-10 sm:shrink-0">{item.n}</span>
+                  <h3 className="text-lg font-medium text-white sm:w-72 sm:shrink-0">{item.title}</h3>
+                  <p className="text-sm leading-relaxed text-white/50">{item.description}</p>
                 </div>
               </Reveal>
             ))}
@@ -114,6 +114,7 @@ export default function HomePage() {
           </div>
         </Container>
       </Section>
+
 
       {/* CTA final — seção de contraste em preto */}
       <Section size="lg" className="bg-dark-bg">

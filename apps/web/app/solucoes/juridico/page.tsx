@@ -6,7 +6,7 @@ import {
   IconCalendarEvent,
   IconCoin,
   IconFileText,
-  IconSignature,
+  IconChecklist,
   IconReportAnalytics,
   IconSparkles,
   IconBolt,
@@ -25,10 +25,11 @@ import {
   Section,
   Breadcrumb,
   MockupFrame,
-  Skeleton,
   Accordion,
 } from '@hrtech/ui';
 import { siteConfig } from '@/lib/site-config';
+import { TiltCard } from '@/components/TiltCard';
+import { LegalProductMockup } from '@/components/legal/LegalProductMockup';
 
 export const metadata: Metadata = {
   title: 'Soluções para Advocacia',
@@ -71,14 +72,19 @@ const features = [
     description: 'Repositório centralizado, versionado e pesquisável de petições e documentos.',
   },
   {
-    icon: IconSignature,
-    title: 'Assinatura Eletrônica',
-    description: 'Fluxo de assinatura de documentos integrado, sem sair da plataforma.',
+    icon: IconChecklist,
+    title: 'Tarefas',
+    description: 'Distribuição e acompanhamento de tarefas da equipe, vinculadas a cada processo.',
+  },
+  {
+    icon: IconBolt,
+    title: 'Automações',
+    description: 'Rotinas automáticas para movimentações, notificações e atualizações de status.',
   },
   {
     icon: IconReportAnalytics,
-    title: 'Relatórios',
-    description: 'Visão consolidada de processos, produtividade e financeiro do escritório.',
+    title: 'Indicadores',
+    description: 'Painel consolidado de processos, produtividade e financeiro do escritório.',
   },
   {
     icon: IconSparkles,
@@ -146,47 +152,11 @@ export default function SolucaoJuridicaPage() {
           </Reveal>
 
           <Reveal delay={0.15} className="mt-16">
-            <MockupFrame label="app.hrtech.com.br/juridico — dashboard (conceito)">
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
-                <div className="hidden flex-col gap-1 lg:flex">
-                  {['Dashboard', 'Processos', 'Clientes', 'Agenda', 'Financeiro', 'Documentos'].map((label, i) => (
-                    <div
-                      key={label}
-                      className={
-                        'rounded-lg px-3 py-2.5 text-xs ' +
-                        (i === 0 ? 'bg-brand-gradient-soft text-white' : 'text-white/45')
-                      }
-                    >
-                      {label}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {['Processos ativos', 'Prazos esta semana', 'Audiências hoje'].map((label) => (
-                      <div key={label} className="rounded-xl border border-dark-border bg-dark-surface p-4">
-                        <span className="text-[11px] text-white/40">{label}</span>
-                        <Skeleton className="mt-3 h-6 w-12" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 rounded-xl border border-dark-border bg-dark-surface p-4">
-                    <span className="text-[11px] text-white/40">Processos recentes</span>
-                    <div className="mt-3 space-y-2.5">
-                      {[0, 1, 2, 3].map((i) => (
-                        <div key={i} className="flex items-center justify-between rounded-lg bg-white/[0.02] px-3 py-2.5">
-                          <div className="flex items-center gap-3">
-                            <Skeleton className="h-8 w-8 rounded-full" />
-                            <Skeleton className="h-3 w-28" />
-                          </div>
-                          <Skeleton className="h-3 w-16" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </MockupFrame>
+            <TiltCard strength={3}>
+              <MockupFrame label="app.hrtech.com.br/juridico — conceito de produto">
+                <LegalProductMockup />
+              </MockupFrame>
+            </TiltCard>
           </Reveal>
         </Container>
       </Section>
@@ -245,10 +215,15 @@ export default function SolucaoJuridicaPage() {
         </Container>
       </Section>
 
-      <Section className="border-t border-border">
+      <Section className="bg-dark-bg">
         <Container>
-          <SectionHeading eyebrow="Fluxo de uso" title="Como a plataforma vai funcionar, na prática." />
-          <div className="relative mt-14 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <Reveal className="max-w-xl">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">Fluxo de uso</span>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">
+              Como a plataforma vai funcionar, na prática.
+            </h2>
+          </Reveal>
+          <div className="relative mt-14 grid grid-cols-1 gap-8 border-t border-dark-border pt-10 sm:grid-cols-2 lg:grid-cols-4">
             {flow.map((item, index) => (
               <Reveal key={item.step} delay={index * 0.08}>
                 <div>
@@ -258,18 +233,14 @@ export default function SolucaoJuridicaPage() {
                   >
                     {item.step}
                   </span>
-                  <h3 className="mt-3 text-base font-semibold text-ink">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-ink/50">{item.description}</p>
+                  <h3 className="mt-3 text-base font-semibold text-white">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-white/50">{item.description}</p>
                 </div>
               </Reveal>
             ))}
           </div>
-        </Container>
-      </Section>
 
-      <Section className="border-t border-border">
-        <Container>
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+          <div className="mt-16 grid grid-cols-1 gap-8 border-t border-dark-border pt-12 sm:grid-cols-3">
             {[
               { icon: IconShieldLock, title: 'Segurança', description: 'Controle de acesso, criptografia e boas práticas desde a concepção.' },
               { icon: IconTrendingUp, title: 'Escalabilidade', description: 'Arquitetura multi-tenant preparada para crescer com o escritório.' },
@@ -277,8 +248,8 @@ export default function SolucaoJuridicaPage() {
             ].map((item, index) => (
               <Reveal key={item.title} delay={index * 0.06}>
                 <item.icon size={22} className="text-brand-orange" />
-                <h3 className="mt-3 text-base font-semibold text-ink">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink/50">{item.description}</p>
+                <h3 className="mt-3 text-base font-semibold text-white">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/50">{item.description}</p>
               </Reveal>
             ))}
           </div>

@@ -2,79 +2,63 @@ import type { Metadata } from 'next';
 import {
   IconCode,
   IconCloud,
-  IconSparkles,
-  IconBolt,
-  IconPlugConnected,
-  IconChartBar,
-  IconLayoutGrid,
   IconBuildingSkyscraper,
+  IconBolt,
+  IconSparkles,
+  IconLayoutGrid,
+  IconPlugConnected,
   IconArrowRight,
-  IconCheck,
 } from '@tabler/icons-react';
 import { Button, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
 
 export const metadata: Metadata = {
   title: 'Serviços',
   description:
-    'Desenvolvimento de sistemas, SaaS, Inteligência Artificial, automações, APIs, dashboards e integrações.',
+    'Desenvolvimento de sistemas, SaaS, sistemas empresariais, automação, Inteligência Artificial, desenvolvimento web e integrações.',
 };
 
 const services = [
   {
     n: '01',
     icon: IconCode,
-    title: 'Desenvolvimento de Sistemas',
-    description: 'Sistemas web sob medida, desenhados para o processo real da sua empresa.',
-    items: ['Arquitetura orientada ao domínio', 'Interfaces modernas e responsivas', 'Código testado e documentado'],
+    title: 'Desenvolvimento de sistemas',
+    description: 'Sistemas web sob medida, desenhados a partir do processo real da sua empresa — não de um template genérico.',
   },
   {
     n: '02',
     icon: IconCloud,
-    title: 'Desenvolvimento SaaS',
-    description: 'Plataformas multi-tenant, do primeiro protótipo à operação em produção.',
-    items: ['Multi-tenancy e isolamento de dados', 'Autenticação e controle de acesso', 'Base pronta para escalar'],
+    title: 'SaaS',
+    description: 'Plataformas multi-tenant, da concepção do produto à operação em produção, prontas para escalar.',
   },
   {
     n: '03',
-    icon: IconSparkles,
-    title: 'Inteligência Artificial',
-    description: 'IA aplicada a processos reais — extração de dados, automação de decisões, assistentes internos.',
-    items: ['Integração com modelos de IA', 'Automação de fluxos com IA', 'Soluções sob medida, não genéricas'],
+    icon: IconBuildingSkyscraper,
+    title: 'Sistemas empresariais',
+    description: 'Módulos internos sob medida para gestão, controle e dashboards de decisão — integrados ao que a empresa já usa.',
   },
   {
     n: '04',
     icon: IconBolt,
-    title: 'Automações',
-    description: 'Eliminação de tarefas manuais e repetitivas com automações confiáveis e monitoradas.',
-    items: ['Integração entre sistemas', 'Rotinas agendadas e gatilhos', 'Redução de erro humano'],
+    title: 'Automação',
+    description: 'Eliminação de tarefas manuais e repetitivas com rotinas confiáveis, monitoradas e auditáveis.',
   },
   {
     n: '05',
-    icon: IconPlugConnected,
-    title: 'APIs e Integrações',
-    description: 'Construção e integração de APIs conectando sistemas internos e serviços de terceiros.',
-    items: ['APIs REST documentadas', 'Integrações com serviços externos', 'Webhooks e eventos em tempo real'],
+    icon: IconSparkles,
+    title: 'Inteligência Artificial',
+    description: 'IA aplicada a processos reais de negócio — extração de dados, automação de decisões, assistentes internos.',
   },
   {
     n: '06',
-    icon: IconChartBar,
-    title: 'Dashboards',
-    description: 'Painéis de dados construídos para decisão rápida, não apenas visualização.',
-    items: ['Métricas relevantes ao negócio', 'Performance de carregamento', 'Design claro e hierárquico'],
+    icon: IconLayoutGrid,
+    title: 'Desenvolvimento Web',
+    description: 'Sites e landing pages de alta performance, construídos com o mesmo padrão de engenharia dos sistemas.',
   },
   {
     n: '07',
-    icon: IconLayoutGrid,
-    title: 'Websites e Landing Pages',
-    description: 'Páginas de alta conversão para produtos, campanhas e lançamentos.',
-    items: ['Foco em conversão', 'Performance e SEO', 'Design alinhado à marca'],
-  },
-  {
-    n: '08',
-    icon: IconBuildingSkyscraper,
-    title: 'Sistemas Empresariais',
-    description: 'Soluções internas sob medida para operações, gestão e controle empresarial.',
-    items: ['Módulos sob medida', 'Controle de permissões', 'Integração com sistemas existentes'],
+    icon: IconPlugConnected,
+    title: 'Integrações e APIs',
+    description: 'Construção e integração de APIs conectando sistemas internos e serviços de terceiros.',
   },
 ];
 
@@ -86,44 +70,36 @@ export default function ServicosPage() {
           <Reveal>
             <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Serviços' }]} />
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-ink sm:text-5xl md:text-6xl">
-              Serviços de engenharia de software sob medida.
+              Engenharia de software sob medida, do escopo à operação.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink/55 md:text-lg">
-              Da concepção à operação em produção — cada serviço segue o mesmo padrão de qualidade, performance e
-              segurança.
+              Sete frentes de trabalho, um único padrão de qualidade. Cada serviço segue a mesma disciplina de
+              arquitetura, performance e segurança.
             </p>
           </Reveal>
         </Container>
       </Section>
 
-      <Section className="border-t border-border">
+      {/* Índice de serviços — tipografia editorial, sem cards */}
+      <Section className="bg-dark-bg">
         <Container>
-          <div className="border-t border-border">
+          <div className="border-t border-dark-border">
             {services.map((service, index) => (
               <Reveal key={service.title} delay={index * 0.03}>
-                <div className="group grid grid-cols-1 gap-4 border-b border-border py-9 lg:grid-cols-12 lg:gap-8">
-                  <div className="flex items-start gap-4 lg:col-span-4">
-                    <span className="font-mono text-sm text-ink/30">{service.n}</span>
+                <div className="group grid grid-cols-1 gap-3 border-b border-dark-border py-9 lg:grid-cols-12 lg:items-baseline lg:gap-8">
+                  <div className="flex items-center gap-4 lg:col-span-5">
+                    <span className="font-mono text-sm text-white/25">{service.n}</span>
                     <service.icon
-                      size={20}
-                      className="mt-0.5 shrink-0 text-brand-orange transition-transform duration-300 group-hover:scale-110"
+                      size={18}
+                      className="shrink-0 text-brand-orange transition-transform duration-300 group-hover:scale-110"
                     />
-                    <h2 className="text-xl font-medium text-ink">{service.title}</h2>
+                    <h2 className="text-xl font-medium tracking-[-0.01em] text-white transition-colors duration-300 sm:text-2xl">
+                      {service.title}
+                    </h2>
                   </div>
-                  <div className="lg:col-span-8">
-                    <p className="max-w-xl text-sm leading-relaxed text-ink/50">{service.description}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {service.items.map((item) => (
-                        <span
-                          key={item}
-                          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1 text-xs text-ink/45"
-                        >
-                          <IconCheck size={12} className="text-brand-orange" />
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  <p className="max-w-xl text-sm leading-relaxed text-white/45 lg:col-span-7">
+                    {service.description}
+                  </p>
                 </div>
               </Reveal>
             ))}
@@ -131,9 +107,35 @@ export default function ServicosPage() {
         </Container>
       </Section>
 
-      <Section size="lg" className="border-t border-border bg-dark-bg">
+      {/* Como entregamos — princípios, não cards */}
+      <Section>
         <Container>
-          <Reveal className="flex flex-col items-center text-center">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
+            <Reveal className="lg:col-span-4">
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">Como entregamos</span>
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-ink sm:text-3xl">
+                Um único padrão de engenharia para todos os serviços.
+              </h2>
+            </Reveal>
+            <Reveal delay={0.08} className="lg:col-span-8">
+              <p className="max-w-2xl text-base leading-relaxed text-ink/60">
+                Não vendemos serviços isolados — vendemos o mesmo rigor técnico aplicado a diferentes frentes.
+                Arquitetura pensada antes da primeira tela, código testado, segurança desde o primeiro commit e um
+                Design System próprio garantem que qualquer entrega da HR Tech tenha a mesma qualidade, do
+                pequeno ajuste ao produto completo.
+              </p>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/45">
+                Sem escopo genérico adaptado à força — cada projeto começa com o mapeamento do processo real da
+                sua empresa.
+              </p>
+            </Reveal>
+          </div>
+        </Container>
+      </Section>
+
+      <Section size="lg" className="bg-dark-bg">
+        <Container>
+          <Reveal className="flex flex-col items-center border-t border-dark-border pt-16 text-center">
             <h2 className="max-w-xl text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
               Não encontrou exatamente o que precisa?
             </h2>
