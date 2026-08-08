@@ -15,23 +15,29 @@ Empresas pequenas, médias e grandes que precisam de sistemas especializados par
 ## Como cada SaaS se conecta ao ecossistema
 Todo produto SaaS vertical nasce sobre a mesma base (Core: autenticação, usuários, tenants, permissões, auditoria, notificações, billing — ver `architecture.md`) e a mesma identidade visual (`design-system.md`). Um cliente que usa duas soluções da HR Tech reconhece a mesma qualidade e consistência em ambas, mesmo sendo produtos com domínio de negócio completamente diferente. A arquitetura modular (`core` / `shared` / `verticals`) é o que torna essa conexão tecnicamente real — não apenas uma promessa de marketing.
 
-## Produtos
+## Escopo deste repositório
 
-| Produto | Papel no ecossistema |
-|---|---|
-| Website | Vitrine institucional — porta de entrada, não um produto vendido |
-| Construção Civil | Vertical SaaS |
-| Jurídico | Vertical SaaS |
-| Logística | Vertical SaaS |
-| Indústria | Vertical SaaS |
-| Saúde | Vertical SaaS |
-| Imobiliário | Vertical SaaS |
-| Varejo | Vertical SaaS |
-| Hotelaria | Vertical SaaS |
-| Distribuição | Vertical SaaS |
-| Serviços Profissionais | Vertical SaaS |
+**Este repositório (`hrtech-site`) entrega exclusivamente o Portfólio Institucional da HR Tech** — site + backend simples de suporte (formulário de contato). Ver `docs/adr/010-scope-narrowed-to-institutional-portfolio.md`.
 
-Status de cada um em `roadmap.md` — este documento descreve o papel de cada produto no ecossistema, não seu estágio atual de desenvolvimento.
+O portfólio apresenta a solução para Escritórios de Advocacia apenas de forma visual/conceitual (mockups), nunca como produto funcional. O SaaS jurídico — e as demais verticais — são construídos em projetos/repositórios separados, quando chegar a vez de cada um.
+
+## Produtos (visão de longo prazo da empresa — não é o escopo deste repositório)
+
+| Produto | Papel no ecossistema | Onde é construído |
+|---|---|---|
+| Portfólio Institucional | Vitrine institucional — porta de entrada, não um produto vendido | Este repositório |
+| Jurídico | Vertical SaaS | Repositório próprio (futuro) |
+| Construção Civil | Vertical SaaS | Repositório próprio (futuro) |
+| Logística | Vertical SaaS | Repositório próprio (futuro) |
+| Indústria | Vertical SaaS | Repositório próprio (futuro) |
+| Saúde | Vertical SaaS | Repositório próprio (futuro) |
+| Imobiliário | Vertical SaaS | Repositório próprio (futuro) |
+| Varejo | Vertical SaaS | Repositório próprio (futuro) |
+| Hotelaria | Vertical SaaS | Repositório próprio (futuro) |
+| Distribuição | Vertical SaaS | Repositório próprio (futuro) |
+| Serviços Profissionais | Vertical SaaS | Repositório próprio (futuro) |
+
+Status de cada um em `roadmap.md` — este documento descreve o papel de cada produto na visão de longo prazo da empresa, não o escopo de implementação deste repositório.
 
 ## Visão de longo prazo
 Evoluir de uma empresa que constrói sistemas sob demanda para uma plataforma de tecnologia que opera múltiplos produtos SaaS simultaneamente, com CRM interno, portal do cliente unificado, marketplace de integrações e inteligência artificial própria — todos compartilhando a mesma fundação técnica descrita em `architecture.md`.

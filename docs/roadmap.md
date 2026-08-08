@@ -1,14 +1,18 @@
 # Roadmap — HR Tech
 
+## Escopo deste repositório
+
+Este repositório entrega **apenas o Portfólio Institucional** (Fase 1 abaixo). As fases 2 em diante descrevem a visão de longo prazo da empresa e são construídas em repositórios separados, quando chegar a vez de cada uma — ver `docs/adr/010-scope-narrowed-to-institutional-portfolio.md`.
+
 ## Roadmap da empresa
 
-**Fase 1 — Fundação (em andamento)**
-Arquitetura, monorepo, Design System, site institucional, portfólio, landing pages, contato.
+**Fase 1 — Portfólio Institucional (este repositório, em andamento)**
+Site institucional (Home, Sobre, Serviços, Portfólio/metodologia, apresentação visual da solução para Escritórios de Advocacia, Contato) + backend simples de suporte ao formulário de contato.
 
-**Fase 2 — SaaS Construção Civil**
-Primeiro produto vertical, primeiro consumidor real da camada `shared/`.
+**Fase 2 — SaaS Jurídico (repositório separado, futuro)**
+Primeiro produto vertical real, primeiro cliente pagante.
 
-**Fase 3 — SaaS Jurídico**
+**Fase 3 — Demais verticais** (Construção Civil, Logística, Indústria, Saúde, Imobiliário, Varejo, Hotelaria, Distribuição, Serviços Profissionais — repositórios separados, futuro)
 
 **Fase 4 — CRM interno**
 
@@ -18,27 +22,27 @@ Primeiro produto vertical, primeiro consumidor real da camada `shared/`.
 
 **Fase 7 — IA própria da HR Tech**
 
-## Roadmap do produto (site institucional)
+## Roadmap do produto (Portfólio Institucional — este repositório)
 
 | Página / entrega | Status |
 |---|---|
 | Arquitetura, monorepo, Design System v1.0 | Em desenvolvimento |
 | Home | Em desenvolvimento |
-| Sobre a Empresa | Pré-lançamento |
-| Sobre o Fundador | Pré-lançamento |
-| Portfólio | Pré-lançamento |
+| Sobre a HR Tech | Pré-lançamento |
+| Serviços | Pré-lançamento |
+| Portfólio (metodologia, Design System, demonstrações) | Pré-lançamento |
+| Soluções para Advocacia (apresentação visual/conceitual, mockups) | Pré-lançamento |
+| Próximas Soluções (cards "em desenvolvimento") | Pré-lançamento |
 | Contato | Pré-lançamento |
-| Hub de Soluções | Pré-lançamento |
-| Landing Pages das 10 soluções | Pré-lançamento |
 
-## Status das soluções (Hub de Soluções)
+## Próximas Soluções (apresentação visual apenas — não desenvolvidas neste repositório)
 
 Nenhuma solução vertical tem produto pronto ainda — todas aparecem no site como roadmap transparente, nunca como funcionalidade existente:
 
-| Solução | Status |
+| Solução | Status no site |
 |---|---|
+| Jurídico (Escritórios de Advocacia) | Em destaque — apresentação visual/mockups |
 | Construção Civil | Em desenvolvimento |
-| Jurídico | Em desenvolvimento |
 | Logística | Em desenvolvimento |
 | Indústria | Em desenvolvimento |
 | Saúde | Em desenvolvimento |
