@@ -8,7 +8,7 @@ import {
   IconPlugConnected,
   IconArrowRight,
 } from '@tabler/icons-react';
-import { Button, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
+import { Button, Reveal, Container, Section, Breadcrumb, SectionHeading, Accordion } from '@hrtech/ui';
 import { pageMetadata } from '@/lib/page-metadata';
 
 export const metadata = pageMetadata(
@@ -59,6 +59,56 @@ const services = [
     icon: IconPlugConnected,
     title: 'Integrações e APIs',
     description: 'Construção e integração de APIs conectando sistemas internos e serviços de terceiros.',
+  },
+];
+
+const faqs = [
+  {
+    value: 'custo',
+    question: 'Quanto custa desenvolver um sistema?',
+    answer:
+      'Varia conforme o escopo, a complexidade e as integrações necessárias — não trabalhamos com valor fixo genérico. Depois de entender o que sua empresa precisa, enviamos uma proposta objetiva.',
+  },
+  {
+    value: 'saas',
+    question: 'Vocês desenvolvem SaaS?',
+    answer: 'Sim. Desenvolvimento de plataformas SaaS é uma das nossas principais frentes de trabalho.',
+  },
+  {
+    value: 'pequenas-empresas',
+    question: 'Vocês atendem pequenas empresas?',
+    answer: 'Sim. Atendemos empresas de diferentes portes — o escopo é sempre dimensionado à realidade do negócio.',
+  },
+  {
+    value: 'integracao',
+    question: 'É possível integrar sistemas existentes?',
+    answer: 'Sim. Integrações e APIs conectando sistemas internos e serviços de terceiros fazem parte do nosso dia a dia.',
+  },
+  {
+    value: 'ia',
+    question: 'Vocês trabalham com IA?',
+    answer: 'Sim, aplicada a processos reais de negócio — não como modismo ou recurso decorativo.',
+  },
+  {
+    value: 'manutencao',
+    question: 'Vocês fazem manutenção?',
+    answer: 'Sim. Acompanhamento e evolução contínua fazem parte do nosso processo, não terminam na entrega inicial.',
+  },
+  {
+    value: 'prazo',
+    question: 'Quanto tempo leva para desenvolver?',
+    answer:
+      'Depende do escopo do projeto. Definimos um cronograma realista logo após a etapa de descoberta, antes de qualquer compromisso.',
+  },
+  {
+    value: 'processo',
+    question: 'Como funciona o processo?',
+    answer: 'Descoberta, estratégia, desenvolvimento, testes, lançamento e evolução contínua — sempre com arquitetura pensada antes da primeira tela.',
+  },
+  {
+    value: 'orcamento',
+    question: 'Como solicitar orçamento?',
+    answer: 'Pelo formulário de contato ou diretamente pelo WhatsApp — respondemos com um plano claro de como podemos ajudar.',
   },
 ];
 
@@ -133,6 +183,16 @@ export default function ServicosPage() {
         </Container>
       </Section>
 
+      {/* FAQ */}
+      <Section>
+        <Container>
+          <SectionHeading eyebrow="Perguntas frequentes" title="Antes de solicitar um orçamento." />
+          <Reveal delay={0.1} className="mt-10">
+            <Accordion items={faqs} />
+          </Reveal>
+        </Container>
+      </Section>
+
       <Section size="lg" className="bg-dark-bg">
         <Container>
           <Reveal className="flex flex-col items-center border-t border-dark-border pt-16 text-center">
@@ -144,7 +204,7 @@ export default function ServicosPage() {
             </p>
             <div className="mt-8">
               <Button href="/contato" iconRight={<IconArrowRight size={16} />}>
-                Solicitar Orçamento
+                Quero desenvolver meu projeto
               </Button>
             </div>
           </Reveal>

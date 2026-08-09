@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { MotionConfig } from 'framer-motion';
 import { Header, Footer, ToastProvider } from '@hrtech/ui';
 import { siteConfig, mainNav, footerGroups } from '@/lib/site-config';
 import { WhatsAppFloatingButton } from '@/components/WhatsAppFloatingButton';
@@ -18,7 +19,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} — Desenvolvimento de Sistemas, SaaS e IA`,
+    default: 'HR Tech | Desenvolvimento de Sistemas, SaaS e Automação',
     template: `%s — ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -28,12 +29,12 @@ export const metadata: Metadata = {
     locale: 'pt_BR',
     url: siteConfig.url,
     siteName: siteConfig.name,
-    title: `${siteConfig.name} — Desenvolvimento de Sistemas, SaaS e IA`,
+    title: 'HR Tech | Desenvolvimento de Sistemas, SaaS e Automação',
     description: siteConfig.description,
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${siteConfig.name} — Desenvolvimento de Sistemas, SaaS e IA`,
+    title: 'HR Tech | Desenvolvimento de Sistemas, SaaS e Automação',
     description: siteConfig.description,
   },
   robots: {
@@ -66,22 +67,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="flex min-h-screen flex-col font-sans">
-        <ToastProvider>
-          <Header
-            items={mainNav}
-            ctaHref="/contato"
-            whatsappHref={siteConfig.whatsappHref}
-            instagramHref={siteConfig.instagramUrl}
-          />
-          <main className="flex-1">{children}</main>
-          <Footer
-            groups={footerGroups}
-            whatsappHref={siteConfig.whatsappHref}
-            email={siteConfig.email}
-            instagramHref={siteConfig.instagramUrl}
-          />
-          <WhatsAppFloatingButton />
-        </ToastProvider>
+        <MotionConfig reducedMotion="user">
+          <ToastProvider>
+            <Header
+              items={mainNav}
+              ctaHref="/contato"
+              whatsappHref={siteConfig.whatsappHref}
+              instagramHref={siteConfig.instagramUrl}
+            />
+            <main className="flex-1">{children}</main>
+            <Footer
+              groups={footerGroups}
+              whatsappHref={siteConfig.whatsappHref}
+              email={siteConfig.email}
+              instagramHref={siteConfig.instagramUrl}
+            />
+            <WhatsAppFloatingButton />
+          </ToastProvider>
+        </MotionConfig>
       </body>
     </html>
   );

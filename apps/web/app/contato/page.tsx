@@ -117,8 +117,11 @@ export default function ContatoPage() {
                   Solicitar orçamento
                 </span>
                 <h2 className="mt-2 text-xl font-semibold tracking-[-0.01em] text-ink">
-                  Conte os detalhes do seu projeto
+                  Vamos transformar sua ideia em tecnologia?
                 </h2>
+                <p className="mt-2 text-sm leading-relaxed text-ink/55">
+                  Conte o que sua empresa precisa e vamos conversar sobre a melhor solução.
+                </p>
                 <div className="mt-6">
                   <ContactForm />
                 </div>

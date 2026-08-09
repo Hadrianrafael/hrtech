@@ -15,6 +15,11 @@ const roadmap = [
   { emoji: '🚚', title: 'Logística' },
   { emoji: '🏠', title: 'Imobiliário' },
   { emoji: '🐾', title: 'Veterinário' },
+  { emoji: '🏭', title: 'Indústria' },
+  { emoji: '🛍️', title: 'Varejo' },
+  { emoji: '🏨', title: 'Hotelaria' },
+  { emoji: '📦', title: 'Distribuição' },
+  { emoji: '💼', title: 'Serviços Profissionais' },
 ];
 
 export default function SolucoesPage() {
@@ -31,8 +36,8 @@ export default function SolucoesPage() {
               Soluções que estamos construindo.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink/55 md:text-lg">
-              Este é o ecossistema de plataformas SaaS especializadas por setor que a HR Tech está construindo —
-              um setor de cada vez, com profundidade, antes de anunciar o próximo.
+              Produtos digitais pensados para resolver problemas específicos de diferentes setores — um setor de
+              cada vez, com profundidade, antes de anunciar o próximo.
             </p>
           </Reveal>
         </Container>

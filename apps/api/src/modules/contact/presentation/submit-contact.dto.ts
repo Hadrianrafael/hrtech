@@ -20,6 +20,16 @@ export class SubmitContactDto {
   @MaxLength(40)
   phone?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  segment?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  interest?: string;
+
   @IsString()
   @MinLength(10)
   @MaxLength(4000)

@@ -34,12 +34,12 @@ export function Hero() {
             variants={fadeUp}
             className="mt-8 max-w-2xl text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-white"
           >
-            Desenvolvimento de sistemas para empresas que querem{' '}
+            Transformamos desafios empresariais em{' '}
             <span
               className="bg-clip-text text-transparent"
               style={{ backgroundImage: 'linear-gradient(135deg, #E92034 0%, #FF871F 100%)' }}
             >
-              evoluir
+              tecnologia
             </span>
             .
           </motion.h1>
@@ -51,8 +51,8 @@ export function Hero() {
             variants={fadeUp}
             className="mt-6 max-w-lg text-base leading-relaxed text-white/55 md:text-lg"
           >
-            Construímos sistemas, SaaS, automações e experiências digitais sob medida para transformar processos
-            complexos em soluções simples.
+            Desenvolvemos sistemas, SaaS, automações e soluções digitais sob medida para empresas que querem
+            simplificar processos, ganhar produtividade e crescer através da tecnologia.
           </motion.p>
 
           <motion.div
@@ -65,8 +65,8 @@ export function Hero() {
             <Button href="/contato" size="lg" iconRight={<IconArrowRight size={18} />}>
               Falar com a HR Tech
             </Button>
-            <Button href="/servicos" variant="secondary" size="lg">
-              Conhecer nossos serviços
+            <Button href="/solucoes" variant="secondary" size="lg">
+              Conhecer nossas soluções
             </Button>
           </motion.div>
         </div>

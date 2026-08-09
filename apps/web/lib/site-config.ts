@@ -1,15 +1,15 @@
 export const siteConfig = {
   name: 'HR Tech',
   description:
-    'Desenvolvimento de Sistemas, Plataformas SaaS e Inteligência Artificial. Engenharia de software de padrão internacional.',
+    'A HR Tech desenvolve sistemas personalizados, SaaS, automações, inteligência artificial e soluções digitais para empresas.',
   url: 'https://hrtechsistemas.com.br',
   email: 'contato@hrtechsistemas.com.br',
-  whatsappNumber: '5511916528370',
+  whatsappNumber: '5511932441699',
+  whatsappDefaultMessage: 'Olá! Conheci a HR Tech pelo site e gostaria de saber mais sobre as soluções.',
   get whatsappHref() {
-    return `https://wa.me/${this.whatsappNumber}`;
+    return `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(this.whatsappDefaultMessage)}`;
   },
-  // TODO: confirm o @ oficial do Instagram da HR Tech e atualizar este valor.
-  instagramUrl: 'https://instagram.com/hrtechsistemas',
+  instagramUrl: 'https://www.instagram.com/hr_desenvolvimento/',
 };
 
 export const mainNav = [

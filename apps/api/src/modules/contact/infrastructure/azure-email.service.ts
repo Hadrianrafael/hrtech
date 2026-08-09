@@ -39,7 +39,9 @@ export class AzureEmailService implements EmailPort {
           `Nome: ${submission.name}`,
           submission.company ? `Empresa: ${submission.company}` : undefined,
           `E-mail: ${submission.email}`,
-          submission.phone ? `Telefone: ${submission.phone}` : undefined,
+          submission.phone ? `WhatsApp: ${submission.phone}` : undefined,
+          submission.segment ? `Segmento: ${submission.segment}` : undefined,
+          submission.interest ? `O que procura: ${submission.interest}` : undefined,
           '',
           submission.message,
         ]

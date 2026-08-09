@@ -2,17 +2,38 @@
 
 import * as React from 'react';
 import { IconArrowRight, IconLoader2 } from '@tabler/icons-react';
-import { Button, Input, Textarea, useToast } from '@hrtech/ui';
+import { Button, Input, Textarea, Select, useToast } from '@hrtech/ui';
 
 interface FormState {
   name: string;
   company: string;
   email: string;
   phone: string;
+  segment: string;
+  interest: string;
   message: string;
 }
 
-const initialState: FormState = { name: '', company: '', email: '', phone: '', message: '' };
+const initialState: FormState = {
+  name: '',
+  company: '',
+  email: '',
+  phone: '',
+  segment: '',
+  interest: '',
+  message: '',
+};
+
+const interestOptions = [
+  { value: 'sistema-personalizado', label: 'Sistema personalizado' },
+  { value: 'saas', label: 'SaaS' },
+  { value: 'automacao', label: 'Automação' },
+  { value: 'ia', label: 'Inteligência Artificial' },
+  { value: 'website', label: 'Website' },
+  { value: 'landing-page', label: 'Landing Page' },
+  { value: 'integracao', label: 'Integração' },
+  { value: 'outro', label: 'Outro' },
+];
 
 export function ContactForm() {
   const { push } = useToast();
@@ -20,9 +41,10 @@ export function ContactForm() {
   const [submitting, setSubmitting] = React.useState(false);
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormState, string>>>({});
 
-  const update = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-  };
+  const update =
+    (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    };
 
   const validate = (): boolean => {
     const nextErrors: Partial<Record<keyof FormState, string>> = {};
@@ -47,6 +69,8 @@ export function ContactForm() {
           company: form.company || undefined,
           email: form.email,
           phone: form.phone || undefined,
+          segment: form.segment || undefined,
+          interest: form.interest || undefined,
           message: form.message,
         }),
       });
@@ -100,10 +124,25 @@ export function ContactForm() {
           required
         />
         <Input
-          label="Telefone"
+          label="WhatsApp"
           placeholder="(11) 91234-5678 (opcional)"
           value={form.phone}
           onChange={update('phone')}
+        />
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <Input
+          label="Segmento"
+          placeholder="Ex: Advocacia, Varejo, Saúde... (opcional)"
+          value={form.segment}
+          onChange={update('segment')}
+        />
+        <Select
+          label="O que você procura?"
+          placeholder="Selecione uma opção (opcional)"
+          options={interestOptions}
+          value={form.interest}
+          onChange={update('interest')}
         />
       </div>
       <Textarea
@@ -121,7 +160,7 @@ export function ContactForm() {
             Enviando...
           </>
         ) : (
-          'Enviar mensagem'
+          'Quero falar com a HR Tech'
         )}
       </Button>
     </form>
