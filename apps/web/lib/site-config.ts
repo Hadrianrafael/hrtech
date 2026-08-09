@@ -8,6 +8,8 @@ export const siteConfig = {
   get whatsappHref() {
     return `https://wa.me/${this.whatsappNumber}`;
   },
+  // TODO: confirm o @ oficial do Instagram da HR Tech e atualizar este valor.
+  instagramUrl: 'https://instagram.com/hrtechsistemas',
 };
 
 export const mainNav = [

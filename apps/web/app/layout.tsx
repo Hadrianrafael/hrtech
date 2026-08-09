@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Header, Footer, ToastProvider } from '@hrtech/ui';
 import { siteConfig, mainNav, footerGroups } from '@/lib/site-config';
+import { WhatsAppFloatingButton } from '@/components/WhatsAppFloatingButton';
 import './globals.css';
 
 const geistSans = Geist({
@@ -47,7 +48,7 @@ const organizationJsonLd = {
   url: siteConfig.url,
   description: siteConfig.description,
   email: siteConfig.email,
-  sameAs: [siteConfig.whatsappHref],
+  sameAs: [siteConfig.whatsappHref, siteConfig.instagramUrl],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -61,13 +62,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="flex min-h-screen flex-col font-sans">
         <ToastProvider>
-          <Header items={mainNav} ctaHref="/contato" />
+          <Header
+            items={mainNav}
+            ctaHref="/contato"
+            whatsappHref={siteConfig.whatsappHref}
+            instagramHref={siteConfig.instagramUrl}
+          />
           <main className="flex-1">{children}</main>
           <Footer
             groups={footerGroups}
             whatsappHref={siteConfig.whatsappHref}
             email={siteConfig.email}
+            instagramHref={siteConfig.instagramUrl}
           />
+          <WhatsAppFloatingButton />
         </ToastProvider>
       </body>
     </html>

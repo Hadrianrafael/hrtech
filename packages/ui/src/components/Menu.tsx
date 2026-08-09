@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { IconX } from '@tabler/icons-react';
+import { IconX, IconBrandWhatsapp, IconBrandInstagram } from '@tabler/icons-react';
 import { cn } from '../lib/cn';
 
 export interface MenuItem {
@@ -16,9 +16,11 @@ export interface MenuProps {
   items: MenuItem[];
   cta?: React.ReactNode;
   activeHref?: string;
+  whatsappHref?: string;
+  instagramHref?: string;
 }
 
-export function Menu({ open, onClose, items, cta, activeHref }: MenuProps) {
+export function Menu({ open, onClose, items, cta, activeHref, whatsappHref, instagramHref }: MenuProps) {
   React.useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
@@ -72,7 +74,35 @@ export function Menu({ open, onClose, items, cta, activeHref }: MenuProps) {
                 </li>
               ))}
             </ul>
-            {cta && <div className="mt-auto pt-8">{cta}</div>}
+            <div className="mt-auto flex flex-col gap-6">
+              {(whatsappHref || instagramHref) && (
+                <div className="flex items-center gap-3 border-t border-border pt-6">
+                  {whatsappHref && (
+                    <a
+                      href={whatsappHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="WhatsApp"
+                      className="flex h-10 w-10 items-center justify-center rounded-md border border-border text-ink/55 transition-colors hover:border-ink/25 hover:text-ink"
+                    >
+                      <IconBrandWhatsapp size={18} />
+                    </a>
+                  )}
+                  {instagramHref && (
+                    <a
+                      href={instagramHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Instagram"
+                      className="flex h-10 w-10 items-center justify-center rounded-md border border-border text-ink/55 transition-colors hover:border-ink/25 hover:text-ink"
+                    >
+                      <IconBrandInstagram size={18} />
+                    </a>
+                  )}
+                </div>
+              )}
+              {cta}
+            </div>
           </motion.nav>
         </>
       )}

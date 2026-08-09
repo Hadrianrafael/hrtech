@@ -12,9 +12,18 @@ export interface HeaderProps {
   activeHref?: string;
   ctaLabel?: string;
   ctaHref?: string;
+  whatsappHref?: string;
+  instagramHref?: string;
 }
 
-export function Header({ items, activeHref, ctaLabel = 'Solicitar Orçamento', ctaHref = '/contato' }: HeaderProps) {
+export function Header({
+  items,
+  activeHref,
+  ctaLabel = 'Solicitar Orçamento',
+  ctaHref = '/contato',
+  whatsappHref,
+  instagramHref,
+}: HeaderProps) {
   const [scrolled, setScrolled] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
 
@@ -72,6 +81,8 @@ export function Header({ items, activeHref, ctaLabel = 'Solicitar Orçamento', c
         onClose={() => setMenuOpen(false)}
         items={items}
         activeHref={activeHref}
+        whatsappHref={whatsappHref}
+        instagramHref={instagramHref}
         cta={
           <Button href={ctaHref} fullWidth>
             {ctaLabel}

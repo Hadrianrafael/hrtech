@@ -19,5 +19,6 @@ export * from './components/Container';
 export * from './components/Reveal';
 export * from './components/SectionHeading';
 export * from './components/MockupFrame';
+export * from './components/ProjectCard';
 export * from './components/LogoMark';
 export * from './components/AnimatedLogo';

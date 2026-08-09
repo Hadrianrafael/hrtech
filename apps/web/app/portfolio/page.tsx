@@ -10,12 +10,12 @@ import {
   IconBrandAzure,
   IconArrowRight,
   IconInfoCircle,
-  IconScale,
   IconWorld,
   IconRotate3d,
 } from '@tabler/icons-react';
-import { Badge, Button, Reveal, Container, Section, Breadcrumb, Tabs, MockupFrame } from '@hrtech/ui';
+import { Button, Reveal, Container, Section, Breadcrumb, Tabs, ProjectCard } from '@hrtech/ui';
 import { TiltCard } from '@/components/TiltCard';
+import { LegalProductMockup } from '@/components/legal/LegalProductMockup';
 
 export const metadata: Metadata = {
   title: 'Portfólio',
@@ -186,56 +186,17 @@ export default function PortfolioPage() {
               </div>
             </Reveal>
 
-            {/* Legal Tech */}
-            <Reveal delay={0.08} className="grid grid-cols-1 gap-10 border-t border-dark-border pt-16 lg:grid-cols-12 lg:items-center lg:gap-14">
-              <div className="order-2 lg:order-1 lg:col-span-7">
-                <TiltCard strength={4}>
-                  <MockupFrame label="app.hrtech.com.br/juridico — conceito">
-                    <div className="grid grid-cols-3 gap-3">
-                      {['Processos ativos', 'Prazos esta semana', 'Audiências hoje'].map((label) => (
-                        <div key={label} className="rounded-lg border border-dark-border bg-dark-surface p-3.5">
-                          <span className="text-[10px] text-white/40">{label}</span>
-                          <div className="mt-2.5 h-4 w-10 rounded bg-white/10" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-3 flex h-16 items-end gap-1.5 rounded-lg border border-dark-border bg-dark-surface p-3.5">
-                      {[40, 65, 30, 80, 55, 95, 45].map((h, i) => (
-                        <div
-                          key={i}
-                          className="flex-1 rounded-sm"
-                          style={{
-                            height: `${h}%`,
-                            background:
-                              i === 5 ? 'linear-gradient(180deg, #FF871F 0%, #E92034 100%)' : 'rgba(255,255,255,0.08)',
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </MockupFrame>
-                </TiltCard>
-              </div>
-              <div className="order-1 lg:order-2 lg:col-span-5">
-                <div className="flex items-center gap-2">
-                  <IconScale size={16} className="text-brand-orange" />
-                  <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">
-                    Solução conceitual — em desenvolvimento
-                  </span>
-                </div>
-                <h2 className="mt-4 text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
-                  Legal Tech — SaaS para advocacia
-                </h2>
-                <p className="mt-4 text-sm leading-relaxed text-white/55">
-                  Gestão de processos, clientes, documentos e financeiro com Inteligência Artificial aplicada ao
-                  fluxo jurídico. Apresentado publicamente como demonstração conceitual do padrão de produto da
-                  HR Tech.
-                </p>
-                <div className="mt-6">
-                  <Button href="/solucoes/juridico" variant="secondary" iconRight={<IconArrowRight size={16} />}>
-                    Ver solução completa
-                  </Button>
-                </div>
-              </div>
+            {/* Legal Tech — projeto principal do portfólio */}
+            <Reveal delay={0.08} className="border-t border-dark-border pt-16">
+              <ProjectCard
+                eyebrow="Projeto principal"
+                title="Legal Tech"
+                status="Em desenvolvimento"
+                description="Solução tecnológica para escritórios de advocacia — gestão de processos, clientes, documentos e financeiro com Inteligência Artificial aplicada ao fluxo jurídico."
+                href="/solucoes/juridico"
+                ctaLabel="Conhecer solução"
+                visual={<LegalProductMockup />}
+              />
             </Reveal>
           </div>
 

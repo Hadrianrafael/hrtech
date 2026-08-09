@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { IconBrandWhatsapp, IconMail, IconClock, IconArrowRight } from '@tabler/icons-react';
+import { IconBrandWhatsapp, IconBrandInstagram, IconMail, IconClock, IconArrowRight } from '@tabler/icons-react';
 import { Button, Card, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
 import { ContactForm } from '@/components/ContactForm';
 import { siteConfig } from '@/lib/site-config';
@@ -92,6 +92,20 @@ export default function ContatoPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-ink">Tempo de resposta</h3>
                   <p className="mt-1 text-sm text-ink/55">Respondemos em até 1 dia útil.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <IconBrandInstagram size={20} className="mt-0.5 shrink-0 text-brand-orange" />
+                <div>
+                  <h3 className="text-sm font-semibold text-ink">Instagram</h3>
+                  <a
+                    href={siteConfig.instagramUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 block text-sm text-ink/55 transition-colors hover:text-ink"
+                  >
+                    Seguir a HR Tech
+                  </a>
                 </div>
               </div>
             </Reveal>
