@@ -11,93 +11,137 @@ import {
   IconSparkles,
   IconBolt,
   IconShieldLock,
-  IconTrendingUp,
+  IconLayoutDashboard,
   IconArrowRight,
   IconBrandWhatsapp,
   IconCircleCheck,
   IconAlertTriangle,
 } from '@tabler/icons-react';
-import {
-  Button,
-  SectionHeading,
-  Reveal,
-  Container,
-  Section,
-  Breadcrumb,
-  MockupFrame,
-  Accordion,
-} from '@hrtech/ui';
+import { Badge, Button, SectionHeading, Reveal, Container, Section, Breadcrumb, MockupFrame, Accordion } from '@hrtech/ui';
 import { siteConfig } from '@/lib/site-config';
 import { TiltCard } from '@/components/TiltCard';
 import { LegalProductMockup } from '@/components/legal/LegalProductMockup';
 
 export const metadata: Metadata = {
-  title: 'Soluções para Advocacia',
+  title: 'Legal Tech — Solução para Advocacia',
   description:
-    'Apresentação conceitual do futuro SaaS da HR Tech para escritórios de advocacia — gestão de processos, clientes, agenda, financeiro e documentos com Inteligência Artificial.',
+    'Legal Tech: a plataforma que a HR Tech está desenvolvendo para modernizar a gestão de escritórios de advocacia — processos, clientes, agenda, documentos, financeiro, automações e Inteligência Artificial em um único ambiente.',
 };
 
 const problems = [
-  'Processos e prazos controlados em planilhas dispersas',
-  'Documentos espalhados entre e-mail, pastas e drives pessoais',
-  'Agenda de audiências e prazos sem alertas automáticos',
-  'Financeiro do escritório sem visão clara de honorários e custos',
-  'Tempo perdido em tarefas manuais que poderiam ser automatizadas',
+  'Informações espalhadas entre e-mail, planilhas e pastas pessoais',
+  'Controle manual de processos e prazos',
+  'Excesso de planilhas paralelas',
+  'Perda de prazos importantes',
+  'Dificuldade de acompanhar o andamento dos processos',
+  'Documentos desorganizados',
+  'Falta de visão financeira clara',
+  'Tarefas repetitivas consumindo tempo da equipe',
+  'Pouca automação no dia a dia do escritório',
 ];
 
-const features = [
+const mainFeatures = [
+  {
+    icon: IconLayoutDashboard,
+    eyebrow: 'Dashboard',
+    title: 'Visão geral da operação, em um único painel.',
+    description:
+      'Indicadores, processos, prazos e atividades reunidos em um painel único e claro — sem precisar abrir cinco telas diferentes para entender como o escritório está.',
+    bullets: ['Indicadores', 'Processos', 'Prazos', 'Atividades', 'Financeiro'],
+    screen: 'Dashboard' as const,
+  },
   {
     icon: IconFolders,
-    title: 'Gestão de Processos',
-    description: 'Organização centralizada de processos, andamentos e prazos por cliente e por área.',
+    eyebrow: 'Gestão de Processos',
+    title: 'Cada processo, sempre à vista.',
+    description:
+      'Número do processo, tribunal, partes, responsáveis, status e movimentações organizados em um só lugar, com tarefas vinculadas a cada caso.',
+    bullets: ['Número do processo', 'Tribunal', 'Partes', 'Responsáveis', 'Status', 'Movimentações', 'Tarefas relacionadas'],
+    screen: 'Processos' as const,
   },
   {
     icon: IconUsers,
-    title: 'Gestão de Clientes',
-    description: 'Histórico completo de relacionamento, contatos e processos vinculados a cada cliente.',
+    eyebrow: 'Gestão de Clientes',
+    title: 'Relacionamento e histórico, sem depender de memória.',
+    description:
+      'Cadastro, histórico completo, documentos, contatos e observações vinculados a cada cliente do escritório.',
+    bullets: ['Cadastro', 'Histórico', 'Documentos', 'Contatos', 'Observações'],
+    screen: 'Clientes' as const,
   },
   {
     icon: IconCalendarEvent,
-    title: 'Agenda Integrada',
-    description: 'Audiências, prazos e compromissos com alertas automáticos para toda a equipe.',
+    eyebrow: 'Agenda',
+    title: 'Prazos e compromissos, sem depender de lembrete manual.',
+    description: 'Audiências, reuniões, prazos e tarefas organizados com lembretes automáticos para toda a equipe.',
+    bullets: ['Audiências', 'Reuniões', 'Prazos', 'Lembretes', 'Tarefas'],
+    screen: 'Agenda' as const,
   },
   {
     icon: IconCoin,
-    title: 'Financeiro',
-    description: 'Controle de honorários, custas processuais e fluxo de caixa do escritório.',
+    eyebrow: 'Financeiro',
+    title: 'Visão clara da saúde financeira do escritório.',
+    description: 'Receitas, despesas, pagamentos, cobranças e indicadores reunidos em um painel financeiro único.',
+    bullets: ['Receitas', 'Despesas', 'Pagamentos', 'Cobranças', 'Fluxo financeiro', 'Indicadores'],
+    screen: 'Financeiro' as const,
   },
+  {
+    icon: IconSparkles,
+    eyebrow: 'Inteligência Artificial',
+    title: 'IA aplicada ao dia a dia jurídico.',
+    description:
+      'Recursos planejados para apoiar a equipe no que consome mais tempo — sem prometer funcionalidades jurídicas específicas ainda não definidas.',
+    bullets: ['Assistente jurídico', 'Análise de documentos', 'Resumo de informações', 'Pesquisa interna', 'Automação de tarefas'],
+    screen: 'IA' as const,
+    badge: 'Recursos planejados',
+  },
+];
+
+const moreFeatures = [
   {
     icon: IconFileText,
     title: 'Gestão de Documentos',
-    description: 'Repositório centralizado, versionado e pesquisável de petições e documentos.',
+    tags: ['Armazenamento', 'Organização', 'Categorização', 'Busca', 'Vinculação a clientes/processos', 'Controle de acesso'],
   },
   {
     icon: IconChecklist,
-    title: 'Tarefas',
-    description: 'Distribuição e acompanhamento de tarefas da equipe, vinculadas a cada processo.',
+    title: 'Gestão de Tarefas',
+    tags: ['Responsáveis', 'Prioridades', 'Prazos', 'Status', 'Notificações'],
   },
   {
     icon: IconBolt,
     title: 'Automações',
-    description: 'Rotinas automáticas para movimentações, notificações e atualizações de status.',
+    tags: ['Lembretes', 'Notificações', 'Acompanhamento', 'Organização', 'Fluxos internos'],
   },
   {
     icon: IconReportAnalytics,
-    title: 'Indicadores',
-    description: 'Painel consolidado de processos, produtividade e financeiro do escritório.',
+    title: 'Relatórios',
+    tags: ['Processos', 'Produtividade', 'Financeiro', 'Clientes', 'Tarefas', 'Indicadores'],
   },
   {
-    icon: IconSparkles,
-    title: 'Inteligência Artificial',
-    description: 'IA aplicada à leitura de processos, resumo de andamentos e apoio à redação.',
+    icon: IconShieldLock,
+    title: 'Segurança',
+    tags: ['Controle de acesso', 'Permissões', 'Proteção de dados', 'Auditoria', 'Arquitetura escalável'],
   },
 ];
 
-const flow = [
-  { step: '01', title: 'Cadastro do processo', description: 'O processo entra na plataforma com todos os dados vinculados ao cliente.' },
-  { step: '02', title: 'Organização automática', description: 'Prazos, andamentos e documentos são organizados automaticamente.' },
-  { step: '03', title: 'Alertas e agenda', description: 'A equipe recebe alertas de prazos e audiências antes do vencimento.' },
-  { step: '04', title: 'Relatórios e decisão', description: 'Gestores acompanham o escritório inteiro em um painel único.' },
+const howItWorks = [
+  { n: '01', title: 'Cadastre seu escritório.' },
+  { n: '02', title: 'Organize clientes e processos.' },
+  { n: '03', title: 'Centralize documentos e tarefas.' },
+  { n: '04', title: 'Automatize atividades.' },
+  { n: '05', title: 'Acompanhe indicadores.' },
+  { n: '06', title: 'Use IA para ganhar produtividade.' },
+];
+
+const benefits = [
+  'Mais organização',
+  'Menos trabalho manual',
+  'Maior controle',
+  'Mais produtividade',
+  'Informações centralizadas',
+  'Automação',
+  'Inteligência Artificial',
+  'Visão estratégica',
 ];
 
 const faqs = [
@@ -105,11 +149,11 @@ const faqs = [
     value: 'status',
     question: 'Esse sistema já está disponível?',
     answer:
-      'Não. Esta página apresenta o conceito e os recursos planejados para a solução jurídica da HR Tech, que ainda está em desenvolvimento. As telas mostradas são mockups ilustrativos, não o produto funcional.',
+      'Não. Esta página apresenta o conceito e os recursos planejados para o Legal Tech, que ainda está em desenvolvimento. As telas mostradas são mockups ilustrativos, não o produto funcional.',
   },
   {
     value: 'quando',
-    question: 'Quando o SaaS jurídico estará disponível?',
+    question: 'Quando o Legal Tech estará disponível?',
     answer: 'Ainda não temos uma data de lançamento definida. Entre em contato para acompanhar as novidades.',
   },
   {
@@ -122,30 +166,31 @@ const faqs = [
 export default function SolucaoJuridicaPage() {
   return (
     <>
+      {/* Hero */}
       <Section size="lg">
         <Container>
           <Reveal>
             <Breadcrumb
-              items={[{ label: 'Home', href: '/' }, { label: 'Soluções', href: '/solucoes' }, { label: 'Jurídico' }]}
+              items={[{ label: 'Home', href: '/' }, { label: 'Soluções', href: '/solucoes' }, { label: 'Legal Tech' }]}
             />
             <div className="mt-6 flex items-center gap-2">
               <IconScale size={16} className="text-brand-orange" />
               <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">
-                Apresentação conceitual — em desenvolvimento
+                Legal Tech — produto em desenvolvimento pela HR Tech
               </span>
             </div>
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-ink sm:text-5xl md:text-6xl">
-              O futuro SaaS jurídico da HR Tech.
+              Mais inteligência para a gestão jurídica.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink/55 md:text-lg">
-              Uma plataforma para escritórios de advocacia gerirem processos, clientes, agenda, documentos e
-              financeiro em um só lugar — com Inteligência Artificial aplicada ao fluxo jurídico.
+              Uma plataforma inteligente para modernizar a gestão de escritórios de advocacia — centralizando
+              processos, clientes, documentos, agenda, financeiro e automações em um único ambiente.
             </p>
             <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row">
               <Button href="/contato" size="lg" iconRight={<IconArrowRight size={18} />}>
-                Solicitar Demonstração
+                Quero conhecer a solução
               </Button>
-              <Button href={siteConfig.whatsappHref} variant="secondary" size="lg" iconLeft={<IconBrandWhatsapp size={18} />}>
+              <Button href={siteConfig.whatsappHref} target="_blank" rel="noreferrer" variant="secondary" size="lg" iconLeft={<IconBrandWhatsapp size={18} />}>
                 Falar no WhatsApp
               </Button>
             </div>
@@ -161,12 +206,13 @@ export default function SolucaoJuridicaPage() {
         </Container>
       </Section>
 
+      {/* Problema / Solução */}
       <Section className="border-t border-border">
         <Container>
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
             <Reveal>
               <SectionHeading eyebrow="O problema" title="O que a maioria dos escritórios ainda enfrenta." align="left" />
-              <ul className="mt-8 flex flex-col gap-4">
+              <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {problems.map((problem) => (
                   <li key={problem} className="flex items-start gap-3 text-sm text-ink/60">
                     <IconAlertTriangle size={16} className="mt-0.5 shrink-0 text-brand-orange" />
@@ -176,11 +222,11 @@ export default function SolucaoJuridicaPage() {
               </ul>
             </Reveal>
             <Reveal delay={0.1}>
-              <SectionHeading eyebrow="A solução" title="Tudo em uma única plataforma." align="left" />
+              <SectionHeading eyebrow="A solução" title="Um único ambiente para administrar a operação do escritório." align="left" />
               <p className="mt-8 text-sm leading-relaxed text-ink/55">
-                A proposta da solução jurídica da HR Tech é reunir processos, clientes, agenda, documentos e
-                financeiro em uma plataforma única, com automações e Inteligência Artificial aplicadas ao dia a
-                dia do escritório — reduzindo retrabalho e risco de prazo perdido.
+                O Legal Tech centraliza processos, clientes, agenda, documentos e financeiro em uma plataforma
+                única, com automações e Inteligência Artificial aplicadas ao dia a dia do escritório — reduzindo
+                retrabalho e risco de prazo perdido.
               </p>
               <div className="mt-6 flex items-center gap-2 text-sm text-emerald-700">
                 <IconCircleCheck size={16} />
@@ -191,71 +237,139 @@ export default function SolucaoJuridicaPage() {
         </Container>
       </Section>
 
-      <Section className="border-t border-border">
-        <Container>
-          <Reveal className="max-w-xl">
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">Recursos planejados</span>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
-              Tudo que o escritório precisa, em um só produto.
-            </h2>
-          </Reveal>
-          <div className="mt-14 grid grid-cols-1 gap-x-10 border-t border-border sm:grid-cols-2">
-            {features.map((feature, index) => (
-              <Reveal key={feature.title} delay={(index % 4) * 0.04}>
-                <div className="flex items-start gap-4 border-b border-border py-7">
-                  <feature.icon size={20} className="mt-0.5 shrink-0 text-brand-orange" />
-                  <div>
-                    <h3 className="text-base font-medium text-ink">{feature.title}</h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-ink/50">{feature.description}</p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </Container>
-      </Section>
-
+      {/* Funcionalidades principais — blocos alternados com mockup */}
       <Section className="bg-dark-bg">
         <Container>
           <Reveal className="max-w-xl">
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">Fluxo de uso</span>
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">Funcionalidades</span>
             <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">
-              Como a plataforma vai funcionar, na prática.
+              Tudo que o escritório precisa, em um só produto.
             </h2>
           </Reveal>
-          <div className="relative mt-14 grid grid-cols-1 gap-8 border-t border-dark-border pt-10 sm:grid-cols-2 lg:grid-cols-4">
-            {flow.map((item, index) => (
-              <Reveal key={item.step} delay={index * 0.08}>
-                <div>
-                  <span
-                    className="text-3xl font-semibold bg-clip-text text-transparent"
-                    style={{ backgroundImage: 'linear-gradient(135deg, #E92034 0%, #FF871F 100%)' }}
-                  >
-                    {item.step}
-                  </span>
-                  <h3 className="mt-3 text-base font-semibold text-white">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">{item.description}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
 
-          <div className="mt-16 grid grid-cols-1 gap-8 border-t border-dark-border pt-12 sm:grid-cols-3">
-            {[
-              { icon: IconShieldLock, title: 'Segurança', description: 'Controle de acesso, criptografia e boas práticas desde a concepção.' },
-              { icon: IconTrendingUp, title: 'Escalabilidade', description: 'Arquitetura multi-tenant preparada para crescer com o escritório.' },
-              { icon: IconBolt, title: 'Automações', description: 'Tarefas repetitivas automatizadas para a equipe focar no jurídico.' },
-            ].map((item, index) => (
-              <Reveal key={item.title} delay={index * 0.06}>
-                <item.icon size={22} className="text-brand-orange" />
-                <h3 className="mt-3 text-base font-semibold text-white">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/50">{item.description}</p>
+          <div className="mt-16 flex flex-col gap-24">
+            {mainFeatures.map((feature, index) => {
+              const reversed = index % 2 === 1;
+              return (
+                <div
+                  key={feature.eyebrow}
+                  className="grid grid-cols-1 items-center gap-10 border-t border-dark-border pt-16 first:border-t-0 first:pt-0 lg:grid-cols-12 lg:gap-14"
+                >
+                  <Reveal className={reversed ? 'lg:col-span-5 lg:order-2' : 'lg:col-span-5'}>
+                    <div className="flex items-center gap-2">
+                      <feature.icon size={16} className="text-brand-orange" />
+                      <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">
+                        {feature.eyebrow}
+                      </span>
+                      {feature.badge && (
+                        <Badge variant="outline" className="border-white/15 text-white/55">
+                          {feature.badge}
+                        </Badge>
+                      )}
+                    </div>
+                    <h3 className="mt-4 text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
+                      {feature.title}
+                    </h3>
+                    <p className="mt-4 text-sm leading-relaxed text-white/55">{feature.description}</p>
+                    <div className="mt-6 flex flex-wrap gap-x-3 gap-y-2">
+                      {feature.bullets.map((bullet, i) => (
+                        <span key={bullet} className="flex items-center gap-2 text-xs text-white/40">
+                          {i > 0 && <span className="text-white/15">·</span>}
+                          {bullet}
+                        </span>
+                      ))}
+                    </div>
+                  </Reveal>
+                  <Reveal delay={0.1} className={reversed ? 'lg:col-span-7 lg:order-1' : 'lg:col-span-7'}>
+                    <TiltCard strength={3}>
+                      <div className="overflow-hidden rounded-md border border-dark-border bg-dark-surface p-5 md:p-7">
+                        <LegalProductMockup defaultScreen={feature.screen} interactive={false} />
+                      </div>
+                    </TiltCard>
+                  </Reveal>
+                </div>
+              );
+            })}
+          </div>
+        </Container>
+      </Section>
+
+      {/* Mais recursos da plataforma */}
+      <Section className="border-t border-border">
+        <Container>
+          <Reveal className="max-w-xl">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">Mais recursos</span>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
+              O que mais a plataforma vai oferecer.
+            </h2>
+          </Reveal>
+          <div className="mt-14 grid grid-cols-1 gap-x-10 gap-y-12 border-t border-border pt-12 sm:grid-cols-2 lg:grid-cols-3">
+            {moreFeatures.map((feature, index) => (
+              <Reveal key={feature.title} delay={(index % 3) * 0.05}>
+                <feature.icon size={20} className="text-brand-orange" />
+                <h3 className="mt-3 text-base font-semibold text-ink">{feature.title}</h3>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {feature.tags.map((tag) => (
+                    <Badge key={tag} variant="outline">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               </Reveal>
             ))}
           </div>
         </Container>
       </Section>
 
+      {/* Como funciona */}
+      <Section className="bg-dark-bg">
+        <Container>
+          <Reveal className="max-w-xl">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">Como funciona</span>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">
+              Do cadastro do escritório à produtividade com IA.
+            </h2>
+          </Reveal>
+          <div className="mt-14 grid grid-cols-1 gap-8 border-t border-dark-border pt-12 sm:grid-cols-2 lg:grid-cols-3">
+            {howItWorks.map((step, index) => (
+              <Reveal key={step.n} delay={index * 0.05}>
+                <span
+                  className="text-3xl font-semibold bg-clip-text text-transparent"
+                  style={{ backgroundImage: 'linear-gradient(135deg, #E92034 0%, #FF871F 100%)' }}
+                >
+                  {step.n}
+                </span>
+                <h3 className="mt-3 text-base font-medium text-white">{step.title}</h3>
+              </Reveal>
+            ))}
+          </div>
+        </Container>
+      </Section>
+
+      {/* Benefícios */}
+      <Section className="border-t border-border">
+        <Container>
+          <Reveal className="max-w-xl">
+            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">Por que usar o Legal Tech?</span>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
+              Benefícios pensados para o dia a dia do escritório.
+            </h2>
+          </Reveal>
+          <div className="mt-12 grid grid-cols-1 gap-x-10 gap-y-5 border-t border-border pt-10 sm:grid-cols-2">
+            {benefits.map((benefit, index) => (
+              <Reveal key={benefit} delay={(index % 4) * 0.04} className="flex items-center gap-3">
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={{ background: 'linear-gradient(135deg, #E92034 0%, #FF871F 100%)' }}
+                />
+                <span className="text-sm text-ink/65">{benefit}</span>
+              </Reveal>
+            ))}
+          </div>
+        </Container>
+      </Section>
+
+      {/* FAQ */}
       <Section className="border-t border-border">
         <Container>
           <SectionHeading eyebrow="Perguntas frequentes" title="Antes de conversar com a gente." />
@@ -265,21 +379,19 @@ export default function SolucaoJuridicaPage() {
         </Container>
       </Section>
 
+      {/* CTA final */}
       <Section size="lg" className="border-t border-border bg-dark-bg">
         <Container>
           <Reveal className="flex flex-col items-center text-center">
             <h2 className="max-w-xl text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
-              Quer acompanhar o lançamento da solução jurídica?
+              Seu escritório está pronto para evoluir?
             </h2>
             <p className="mt-4 max-w-md text-sm text-white/50">
-              Entre em contato e fique por dentro das novidades sobre o SaaS para escritórios de advocacia.
+              Estamos desenvolvendo uma nova geração de tecnologia para gestão jurídica.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-              <Button href="/contato" size="lg" iconRight={<IconArrowRight size={18} />}>
-                Solicitar Demonstração
-              </Button>
-              <Button href={siteConfig.whatsappHref} variant="ghost" size="lg" iconLeft={<IconBrandWhatsapp size={18} />}>
-                Falar no WhatsApp
+            <div className="mt-8">
+              <Button href={siteConfig.whatsappHref} target="_blank" rel="noreferrer" size="lg" iconRight={<IconArrowRight size={18} />}>
+                Falar com a HR Tech
               </Button>
             </div>
           </Reveal>
