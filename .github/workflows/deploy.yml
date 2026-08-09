@@ -45,6 +45,11 @@ jobs:
 
       - name: Deploy API revision
         run: |
+          az containerapp registry set \
+            --name ${{ secrets.AZURE_API_APP_NAME }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --server ${{ secrets.AZURE_ACR_NAME }}.azurecr.io \
+            --identity system
           az containerapp update \
             --name ${{ secrets.AZURE_API_APP_NAME }} \
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
@@ -52,6 +57,11 @@ jobs:
 
       - name: Deploy web revision
         run: |
+          az containerapp registry set \
+            --name ${{ secrets.AZURE_WEB_APP_NAME }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --server ${{ secrets.AZURE_ACR_NAME }}.azurecr.io \
+            --identity system
           az containerapp update \
             --name ${{ secrets.AZURE_WEB_APP_NAME }} \
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
