@@ -55,25 +55,52 @@ ativa.
 3. Local: **Brazil South**. SKU: **Basic** (suficiente para este projeto).
 4. **Review + create** → **Create**.
 
-## PASSO 5 — Buildar as imagens direto do GitHub (sem Docker local, sem CLI)
+## PASSO 5 — Configurar deploy contínuo via GitHub Actions
 
-Dentro do Container Registry recém-criado:
+> **Atualização:** o wizard "Quick Task from Git repo" do Container Registry
+> (que este passo descrevia antes) não existe mais no Portal atual. O caminho
+> que funciona hoje — e que continua sem depender do Azure CLI local — é
+> GitHub Actions: o build roda nos runners do próprio GitHub, autenticado
+> com um Service Principal, e usa `az acr build` (build remoto na ACR, sem
+> Docker local) por trás.
 
-1. Menu lateral → **Tasks** → **+ Add** → **Quick task** (ou "Git repository",
-   dependendo da versão do Portal).
-2. **Source**: escolha **Git repository**, cole a URL do repositório que
-   você publicou no Passo 1.
-3. **Dockerfile**: `apps/web/Dockerfile` — **Image name**: `hrtech-web:latest`.
-4. Rode a task (**Run** ou **Trigger now**). Acompanhe o log na própria tela.
-5. Repita criando uma segunda task: **Dockerfile**: `apps/api/Dockerfile` —
-   **Image name**: `hrtech-api:latest`.
+O workflow já está pronto no repositório em `.github/workflows/deploy.yml`
+(chama `.github/workflows/ci.yml` primeiro — lint, typecheck, test, build,
+e2e — e só builda/publica se tudo passar). Falta só autorizar o GitHub a
+falar com a sua assinatura Azure:
 
-Depois de rodar as duas, confira em **Repositories** que `hrtech-web` e
-`hrtech-api` aparecem com a tag `latest`.
+1. No Portal, busca → **"App registrations"** → **+ New registration**.
+   Nome: `hrtech-github-deploy` (ou o que preferir). **Register**.
+2. Dentro do App Registration → **Certificates & secrets** → **+ New client
+   secret** → copie o **Value** assim que aparecer (some depois de sair da
+   tela).
+3. Anote também, na página **Overview** do App Registration: **Application
+   (client) ID**, **Directory (tenant) ID**, e a **Subscription ID** (na
+   página da sua assinatura).
+4. Busca → **"Resource groups"** → `rg-hrtech` → **Access control (IAM)** →
+   **Add role assignment** → role **Contributor** (aba "Privileged
+   administrator roles") → **Members**: "User, group, or service principal"
+   → selecione `hrtech-github-deploy` → **Review + assign**.
+5. No GitHub, no repositório → **Settings → Secrets and variables →
+   Actions → New repository secret**, crie:
 
-> Se o Portal não oferecer "Git repository" como origem na versão que você
-> está vendo, procure por **"Tasks" → "Add" → "Task"** (não "Quick task") —
-> esse fluxo sempre pede uma URL de repositório Git como gatilho.
+   | Secret | Valor |
+   |---|---|
+   | `AZURE_CREDENTIALS` | JSON no formato `{"clientId": "...", "clientSecret": "...", "subscriptionId": "...", "tenantId": "..."}` com os valores do passo 3 |
+   | `AZURE_ACR_NAME` | nome do registro criado no Passo 4 (ex: `hrtechsistemasacr`) |
+   | `AZURE_RESOURCE_GROUP` | `rg-hrtech` |
+   | `AZURE_API_APP_NAME` | `hrtech-api` |
+   | `AZURE_WEB_APP_NAME` | `hrtech-web` |
+
+Esses valores (exceto `AZURE_CREDENTIALS`) não são segredos sensíveis, mas
+ficam no mesmo lugar por consistência com o workflow. **Nunca cole a
+connection string ou o client secret em nenhum outro lugar** — só aqui, no
+formulário de secrets do próprio GitHub.
+
+As imagens ainda não existem na ACR neste ponto — elas só são criadas na
+primeira vez que o workflow rodar (Passo 9). Os Container Apps dos Passos 7
+e 8 usam uma imagem pública de bootstrap só para o recurso poder ser criado;
+o workflow substitui automaticamente pela imagem real.
 
 ## PASSO 6 — Criar o Container Apps Environment
 
@@ -81,60 +108,77 @@ Depois de rodar as duas, confira em **Repositories** que `hrtech-web` e
 2. Na primeira aba ele pede pra criar o **Container Apps Environment** junto
    — resource group `rg-hrtech`, nome `hrtech-env`, região **Brazil South**.
 
-## PASSO 7 — Criar o Container App do backend (api)
+## PASSO 7 — Criar o Container App do backend (api), com imagem de bootstrap
 
-Ainda no assistente de criação (ou **+ Create** de novo, se já saiu dele):
+O workflow do GitHub Actions só consegue atualizar um Container App que já
+existe — então este passo cria o recurso com uma imagem pública qualquer
+(o "hello world" da Microsoft), e o Passo 9 substitui pela imagem real.
 
-1. **Container App name**: `hrtech-api`. **Environment**: `hrtech-env`.
+1. **+ Create** → **Container App name**: `hrtech-api`. **Environment**:
+   o environment criado no Passo 6.
 2. Aba **Container**:
-   - **Image source**: Azure Container Registry.
-   - **Registry**: o que você criou no Passo 4. **Image**: `hrtech-api`. **Tag**: `latest`.
-   - **CPU/Memory**: 0.5 vCPU / 1 Gi (suficiente para o tráfego inicial).
+   - **Use quickstart image**: desmarcado (queremos controlar a imagem manualmente).
+   - **Image source**: **Docker Hub or other registries** → **Public**.
+   - **Registry login server**: `mcr.microsoft.com`. **Image and tag**:
+     `k8se/quickstart:latest`.
+   - **CPU/Memory**: qualquer combinação válida (ex: 0.5 vCPU / 1 Gi).
 3. Aba **Ingress**:
    - **Ingress**: ativado.
    - **Ingress traffic**: **Limited to Container Apps Environment** (interno — o
      navegador do visitante nunca precisa acessar a API diretamente).
    - **Target port**: **3001**.
-4. Aba **Environment variables** — adicione:
+4. **Review + create** → **Create**.
 
-   | Nome | Valor |
-   |---|---|
-   | `NODE_ENV` | `production` |
-   | `PORT` | `3001` |
-   | `CORS_ORIGIN` | `https://hrtechsistemas.com.br` |
-   | `CONTACT_RECIPIENT_EMAIL` | `contato@hrtechsistemas.com.br` |
+## PASSO 8 — Criar o Container App do frontend (web), com imagem de bootstrap
 
-   (Deixe `AZURE_COMMUNICATION_CONNECTION_STRING` e `CONTACT_SENDER_EMAIL` de
-   fora por enquanto — sem elas o formulário de contato responde 503 de
-   propósito, em vez de fingir que enviou. Você adiciona depois de criar o
-   recurso de e-mail, se quiser isso funcionando.)
-
-5. **Review + create** → **Create**.
-
-## PASSO 8 — Criar o Container App do frontend (web)
-
-1. **+ Create** de novo. **Name**: `hrtech-web`. **Environment**: `hrtech-env`.
-2. Aba **Container**:
-   - **Image**: `hrtech-web`, tag `latest`, mesmo registry.
+1. **+ Create** de novo. **Name**: `hrtech-web`. **Environment**: o mesmo do Passo 7.
+2. Aba **Container**: mesma configuração de imagem pública do Passo 7
+   (`mcr.microsoft.com` / `k8se/quickstart:latest`).
 3. Aba **Ingress**:
    - **Ingress traffic**: **Accepting traffic from anywhere** (este precisa
      ser público).
    - **Target port**: **3000**.
-4. Aba **Environment variables**:
+4. **Review + create** → **Create**.
 
-   | Nome | Valor |
-   |---|---|
-   | `NODE_ENV` | `production` |
-   | `API_URL` | a **URL interna** do `hrtech-api` (veja abaixo) |
+Depois de criado, se quiser já deixar a variável `API_URL` configurada:
+**Application → Containers → Environment variables** → `API_URL` = URL
+interna do `hrtech-api` (copie de `hrtech-api` → **Overview** →
+**Application Url**, algo como
+`https://hrtech-api.internal.<sufixo>.brazilsouth.azurecontainerapps.io`) →
+**Save as a new revision**.
 
-   Para pegar a URL interna do `hrtech-api`: abra o Container App `hrtech-api`
-   já criado → **Overview** → copie o campo **Application Url** (algo como
-   `hrtech-api.internal.<algo>.brazilsouth.azurecontainerapps.io`) e use
-   `http://` na frente (não `https`, tráfego interno não usa TLS).
+## PASSO 9 — Autorizar os Container Apps a puxar da ACR (identidade gerenciada)
 
-5. **Review + create** → **Create**.
+A ACR é privada — sem isso, o `az containerapp update` do workflow falha
+com `UNAUTHORIZED` ao tentar trocar a imagem de bootstrap pela real.
 
-## PASSO 9 — Configurar health probes (opcional, recomendado)
+1. Em cada Container App (`hrtech-api` e `hrtech-web`) → **Settings → Security → Identity** → aba **System assigned** → **Status: On** → **Save**.
+
+   > Se o toggle voltar para "Off" sozinho depois de salvar: o Container App
+   > provavelmente está com uma revisão travada em "Failed" (por exemplo, de
+   > uma tentativa anterior de imagem inválida). Vá em **Application →
+   > Containers**, mude qualquer valor (ex: Memory de 1 para 1.5 Gi, ajustando
+   > o CPU junto para manter uma combinação válida) e clique **Save as a new
+   > revision** para forçar uma revisão saudável — isso destrava o recurso e
+   > o Identity volta a salvar normalmente.
+
+2. No Container Registry (`hrtechsistemasacr`) → **Access control (IAM)** →
+   **Add role assignment** → role **AcrPull** (aba "Job function roles") →
+   **Members**: **Managed identity** → **Select members** → tipo **Container
+   App** → selecione `hrtech-api` **e** `hrtech-web` → **Review + assign**.
+
+## PASSO 10 — Disparar o primeiro deploy real
+
+1. Qualquer push em `main` dispara o workflow automaticamente. Para disparar
+   manualmente sem esperar um commit: no GitHub, **Actions → Deploy to Azure
+   Container Apps → Run workflow**.
+2. Acompanhe a execução: primeiro o job `ci` (lint, typecheck, test, build,
+   e2e), depois `deploy` (`az acr build` das duas imagens seguido de
+   `az containerapp registry set` + `az containerapp update` para cada app).
+3. Se `deploy` falhar com `UNAUTHORIZED` ao puxar a imagem, volte ao Passo 9
+   — a identidade ou o `AcrPull` não foram configurados corretamente.
+
+## PASSO 11 — Configurar health probes (opcional, recomendado)
 
 Em cada Container App → **Health probes** (na aba Container, ou no menu
 lateral depois de criado):
@@ -142,28 +186,27 @@ lateral depois de criado):
 - **api**: Liveness → `GET /health/live`. Readiness → `GET /health/ready`.
 - **web**: Liveness/Readiness → `GET /` (o Next.js responde 200 na home).
 
-## PASSO 10 — Testar
+## PASSO 12 — Testar
 
 1. Abra o Container App `hrtech-web` → **Overview** → clique na
-   **Application Url** pública. O site deve carregar.
+   **Application Url** pública. O site deve carregar com o conteúdo real
+   (não mais o "hello world" de bootstrap).
 2. Teste o formulário de contato em `/contato` — se as variáveis de e-mail
    não foram configuradas, ele deve mostrar o erro amigável de "não foi
-   possível enviar", não travar.
+   possível enviar" (a API responde 503 de propósito), não travar.
 3. Para ver logs: Container App → menu lateral → **Log stream** (tempo real)
    ou **Logs** (consultas mais elaboradas via Log Analytics).
-4. Para forçar uma nova revisão depois de re-buildar uma imagem: Container
-   App → **Revisions and replicas** → **Create new revision** → confirme
-   que está puxando a tag `latest` mais recente (ou aponte para uma tag
-   específica que você tenha gerado no Passo 5).
+4. Todo push subsequente em `main` builda e publica automaticamente — não
+   precisa mexer em revisão manualmente.
 
-## PASSO 11 — Domínio customizado (hrtechsistemas.com.br)
+## PASSO 13 — Domínio customizado (hrtechsistemas.com.br)
 
 1. No Container App `hrtech-web` → **Custom domains** → **+ Add custom domain**.
 2. Ele vai pedir para você criar, no seu provedor de DNS:
    - Um registro **TXT** (`asuid.hrtechsistemas.com.br`) para provar que o
      domínio é seu.
    - Um registro **CNAME** apontando `hrtechsistemas.com.br` (ou `www`) para
-     a Application Url do Passo 10.
+     a Application Url do Passo 12.
 3. Depois que o DNS propagar, volte na mesma tela e clique **Validate** →
    **Add**.
 4. Para HTTPS: na mesma tela de **Custom domains**, **Add certificate** →
