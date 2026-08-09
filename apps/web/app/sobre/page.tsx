@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Image from 'next/image';
 import {
   IconArrowRight,
   IconTargetArrow,
@@ -149,20 +150,31 @@ export default function SobrePage() {
             <Reveal delay={0.05} className="lg:col-span-5">
               <TiltCard className="mx-auto w-full max-w-sm lg:mx-0" strength={6}>
                 <div className="relative aspect-[4/5] w-full overflow-hidden rounded-md border border-white/10 bg-dark-surface">
+                  <Image
+                    src="/founder.jpg"
+                    alt="Hadrian Rafael, fundador da HR Tech"
+                    fill
+                    sizes="(min-width: 1024px) 384px, 90vw"
+                    className="object-cover grayscale contrast-110 brightness-95"
+                    priority
+                  />
                   <div
-                    className="absolute inset-0"
+                    className="pointer-events-none absolute inset-0"
                     style={{
                       background:
-                        'radial-gradient(120% 120% at 18% 12%, rgba(233,32,52,0.32) 0%, rgba(255,135,31,0.10) 45%, transparent 72%)',
+                        'radial-gradient(120% 120% at 18% 12%, rgba(233,32,52,0.28) 0%, rgba(255,135,31,0.10) 45%, transparent 72%)',
+                      mixBlendMode: 'color',
                     }}
                   />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-mono text-[5.5rem] font-semibold tracking-tight text-white/10">HR</span>
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-white/10 bg-black/40 px-4 py-3">
-                    <span className="text-[11px] uppercase tracking-[0.18em] text-white/40">Foto em breve</span>
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-orange" />
-                  </div>
+                  <div
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-24"
+                    style={{ background: 'linear-gradient(to top, rgba(13,13,13,0.85), transparent)' }}
+                  />
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-0 bottom-0 h-[3px]"
+                    style={{ background: 'linear-gradient(90deg, #E92034 0%, #FF871F 100%)' }}
+                  />
                 </div>
               </TiltCard>
             </Reveal>
