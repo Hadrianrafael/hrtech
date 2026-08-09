@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Header, Footer, ToastProvider } from '@hrtech/ui';
 import { siteConfig, mainNav, footerGroups } from '@/lib/site-config';
@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     template: `%s — ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  alternates: { canonical: siteConfig.url },
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
@@ -39,6 +40,10 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0D0D0D',
 };
 
 const organizationJsonLd = {

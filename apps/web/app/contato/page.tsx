@@ -1,13 +1,14 @@
-import type { Metadata } from 'next';
 import { IconBrandWhatsapp, IconBrandInstagram, IconMail, IconClock, IconArrowRight } from '@tabler/icons-react';
 import { Button, Card, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
 import { ContactForm } from '@/components/ContactForm';
 import { siteConfig } from '@/lib/site-config';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Contato',
-  description: 'Fale com a HR Tech — solicite um orçamento ou tire suas dúvidas sobre nossos serviços.',
-};
+export const metadata = pageMetadata(
+  'Contato',
+  'Fale com a HR Tech — solicite um orçamento ou tire suas dúvidas sobre nossos serviços.',
+  '/contato',
+);
 
 export default function ContatoPage() {
   return (

@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import {
   IconScale,
   IconUsers,
@@ -21,12 +20,13 @@ import { Badge, Button, SectionHeading, Reveal, Container, Section, Breadcrumb, 
 import { siteConfig } from '@/lib/site-config';
 import { TiltCard } from '@/components/TiltCard';
 import { LegalProductMockup } from '@/components/legal/LegalProductMockup';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Legal Tech — Solução para Advocacia',
-  description:
-    'Legal Tech: a plataforma que a HR Tech está desenvolvendo para modernizar a gestão de escritórios de advocacia — processos, clientes, agenda, documentos, financeiro, automações e Inteligência Artificial em um único ambiente.',
-};
+export const metadata = pageMetadata(
+  'Legal Tech — Solução para Advocacia',
+  'Legal Tech: a plataforma que a HR Tech está desenvolvendo para modernizar a gestão de escritórios de advocacia — processos, clientes, agenda, documentos, financeiro, automações e Inteligência Artificial em um único ambiente.',
+  '/solucoes/juridico',
+);
 
 const problems = [
   'Informações espalhadas entre e-mail, planilhas e pastas pessoais',

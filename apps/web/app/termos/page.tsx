@@ -1,11 +1,8 @@
-import type { Metadata } from 'next';
 import { Container, Section, Breadcrumb, Reveal } from '@hrtech/ui';
 import { siteConfig } from '@/lib/site-config';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Termos de Uso',
-  description: 'Termos de uso do site institucional da HR Tech.',
-};
+export const metadata = pageMetadata('Termos de Uso', 'Termos de uso do site institucional da HR Tech.', '/termos');
 
 const sections = [
   {

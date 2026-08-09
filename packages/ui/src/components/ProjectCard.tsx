@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/cn';
+import { Badge } from './Badge';
 
 export interface ProjectCardProps {
   eyebrow?: string;
@@ -45,10 +46,18 @@ export function ProjectCard({
       variants={{ rest: { y: 0 }, hover: { y: -6 } }}
       transition={{ type: 'spring', stiffness: 300, damping: 26 }}
     >
+      {/* Signature accent — always visible, not gated behind hover, so the
+          identity reads on touch devices too. */}
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 z-10 h-[3px]"
+        style={{ background: 'linear-gradient(90deg, #E92034 0%, #FF871F 100%)' }}
+      />
+
       <motion.div
         aria-hidden
         className="pointer-events-none absolute -inset-24 blur-3xl"
-        variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }}
+        variants={{ rest: { opacity: 0.3 }, hover: { opacity: 1 } }}
         transition={{ duration: 0.5 }}
         style={{
           background:
@@ -59,14 +68,16 @@ export function ProjectCard({
       <div className="relative border-b border-white/10 transition-colors duration-300 group-hover:border-brand-orange/30">
         <div className="flex items-start justify-between gap-4 px-6 pt-6 sm:px-10 sm:pt-10">
           <div>
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">{eyebrow}</span>
+            <span className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-brand-orange">
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ background: 'linear-gradient(135deg, #E92034 0%, #FF871F 100%)' }}
+              />
+              {eyebrow}
+            </span>
             <h3 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">{title}</h3>
           </div>
-          {status && (
-            <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-white/55">
-              {status}
-            </span>
-          )}
+          {status && <Badge variant="gradient">{status}</Badge>}
         </div>
 
         <div className="px-6 pb-8 pt-8 sm:px-10 sm:pb-10">

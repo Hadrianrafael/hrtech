@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import * as React from 'react';
 import {
   IconBrandNextjs,
@@ -16,11 +15,13 @@ import {
 import { Button, Reveal, Container, Section, Breadcrumb, Tabs, ProjectCard } from '@hrtech/ui';
 import { TiltCard } from '@/components/TiltCard';
 import { LegalProductMockup } from '@/components/legal/LegalProductMockup';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Portfólio',
-  description: 'Projetos, metodologia, arquitetura e tecnologias por trás das entregas da HR Tech.',
-};
+export const metadata = pageMetadata(
+  'Portfólio',
+  'Projetos, metodologia, arquitetura e tecnologias por trás das entregas da HR Tech.',
+  '/portfolio',
+);
 
 const stackGroups = [
   {
@@ -194,7 +195,7 @@ export default function PortfolioPage() {
                 status="Em desenvolvimento"
                 description="Solução tecnológica para escritórios de advocacia — gestão de processos, clientes, documentos e financeiro com Inteligência Artificial aplicada ao fluxo jurídico."
                 href="/solucoes/juridico"
-                ctaLabel="Conhecer solução"
+                ctaLabel="Conhecer o Legal Tech"
                 visual={<LegalProductMockup />}
               />
             </Reveal>

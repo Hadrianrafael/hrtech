@@ -1,11 +1,12 @@
-import type { Metadata } from 'next';
 import { Container, Section, Breadcrumb, Reveal } from '@hrtech/ui';
 import { siteConfig } from '@/lib/site-config';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Política de Privacidade',
-  description: 'Como a HR Tech coleta, utiliza e protege dados pessoais, em conformidade com a LGPD.',
-};
+export const metadata = pageMetadata(
+  'Política de Privacidade',
+  'Como a HR Tech coleta, utiliza e protege dados pessoais, em conformidade com a LGPD.',
+  '/privacidade',
+);
 
 const sections = [
   {

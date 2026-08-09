@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import * as React from 'react';
 import {
   IconArrowRight,
@@ -10,12 +9,13 @@ import {
 } from '@tabler/icons-react';
 import { Button, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
 import { TiltCard } from '@/components/TiltCard';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Sobre',
-  description:
-    'Quem é a HR Tech: uma empresa de engenharia de software focada em sistemas sob medida, SaaS e Inteligência Artificial.',
-};
+export const metadata = pageMetadata(
+  'Sobre',
+  'Quem é a HR Tech: uma empresa de engenharia de software focada em sistemas sob medida, SaaS e Inteligência Artificial.',
+  '/sobre',
+);
 
 const principles = [
   {

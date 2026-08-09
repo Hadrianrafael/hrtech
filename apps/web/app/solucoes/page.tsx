@@ -1,12 +1,13 @@
-import type { Metadata } from 'next';
 import { IconArrowRight } from '@tabler/icons-react';
 import { Badge, Button, Reveal, Container, Section, Breadcrumb, ProjectCard } from '@hrtech/ui';
 import { LegalProductMockup } from '@/components/legal/LegalProductMockup';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Soluções',
-  description: 'Produtos e soluções SaaS que a HR Tech está construindo — hoje em desenvolvimento: Legal Tech para escritórios de advocacia.',
-};
+export const metadata = pageMetadata(
+  'Soluções',
+  'Produtos e soluções SaaS que a HR Tech está construindo — hoje em desenvolvimento: Legal Tech para escritórios de advocacia.',
+  '/solucoes',
+);
 
 const roadmap = [
   { emoji: '🏗️', title: 'Construção Civil' },

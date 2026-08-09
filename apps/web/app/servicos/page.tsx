@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import {
   IconCode,
   IconCloud,
@@ -10,12 +9,13 @@ import {
   IconArrowRight,
 } from '@tabler/icons-react';
 import { Button, Reveal, Container, Section, Breadcrumb } from '@hrtech/ui';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'Serviços',
-  description:
-    'Desenvolvimento de sistemas, SaaS, sistemas empresariais, automação, Inteligência Artificial, desenvolvimento web e integrações.',
-};
+export const metadata = pageMetadata(
+  'Serviços',
+  'Desenvolvimento de sistemas, SaaS, sistemas empresariais, automação, Inteligência Artificial, desenvolvimento web e integrações.',
+  '/servicos',
+);
 
 const services = [
   {
