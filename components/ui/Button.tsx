@@ -11,7 +11,7 @@ const base =
 const variants: Record<Variant, string> = {
   primary:
     // bg-brand-strong (não bg-brand) para o texto branco atingir 4.5:1 de contraste (WCAG AA).
-    'bg-brand-strong text-white shadow-[0_0_0_1px_rgb(var(--brand)/0.4),0_10px_30px_-10px_rgb(var(--brand)/0.7)] hover:bg-[#1d4ed8] hover:shadow-[0_0_0_1px_rgb(var(--brand)/0.5),0_14px_40px_-12px_rgb(var(--brand)/0.9)]',
+    'bg-brand-strong text-white shadow-[0_0_0_1px_rgb(var(--brand)/0.4),0_10px_30px_-10px_rgb(var(--brand)/0.7)] hover:bg-[#9a3412] hover:shadow-[0_0_0_1px_rgb(var(--brand)/0.5),0_14px_40px_-12px_rgb(var(--brand)/0.9)]',
   secondary: 'border border-line/[0.14] bg-white/[0.03] text-fg hover:border-line/[0.28] hover:bg-white/[0.07]',
   ghost: 'text-muted hover:text-fg',
 };
