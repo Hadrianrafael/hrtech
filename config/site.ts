@@ -53,6 +53,9 @@ export const siteConfig = {
     linkedin: '', // TODO: URL do LinkedIn da HR Tech ou do fundador
     instagram: 'https://www.instagram.com/hr_desenvolvimento/',
   },
+
+  /** ID de mensuração do Google Analytics (GA4), formato "G-XXXXXXXXXX". Vazio desativa o script. */
+  googleAnalyticsId: 'G-B9NPFJ0FP5',
 } as const;
 
 export type NavItem = { label: string; href: string };
