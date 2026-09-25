@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   authors: [{ name: siteConfig.name, url: siteConfig.url }],
   creator: siteConfig.name,
   formatDetection: { telephone: false },
+  verification: {
+    google: 'A4QBLq7zDow9yYiYTCHeKTYR8SlVe0F8zmZBV8mtpB0',
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '32x32' },
