@@ -2,29 +2,16 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Icon } from '@/components/icons/Icon';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { ProjectCard } from '@/components/projects/ProjectCard';
 import { CtaBand } from '@/components/sections/CtaBand';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { siteConfig } from '@/config/site';
-import { projects } from '@/data/projects';
 import { getService, services } from '@/data/services';
 import { absoluteUrl } from '@/lib/paths';
 import { buildMetadata, organizationId } from '@/lib/seo';
 
 type Params = { slug: string };
-
-/** Mapeia cada solução para as categorias de projeto que a ilustram. */
-const relatedCategories: Record<string, string[]> = {
-  sites: ['SITE'],
-  sistemas: ['SISTEMA'],
-  saas: ['SAAS'],
-  'inteligencia-artificial': ['INTELIGÊNCIA ARTIFICIAL'],
-  automacoes: ['AUTOMAÇÃO'],
-  'e-commerce': ['E-COMMERCE'],
-  'cloud-infraestrutura': ['SAAS', 'SISTEMA'],
-};
 
 export const dynamicParams = false;
 
@@ -45,8 +32,6 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
   if (!service) notFound();
 
   const path = `/solucoes/${service.slug}/`;
-  const wantedCategories = relatedCategories[service.slug] ?? [];
-  const relatedProjects = projects.filter((project) => project.categories.some((category) => wantedCategories.includes(category)));
   const otherServices = services.filter((item) => item.slug !== service.slug);
 
   return (
@@ -83,9 +68,6 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
           <ButtonLink href="/#contato" size="lg">
             Solicitar orçamento
             <Icon name="arrowRight" size={16} />
-          </ButtonLink>
-          <ButtonLink href="/projetos/" size="lg" variant="secondary">
-            Ver projetos
           </ButtonLink>
         </div>
       </PageHeader>
@@ -141,27 +123,6 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
           </div>
         </div>
       </section>
-
-      {relatedProjects.length > 0 && (
-        <section className="border-t border-line/[0.06] bg-surface/30 py-20 lg:py-24">
-          <div className="container">
-            <div className="flex items-end justify-between gap-6">
-              <h2 className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Projetos relacionados</h2>
-              <Link href="/projetos/" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-brand-soft">
-                Ver todos
-                <Icon name="arrowRight" size={15} />
-              </Link>
-            </div>
-            <ul className="mt-10 grid gap-5 md:grid-cols-2">
-              {relatedProjects.slice(0, 2).map((project) => (
-                <li key={project.slug}>
-                  <ProjectCard project={project} />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      )}
 
       <section className="py-16">
         <div className="container">

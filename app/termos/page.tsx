@@ -30,8 +30,7 @@ export default function TermsPage() {
           <h2 className="pt-2 text-lg font-semibold text-fg">1. Sobre o conteúdo</h2>
           <p>
             Os textos, imagens, identidade visual e código deste site pertencem à HR Tech Sistemas ou são utilizados sob
-            licença adequada. Capturas de tela de projetos do portfólio pertencem aos respectivos projetos e são exibidas para
-            fins de demonstração.
+            licença adequada.
           </p>
 
           <h2 className="pt-2 text-lg font-semibold text-fg">2. Uso permitido</h2>

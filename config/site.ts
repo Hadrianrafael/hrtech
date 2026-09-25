@@ -48,7 +48,8 @@ export const siteConfig = {
   contactFormEndpoint: '',
 
   social: {
-    github: 'https://github.com/Hadrianrafael',
+    // GitHub pessoal do fundador removido — o site representa a empresa, não é um perfil individual.
+    github: '',
     linkedin: '', // TODO: URL do LinkedIn da HR Tech ou do fundador
     instagram: 'https://www.instagram.com/hr_desenvolvimento/',
   },
@@ -59,7 +60,6 @@ export type NavItem = { label: string; href: string };
 export const mainNav: NavItem[] = [
   { label: 'Início', href: '/#inicio' },
   { label: 'Soluções', href: '/#solucoes' },
-  { label: 'Projetos', href: '/#projetos' },
   { label: 'Sobre', href: '/#sobre' },
   { label: 'Tecnologias', href: '/#tecnologias' },
   { label: 'Contato', href: '/#contato' },
