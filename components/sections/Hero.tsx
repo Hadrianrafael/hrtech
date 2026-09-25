@@ -2,7 +2,6 @@ import { Icon } from '@/components/icons/Icon';
 import { ButtonLink } from '@/components/ui/Button';
 import { CountUp } from '@/components/ui/CountUp';
 import { processSteps } from '@/data/process';
-import { projects } from '@/data/projects';
 import { services } from '@/data/services';
 import { techGroups } from '@/data/technologies';
 import { HeroVisual } from './HeroVisual';
@@ -14,7 +13,6 @@ const uniqueTechCount = new Set(techGroups.flatMap((group) => group.items.map((i
 /** Números calculados a partir do próprio conteúdo do site — nada inventado. */
 const facts = [
   { value: services.length, label: 'frentes de atuação' },
-  { value: projects.length, label: 'projetos no portfólio' },
   { value: uniqueTechCount, label: 'tecnologias no nosso stack' },
   { value: processSteps.length, label: 'etapas em cada projeto' },
 ];
@@ -41,8 +39,8 @@ export function Hero() {
               empresas que querem vender mais, operar melhor e crescer com segurança.
             </p>
             <div className="hero-in mt-9 flex flex-col gap-3 [animation-delay:120ms] sm:flex-row">
-              <ButtonLink href="/#projetos" size="lg">
-                Conheça nossos projetos
+              <ButtonLink href="/#solucoes" size="lg">
+                Conheça nossas soluções
                 <Icon name="arrowRight" size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
               </ButtonLink>
               <ButtonLink href="/#contato" size="lg" variant="secondary">
@@ -64,7 +62,7 @@ export function Hero() {
           </div>
         </div>
 
-        <dl className="mt-20 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line/[0.08] bg-line/[0.08] lg:mt-28 lg:grid-cols-4">
+        <dl className="mt-20 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-line/[0.08] bg-line/[0.08] lg:mt-28">
           {facts.map((fact) => (
             <div key={fact.label} className="flex flex-col bg-bg px-5 py-6 sm:px-7 sm:py-7">
               <dt className="order-2 mt-1 text-sm text-subtle">{fact.label}</dt>

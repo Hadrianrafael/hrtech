@@ -1,8 +1,8 @@
 # HR Tech Sistemas — site institucional
 
-Site institucional e portfólio da **HR Tech Sistemas**: sites, sistemas web, SaaS, automações
-e soluções com Inteligência Artificial. Publicado como site estático no GitHub Pages, com
-domínio próprio (`hrtechsistemas.com.br`, ver [`CNAME`](./CNAME)).
+Site institucional da **HR Tech Sistemas**: sites, sistemas web, SaaS, automações e soluções
+com Inteligência Artificial. Publicado como site estático no GitHub Pages, com domínio próprio
+(`hrtechsistemas.com.br`, ver [`CNAME`](./CNAME)).
 
 Veja também [`REFERENCIAS.md`](./REFERENCIAS.md) — os três sites usados como referência de
 qualidade de design antes da reconstrução.
@@ -83,19 +83,18 @@ próprio), defina a variável `NEXT_PUBLIC_BASE_PATH=/repositorio` antes do buil
 ```
 app/                  Rotas (App Router) — cada pasta é uma página
   page.tsx              Home (todas as seções de uma página só)
-  projetos/             Listagem e página dinâmica de cada projeto (/projetos/[slug])
   solucoes/              Listagem e página dinâmica de cada solução (/solucoes/[slug])
   privacidade/, termos/  Páginas institucionais
   sitemap.ts, robots.ts, manifest.ts   Gerados a partir de config/ e data/
 components/
-  sections/            Seções da Home (Hero, Services, Projects, About, Founder, Stack...)
+  sections/            Seções da Home (Hero, Services, About, Founder, Stack...)
   layout/              Header, Footer, botão do WhatsApp, breadcrumbs
-  projects/             Card de projeto, moldura de navegador/celular, filtro de categoria
   ui/                   Botão, Section, Reveal (scroll), Tag, Logo etc. (design system)
   icons/                Ícones de linha próprios + logos de marca (Simple Icons)
 data/                  Conteúdo do site, separado da interface
-  projects.ts            Portfólio — cadastro de projetos (ver abaixo)
   services.ts             As 7 soluções (Sites, Sistemas, SaaS, IA...)
+  projects.ts             Estrutura de dados do portfólio — mantida para o futuro (ver abaixo),
+                           não está conectada a nenhuma página no momento
   technologies.ts, process.ts, segments.ts, company.ts
 config/site.ts         Configuração central: nome, contato, WhatsApp, redes sociais, menu
 lib/                   Funções auxiliares (WhatsApp, SEO, validação do formulário, etc.)
@@ -105,24 +104,15 @@ tests/                 Testes unitários (Vitest)
 
 Arquitetura pensada para múltiplos arquivos pequenos e coesos, em vez de um único arquivo
 gigante — cada seção da Home é um componente próprio em `components/sections/`, e todo o
-conteúdo (textos de projetos, serviços, tecnologias) fica em `data/`, sem se misturar com JSX.
+conteúdo (textos de serviços, tecnologias) fica em `data/`, sem se misturar com JSX.
 
-## Como cadastrar um novo projeto no portfólio
+## Portfólio (desativado por enquanto)
 
-1. Abra `data/projects.ts`.
-2. Copie um objeto existente do array `projects` e ajuste os campos: `slug` (vira a URL
-   `/projetos/<slug>`), `name`, `tagline`, `categories`, `status`, `client`, `segment`, `year`,
-   `summary`, `challenge`, `solution`, `features`, `technologies`, `result` e `links`.
-3. Se o cliente/resultado ainda não puder ser divulgado, deixe o campo como `null` — o site
-   mostra automaticamente um aviso "a confirmar" em vez de inventar a informação.
-4. Para adicionar capturas de tela: crie a pasta `public/projects/<slug>/` com
-   `desktop-1.webp`, `desktop-2.webp`, `desktop-3.webp` (1440×900, moldura de navegador) e
-   `mobile-1.webp` (390×844, moldura de celular) — ou use o helper `shots('<slug>', 'Nome')`
-   já usado nos outros projetos para gerar os caminhos automaticamente.
-5. Marque `featured: true` para o projeto aparecer também na Home (seção "Projetos"); todos os
-   projetos aparecem em `/projetos/` independentemente disso.
-6. Rode `pnpm build` — a página `/projetos/<slug>/` é gerada automaticamente
-   (`generateStaticParams`), sem precisar tocar em nenhum componente.
+A empresa optou por não divulgar projetos no site por enquanto. A estrutura de dados para um
+portfólio (`data/projects.ts` — case com desafio, solução, funcionalidades, galeria e
+resultado) foi mantida no repositório para quando fizer sentido reativá-la, mas nenhuma página
+ou seção do site está conectada a ela hoje. Reativar exige recriar as páginas `/projetos/` e os
+componentes de card/case — peça ajuda quando for a hora.
 
 ## Como cadastrar/editar uma solução
 
@@ -135,7 +125,7 @@ um card na Home e uma página em `/solucoes/<slug>/`.
 |---|---|
 | WhatsApp (número e mensagem padrão) | `config/site.ts` → `contact.whatsappNumber` / `whatsappMessage` |
 | E-mail de contato | `config/site.ts` → `contact.email` |
-| Redes sociais (GitHub, LinkedIn, Instagram) | `config/site.ts` → `social` |
+| Redes sociais (LinkedIn, Instagram) | `config/site.ts` → `social` |
 | Itens do menu | `config/site.ts` → `mainNav` |
 | Textos institucionais (Sobre, valores, fundador) | `data/company.ts` |
 | Tecnologias exibidas | `data/technologies.ts` |
@@ -165,6 +155,4 @@ Antes de qualquer publicação, este projeto foi verificado com:
 
 ## Licença de conteúdo
 
-Textos e identidade visual pertencem à HR Tech Sistemas. Capturas de tela de projetos do
-portfólio ilustram trabalhos próprios ou protótipos de demonstração (identificados como tal
-em cada case).
+Textos, identidade visual e código deste site pertencem à HR Tech Sistemas.

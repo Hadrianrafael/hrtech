@@ -3,7 +3,6 @@ import { BrandIcon } from '@/components/icons/BrandIcon';
 import { Icon } from '@/components/icons/Icon';
 import { Logo } from '@/components/ui/Logo';
 import { siteConfig } from '@/config/site';
-import { projects } from '@/data/projects';
 import { services } from '@/data/services';
 import { whatsappLink } from '@/lib/whatsapp';
 import { CurrentYear } from './CurrentYear';
@@ -18,13 +17,6 @@ const columns = [
   {
     title: 'Soluções',
     links: services.map((service) => ({ label: service.title, href: `/solucoes/${service.slug}/` })),
-  },
-  {
-    title: 'Projetos',
-    links: [
-      ...projects.slice(0, 4).map((project) => ({ label: project.name, href: `/projetos/${project.slug}/` })),
-      { label: 'Ver todos os projetos', href: '/projetos/' },
-    ],
   },
   {
     title: 'Empresa',
@@ -70,7 +62,7 @@ export function Footer() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-10 sm:grid-cols-4 lg:col-span-8">
+          <div className="grid grid-cols-2 gap-10 sm:grid-cols-3 lg:col-span-8">
             {columns.map((column) => (
               <div key={column.title}>
                 <h2 className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-subtle">{column.title}</h2>
