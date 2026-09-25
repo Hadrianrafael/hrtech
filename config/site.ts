@@ -8,8 +8,8 @@
 export const siteConfig = {
   name: 'HR Tech Sistemas',
   shortName: 'HR Tech',
-  legalName: 'HR Tech Sistemas', // TODO: razão social completa, se quiser exibi-la no rodapé
-  cnpj: '', // TODO: informar CNPJ (opcional — aparece no rodapé quando preenchido)
+  legalName: 'HR Tech Sistemas',
+  cnpj: '68.438.436/0001-09', // CCMEI — HADRIAN RAFAEL SILVA DE OLIVEIRA
   url: 'https://hrtechsistemas.com.br',
   locale: 'pt_BR',
   title: 'HR Tech Sistemas | Sites, Sistemas, SaaS e Inteligência Artificial',
@@ -28,7 +28,7 @@ export const siteConfig = {
     'Azure',
     'AWS',
   ],
-  city: '', // TODO: cidade de atuação (usada no schema.org quando preenchida)
+  city: 'Suzano', // Endereço comercial do CCMEI
   region: 'SP',
   country: 'BR',
 
