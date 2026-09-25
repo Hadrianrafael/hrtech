@@ -1,72 +1,48 @@
-name: Deploy to Azure Container Apps
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 concurrency:
-  group: deploy-production
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  ci:
-    uses: ./.github/workflows/ci.yml
-
-  deploy:
-    needs: ci
+  build:
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - uses: actions/checkout@v4
 
-      - name: Log in to Azure
-        uses: azure/login@v2
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          node-version: 20
+          cache: pnpm
 
-      - name: Build and push API image (ACR remote build)
-        run: |
-          az acr build \
-            --registry ${{ secrets.AZURE_ACR_NAME }} \
-            --image hrtech-api:${{ github.sha }} \
-            --image hrtech-api:latest \
-            --file apps/api/Dockerfile \
-            .
+      - run: pnpm install --frozen-lockfile
 
-      - name: Build and push web image (ACR remote build)
-        run: |
-          az acr build \
-            --registry ${{ secrets.AZURE_ACR_NAME }} \
-            --image hrtech-web:${{ github.sha }} \
-            --image hrtech-web:latest \
-            --file apps/web/Dockerfile \
-            .
+      - run: pnpm run check
 
-      - name: Deploy API revision
-        run: |
-          az containerapp registry set \
-            --name ${{ secrets.AZURE_API_APP_NAME }} \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --server ${{ secrets.AZURE_ACR_NAME }}.azurecr.io \
-            --identity system
-          az containerapp update \
-            --name ${{ secrets.AZURE_API_APP_NAME }} \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --image ${{ secrets.AZURE_ACR_NAME }}.azurecr.io/hrtech-api:${{ github.sha }}
+      - uses: actions/configure-pages@v5
 
-      - name: Deploy web revision
-        run: |
-          az containerapp registry set \
-            --name ${{ secrets.AZURE_WEB_APP_NAME }} \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --server ${{ secrets.AZURE_ACR_NAME }}.azurecr.io \
-            --identity system
-          az containerapp update \
-            --name ${{ secrets.AZURE_WEB_APP_NAME }} \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --image ${{ secrets.AZURE_ACR_NAME }}.azurecr.io/hrtech-web:${{ github.sha }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
 
-      - name: Logout
-        if: always()
-        run: az logout
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

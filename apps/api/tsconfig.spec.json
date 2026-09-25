@@ -1,8 +1,0 @@
-{
-  "extends": "@hrtech/config/typescript/nestjs.json",
-  "compilerOptions": {
-    "noEmit": true,
-    "baseUrl": "./"
-  },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
-}

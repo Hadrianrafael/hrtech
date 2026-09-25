@@ -1,6 +1,4 @@
 node_modules/
-.turbo/
-dist/
 .next/
 out/
 coverage/

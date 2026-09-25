@@ -1,13 +1,11 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_call: {}
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,10 +19,4 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Generate Prisma Client
-        run: pnpm --filter @hrtech/api prisma:generate
-
-      - run: pnpm turbo run lint typecheck test build
-
-      - name: Run e2e tests
-        run: pnpm turbo run test:e2e
+      - run: pnpm run check
