@@ -1,0 +1,129 @@
+[OK]   4 departamentos na tabela
+[OK]   SW-ENG: 24 portas Fa0/1-24, uma por host
+[OK]   SW-ENG: 20 PCs, 2 impressoras, 2 servidores {'PC': 20, 'Impressora': 2, 'Servidor': 2}
+[OK]   SW-ENG: exatamente 2 VLANs [11, 12]
+[OK]   SW-ENG VLAN 11: portas 1-12
+[OK]   SW-ENG VLAN 11: 10 PCs + 1 impressora + 1 servidor
+[OK]   SW-ENG VLAN 11: todos os IPs em 192.168.10.0/28
+[OK]   SW-ENG VLAN 11: nenhum IP é rede/broadcast
+[OK]   SW-ENG VLAN 11: 12 IPs distintos, sequenciais [1, 2, 3]...
+[OK]   SW-ENG VLAN 11: sequência +1..+12
+[OK]   SW-ENG VLAN 11: 192.168.10.0/28 dentro de 192.168.10.0/24
+[OK]   SW-ENG VLAN 12: portas 13-24
+[OK]   SW-ENG VLAN 12: 10 PCs + 1 impressora + 1 servidor
+[OK]   SW-ENG VLAN 12: todos os IPs em 192.168.10.16/28
+[OK]   SW-ENG VLAN 12: nenhum IP é rede/broadcast
+[OK]   SW-ENG VLAN 12: 12 IPs distintos, sequenciais [17, 18, 19]...
+[OK]   SW-ENG VLAN 12: sequência +1..+12
+[OK]   SW-ENG VLAN 12: 192.168.10.16/28 dentro de 192.168.10.0/24
+[OK]   SW-ENG: as duas VLANs cabem no mesmo /27 192.168.10.0/27
+[OK]   SW-ENG: todos os 24 com IP estático
+[OK]   SW-COMP: 24 portas Fa0/1-24, uma por host
+[OK]   SW-COMP: 20 PCs, 2 impressoras, 2 servidores {'PC': 20, 'Impressora': 2, 'Servidor': 2}
+[OK]   SW-COMP: exatamente 2 VLANs [21, 22]
+[OK]   SW-COMP VLAN 21: portas 1-12
+[OK]   SW-COMP VLAN 21: 10 PCs + 1 impressora + 1 servidor
+[OK]   SW-COMP VLAN 21: todos os IPs em 192.168.10.32/28
+[OK]   SW-COMP VLAN 21: nenhum IP é rede/broadcast
+[OK]   SW-COMP VLAN 21: 12 IPs distintos, sequenciais [33, 34, 35]...
+[OK]   SW-COMP VLAN 21: sequência +1..+12
+[OK]   SW-COMP VLAN 21: 192.168.10.32/28 dentro de 192.168.10.0/24
+[OK]   SW-COMP VLAN 22: portas 13-24
+[OK]   SW-COMP VLAN 22: 10 PCs + 1 impressora + 1 servidor
+[OK]   SW-COMP VLAN 22: todos os IPs em 192.168.10.48/28
+[OK]   SW-COMP VLAN 22: nenhum IP é rede/broadcast
+[OK]   SW-COMP VLAN 22: 12 IPs distintos, sequenciais [49, 50, 51]...
+[OK]   SW-COMP VLAN 22: sequência +1..+12
+[OK]   SW-COMP VLAN 22: 192.168.10.48/28 dentro de 192.168.10.0/24
+[OK]   SW-COMP: as duas VLANs cabem no mesmo /27 192.168.10.32/27
+[OK]   SW-COMP: só servidores estáticos; PCs/impressoras DHCP
+[OK]   SW-COMP: 2 pools DHCP (um por VLAN)
+[OK]   SW-COMP VLAN 21: pool 192.168.10.33+11 == exatamente os 11 clientes DHCP
+[OK]   SW-COMP VLAN 21: servidor DHCP 192.168.10.44 é o servidor da VLAN e fora do pool
+[OK]   SW-COMP VLAN 22: pool 192.168.10.49+11 == exatamente os 11 clientes DHCP
+[OK]   SW-COMP VLAN 22: servidor DHCP 192.168.10.60 é o servidor da VLAN e fora do pool
+[OK]   SW-TI: 24 portas Fa0/1-24, uma por host
+[OK]   SW-TI: 20 PCs, 2 impressoras, 2 servidores {'PC': 20, 'Impressora': 2, 'Servidor': 2}
+[OK]   SW-TI: exatamente 2 VLANs [31, 32]
+[OK]   SW-TI VLAN 31: portas 1-12
+[OK]   SW-TI VLAN 31: 10 PCs + 1 impressora + 1 servidor
+[OK]   SW-TI VLAN 31: todos os IPs em 192.168.10.64/28
+[OK]   SW-TI VLAN 31: nenhum IP é rede/broadcast
+[OK]   SW-TI VLAN 31: 12 IPs distintos, sequenciais [65, 66, 67]...
+[OK]   SW-TI VLAN 31: sequência +1..+12
+[OK]   SW-TI VLAN 31: 192.168.10.64/28 dentro de 192.168.10.0/24
+[OK]   SW-TI VLAN 32: portas 13-24
+[OK]   SW-TI VLAN 32: 10 PCs + 1 impressora + 1 servidor
+[OK]   SW-TI VLAN 32: todos os IPs em 192.168.10.80/28
+[OK]   SW-TI VLAN 32: nenhum IP é rede/broadcast
+[OK]   SW-TI VLAN 32: 12 IPs distintos, sequenciais [81, 82, 83]...
+[OK]   SW-TI VLAN 32: sequência +1..+12
+[OK]   SW-TI VLAN 32: 192.168.10.80/28 dentro de 192.168.10.0/24
+[OK]   SW-TI: as duas VLANs cabem no mesmo /27 192.168.10.64/27
+[OK]   SW-TI: todos os 24 com IP estático
+[OK]   SW-INFRA: 24 portas Fa0/1-24, uma por host
+[OK]   SW-INFRA: 20 PCs, 2 impressoras, 2 servidores {'PC': 20, 'Impressora': 2, 'Servidor': 2}
+[OK]   SW-INFRA: exatamente 2 VLANs [41, 42]
+[OK]   SW-INFRA VLAN 41: portas 1-12
+[OK]   SW-INFRA VLAN 41: 10 PCs + 1 impressora + 1 servidor
+[OK]   SW-INFRA VLAN 41: todos os IPs em 192.168.10.96/28
+[OK]   SW-INFRA VLAN 41: nenhum IP é rede/broadcast
+[OK]   SW-INFRA VLAN 41: 12 IPs distintos, sequenciais [97, 98, 99]...
+[OK]   SW-INFRA VLAN 41: sequência +1..+12
+[OK]   SW-INFRA VLAN 41: 192.168.10.96/28 dentro de 192.168.10.0/24
+[OK]   SW-INFRA VLAN 42: portas 13-24
+[OK]   SW-INFRA VLAN 42: 10 PCs + 1 impressora + 1 servidor
+[OK]   SW-INFRA VLAN 42: todos os IPs em 192.168.10.112/28
+[OK]   SW-INFRA VLAN 42: nenhum IP é rede/broadcast
+[OK]   SW-INFRA VLAN 42: 12 IPs distintos, sequenciais [113, 114, 115]...
+[OK]   SW-INFRA VLAN 42: sequência +1..+12
+[OK]   SW-INFRA VLAN 42: 192.168.10.112/28 dentro de 192.168.10.0/24
+[OK]   SW-INFRA: as duas VLANs cabem no mesmo /27 192.168.10.96/27
+[OK]   SW-INFRA: só servidores estáticos; PCs/impressoras DHCP
+[OK]   SW-INFRA: 2 pools DHCP (um por VLAN)
+[OK]   SW-INFRA VLAN 41: pool 192.168.10.97+11 == exatamente os 11 clientes DHCP
+[OK]   SW-INFRA VLAN 41: servidor DHCP 192.168.10.108 é o servidor da VLAN e fora do pool
+[OK]   SW-INFRA VLAN 42: pool 192.168.10.113+11 == exatamente os 11 clientes DHCP
+[OK]   SW-INFRA VLAN 42: servidor DHCP 192.168.10.124 é o servidor da VLAN e fora do pool
+[OK]   96 IPs distintos no projeto
+[OK]   8 sub-redes /28 sem sobreposição
+[OK]   8 IDs de VLAN únicos no projeto [11, 12, 21, 22, 31, 32, 41, 42]
+[OK]   cada /28 comporta ≥12 hosts (14)
+[OK]   /27 comporta ≥24 hosts (30)
+[OK]   /28 sozinho NÃO comporta 24 (por isso /27 é o agregado do departamento)
+[OK]   4 arquivos de configuração, um por switch
+[OK]   SW-ENG: hostname
+[OK]   SW-ENG: define as 8 VLANs
+[OK]   SW-ENG: Fa0/1-12→VLAN 11, Fa0/13-24→VLAN 12
+[OK]   SW-ENG: trunks nas Gi esperadas
+[OK]   SW-ENG: trunk permite as 8 VLANs
+[OK]   SW-ENG: nenhuma interface fora de Fa0/1-24 e Gi0/1-2
+[OK]   SW-ENG: VTP transparente
+[OK]   SW-TI: hostname
+[OK]   SW-TI: define as 8 VLANs
+[OK]   SW-TI: Fa0/1-12→VLAN 31, Fa0/13-24→VLAN 32
+[OK]   SW-TI: trunks nas Gi esperadas
+[OK]   SW-TI: trunk permite as 8 VLANs
+[OK]   SW-TI: nenhuma interface fora de Fa0/1-24 e Gi0/1-2
+[OK]   SW-TI: VTP transparente
+[OK]   SW-COMP: hostname
+[OK]   SW-COMP: define as 8 VLANs
+[OK]   SW-COMP: Fa0/1-12→VLAN 21, Fa0/13-24→VLAN 22
+[OK]   SW-COMP: trunks nas Gi esperadas
+[OK]   SW-COMP: trunk permite as 8 VLANs
+[OK]   SW-COMP: nenhuma interface fora de Fa0/1-24 e Gi0/1-2
+[OK]   SW-COMP: VTP transparente
+[OK]   SW-INFRA: hostname
+[OK]   SW-INFRA: define as 8 VLANs
+[OK]   SW-INFRA: Fa0/1-12→VLAN 41, Fa0/13-24→VLAN 42
+[OK]   SW-INFRA: trunks nas Gi esperadas
+[OK]   SW-INFRA: trunk permite as 8 VLANs
+[OK]   SW-INFRA: nenhuma interface fora de Fa0/1-24 e Gi0/1-2
+[OK]   SW-INFRA: VTP transparente
+[OK]   cada VLAN tem portas de acesso em UM único switch (sem domínio de broadcast compartilhado entre departamentos)
+[OK]   4 VLANs com DHCP, 4 servidores, 1 por VLAN: sem servidores concorrentes no mesmo domínio
+[OK]   nenhuma porta de uplink usada em dois enlaces
+[OK]   enlaces usam só portas Gi definidas nos trunks
+[OK]   4 switches conectados, 3 enlaces, sem laço
+
+RESULTADO: TUDO OK
