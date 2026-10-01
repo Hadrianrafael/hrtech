@@ -1,4 +1,4 @@
-# Super Tech – Checklist extraído do roteiro e planejamento (v2)
+# Super Tech – Checklist extraído do roteiro e planejamento (v2, aprovada como base)
 
 > **v2.** A versão 1 reutilizava VLAN 1/2 nos quatro switches, com trunks, e colocava as duas VLANs de um departamento na mesma sub-rede. Isso criava domínio de broadcast compartilhado entre departamentos, conflito entre os servidores DHCP de Compras e Infraestrutura e duas VLANs sem separação IP. Esta versão corrige os três problemas (seção 3).
 
@@ -45,7 +45,7 @@ Cada switch com VLAN 1 (portas 1-12) e VLAN 2 (13-24), IDs iguais nos 4 switches
 3. **Qual máscara?** O roteiro fala em "uma máscara". Aqui há duas, ambas explicadas: /27 para o departamento (24 hosts, R4/R9) e /28 para cada VLAN (12 hosts). Os **hosts são configurados com 255.255.255.240 (/28)**.
 4. **Roteador.** O PDF não prevê roteador nem L3. Não foi acrescentado. Consequência (esperada e correta): sem L3, não há comunicação entre VLANs nem entre departamentos; **pings entre sub-redes distintas falham**. Os trunks deixam a infraestrutura L2 pronta, mas nenhum tráfego de dados precisa atravessá-los neste escopo. A interligação é comprovada por `show interfaces trunk` e `show cdp neighbors`, não por ping.
 5. **Topologia entre switches.** "Interligando eles entre si" não define o desenho. Adotada cadeia ENG–COMP–TI–INFRA (3 enlaces, sem laço, sem STP relevante), usando as duas portas Gigabit; cada departamento é uma estrela.
-6. **Modelo do switch e portas.** Um 2950-24 tem 24 portas FastEthernet; usando todas para hosts não sobra porta para interligar. O **2950T-24** (mesma família, 24 Fast + 2 Gigabit) tem Gi0/1 e Gi0/2. Fontes consultadas indicam isso, mas **não consegui abrir o Packet Tracer neste ambiente**; confirme no passo 0 do guia. Se o seu PT mostrar o 2950-24 sem portas Gigabit, o roteiro é inexequível com esse modelo e é preciso usar o 2950T-24.
+6. **Modelo do switch e portas.** Um 2950-24 tem 24 portas FastEthernet; usando todas para hosts não sobra porta para interligar. O **2950T-24** (mesma família, 24 Fast + 2 Gigabit) tem Gi0/1 e Gi0/2. Fontes consultadas indicam isso, mas **não consegui abrir o Packet Tracer neste ambiente**; confirme no passo 0 do guia. O PASSO 0 do guia testa o 2950T-24 no seu PT; se ele não tiver Gi0/1-2, o plano B é o **2960-24TT** (Fa0/1-24 + Gi0/1-2, mesmos nomes de interface, mesmos comandos) – outra família, a declarar no relatório.
 7. **Servidores DHCP.** Os "2 servidores" do departamento são Server-PT; em Compras/Infra, o de cada VLAN roda o serviço DHCP, com IP estático. PCs e impressoras usam DHCP.
 8. **Gateway/DNS** não definidos no PDF: ficam vazios/0.0.0.0.
 

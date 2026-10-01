@@ -1,48 +1,49 @@
-# Auditoria requisito × entrega (v2)
+# Auditoria final – v2 × PDF original (roteiro, 3 páginas)
 
-Nada foi simulado no Packet Tracer. "Verificado por script" significa: `validar_projeto.py` leu `tabela_enderecamento.md` e `configs/*.txt` e conferiu as regras. Saída completa: `validacao_saida.txt` (**127 verificações, 0 falhas**).
+Nada foi simulado no Packet Tracer. "Verificado por script" = `validar_projeto.py` lê `tabela_enderecamento.md`, `configs/*.txt`, `02_guia_execucao_packet_tracer.md` e `04_relatorio.md` e confere as regras (**173 verificações, 0 falhas** – `validacao_saida.txt`). Os arquivos `02` e `04` são gerados por `gerar_documentos.py` a partir do mesmo modelo da tabela e das configs.
 
-## 1. O que mudou da v1 e por quê
-| Problema da v1 | Correção |
-|---|---|
-| VLAN 1/2 repetidas nos 4 switches + trunk = domínio de broadcast compartilhado entre departamentos | IDs exclusivos (11/12, 21/22, 31/32, 41/42); cada VLAN só tem portas em 1 switch |
-| 2 servidores DHCP concorrentes (Compras × Infra) | 1 servidor DHCP por VLAN, em VLANs distintas |
-| 2 VLANs de um departamento na mesma sub-rede /27 | 1 sub-rede /28 por VLAN; as duas somam o /27 do departamento |
-| Uplinks Gi0/1-2 assumidos sem checagem | Modelo 2950T-24 + passo 0 de verificação no guia (ainda **não confirmado no PT**) |
-| Solução de teste "desligar trunks" | Removida; trunks permanecem ligados em todos os cenários |
+## 1. Erro na v2?
+**Nenhum erro de arquitetura, de cálculo ou de configuração foi encontrado.** A única pendência técnica da v2 continua sendo o que depende do simulador (modelo do switch com Gi0/1-2 e sintaxe de duas linhas de CLI), tratada no PASSO 0 e no PASSO 3 do guia. Durante esta etapa, o próprio script de verificação apontou duas falhas **na redação do guia novo** (contagem de dispositivos estáticos e uma frase sobre VLANs no `show vlan brief`); foram corrigidas antes do commit.
 
-## 2. Auditoria matemática (conferível à mão)
-- /28: 2⁴ = 16 endereços, 16 − 2 = **14 úteis ≥ 12** hosts por VLAN ✔. /29 (6) não serve.
-- /27: 2⁵ = 32, **30 úteis ≥ 24** por departamento ✔; /28 sozinho (14) **não** serve para 24 – por isso o agregado do departamento é /27 ✔.
-- Máscaras: /27 = 255.255.255.224 (256 − 32); /28 = 255.255.255.240 (256 − 16) ✔.
-- 4 × /27 = 128 endereços de 256; 8 × /28 = 128; sobra 192.168.10.128/25 ✔.
-- Alinhamento: cada /28 começa em múltiplo de 16 (0, 16, 32, 48, 64, 80, 96, 112) e cada /27 em múltiplo de 32 ✔.
-- Hosts por VLAN: 10 + 1 + 1 = 12 → IPs +1…+12, sobram +13 e +14 ✔. Hosts por departamento: 20 + 2 + 2 = 24; total 96 ✔.
-- Pools: 10 PCs + 1 impressora = 11 clientes por VLAN; Start IP = rede+1, max 11 → rede+1…rede+11; servidor em rede+12, fora do pool ✔.
+## 2. Requisito por requisito (texto do PDF → entrega)
+| # | Texto do PDF | Entrega | Situação |
+|---|---|---|---|
+| 1 | "São 4 departamentos: Engenharia, Compras, TI Interno e Infraestrutura" | 4 departamentos com esses nomes: SW-ENG, SW-COMP, SW-TI, SW-INFRA | Atendido (script) |
+| 2 | "20 estações, 2 servidores e 2 impressoras, totalizando 24 hosts" | Por switch: 20 PC + 2 impressoras + 2 servidores = 24; total 96 nomes distintos | Atendido (script) |
+| 3 | "máscara de sub-rede que atenda a necessidade" | /27 por departamento (30 úteis ≥ 24) e /28 por VLAN (14 úteis ≥ 12) | Atendido; ambiguidade 3 |
+| 4 | "A rede é de Classe C" | 192.168.10.0/24 | Atendido |
+| 5 | "topologia estrela" | Cada departamento: 24 hosts ligados a um switch central (96 cabos retos). Entre switches: cadeia | Atendido; desenho entre switches é decisão (amb. 5) |
+| 6 | "sequência nas sub-redes de acordo com a máscara" | IP = rede da VLAN + posição (+1…+12) | Atendido (script) |
+| 7 | "rede seria de 227, o host de 25" | Lido como /27 e 2⁵; explicado no relatório (seção 2.2) | Ambiguidade 1 |
+| 8 | "Descreva a rede, seu 1º IP válido, último IP válido e broadcast de cada Sub-Rede" | Tabelas 1 e 2 do relatório e `tabela_enderecamento.md`, para os 4 /27 e os 8 /28 | Atendido (script) |
+| 9 | "switch 2950-24 ... para cada departamento, interligando eles entre si" | 4 switches; 3 enlaces trunk em Gi0/1-2 (cadeia) | Atendido com ressalva (modelo, amb. 6) |
+| 10 | "Cada departamento deve estar em uma sub-rede" | 1 bloco /27 por departamento, sem sobreposição | Atendido (script) |
+| 11 | "2 Vlan com 12 portas cada. Da 1-12 VLAN 1 e da 13-24 VLAN2" | Fa0/1-12 = 1ª VLAN, Fa0/13-24 = 2ª VLAN em cada switch | Atendido com ressalva (IDs 11/12…, amb. 2) |
+| 12 | "10 estações, 1 impressora e um Servidor" por VLAN | Portas 1-10/11/12 e 13-22/23/24 (script) | Atendido |
+| 13 | Engenharia e TI Interno com IPs estáticos | 48 dispositivos estáticos (24 + 24) | Atendido (script) |
+| 14 | Compras e Infraestrutura dinâmicos, "de maneira que siga a sequência dos IPs estáticos" | PCs e impressoras em DHCP; pools começam em rede+1, máx. 11; servidores estáticos em rede+12 | Atendido no projeto; associação exata nome↔IP depende da ordem de requisição |
+| 15 | "Instalar ... Simular a rede conforme o cenário descrito" | Guia final passo a passo | **Pendente: você executa** |
+| 16 | "relatório ... introdução, métodos, resultados e conclusão" | `04_relatorio.md`: capa, identificação, introdução, métodos, desenvolvimento, resultados, conclusão, referências, com marcadores para evidências | Estrutura pronta; Resultados/Conclusão dependem da execução |
 
-## 3. Auditoria lógica (script)
-Por switch: 24 portas Fa0/1-24; 20 PC/2 impressoras/2 servidores; exatamente 2 VLANs; 1ª VLAN = portas 1-12 e 2ª = 13-24; cada VLAN com 10+1+1; IPs dentro do /28, sem rede/broadcast, distintos e sequenciais; Engenharia/TI 100% estáticos; Compras/Infra com só servidores estáticos e pool == exatamente os clientes DHCP; servidor DHCP fora do pool.
-Global: 96 IPs distintos; 8 /28 sem sobreposição e dentro de 192.168.10.0/24; 8 IDs de VLAN únicos; cada VLAN com portas de acesso em um único switch; 4 servidores DHCP em 4 VLANs distintas; configs com VTP transparente, 8 VLANs, portas 1-12/13-24 na VLAN correta, trunks em Gi0/1-2 permitindo as 8 VLANs, nenhuma interface fora de Fa0/1-24 e Gi0/1-2; 3 enlaces, uplinks sem uso duplicado, grafo conexo e sem laço.
+Comentário sobre o item 5: "topologia estrela" aplica-se aos departamentos; o PDF não descreve a interligação dos switches.
 
-## 4. Requisito × situação
-| Req. | Situação | Observação |
-|---|---|---|
-| R1 Packet Tracer | **Pendente (você)** | Não há PT aqui |
-| R2/R3 4 deptos, 24 hosts | Atendido no projeto | verificado por script |
-| R4 máscara que atenda | Atendido | /27 (depto) e /28 (VLAN); ambiguidade 3 |
-| R5 Classe C, estrela | Atendido | 192.168.10.0/24; estrela por departamento |
-| R6/R7 sequência, 1º/último/broadcast | Atendido | tabela_enderecamento.md |
-| R8 2950-24 por depto, interligados | Atendido com ressalva | 2950T-24 por causa das Gi; confirmar no PT |
-| R9 sub-rede por depto | Atendido | /27 por depto |
-| R10 VLANs 1-12 / 13-24 | Atendido com ressalva | portas corretas; IDs 11/12… e não 1/2 (ambiguidade 2) |
-| R11 10+1+1 por VLAN | Atendido | verificado por script |
-| R12 estático Eng/TI | Atendido | |
-| R13 DHCP Compras/Infra em sequência | Atendido no projeto | DHCP em servidores; porta↔IP exato depende da ordem de requisição |
-| R14 relatório | Rascunho pronto | Resultados e Conclusão dependem dos seus testes |
-| Pings, .pkt, prints | **Não realizados** | guia 02 |
+## 3. Auditoria matemática (conferível à mão)
+- /28: 2⁴ = 16 endereços, 14 úteis ≥ 12. /27: 2⁵ = 32, 30 úteis ≥ 24. Um /28 sozinho (14) não comporta os 24 do departamento – por isso o agregado do departamento é /27.
+- Máscaras: /27 = 255.255.255.224; /28 = 255.255.255.240.
+- Alinhamento: /28 em 0, 16, 32, 48, 64, 80, 96, 112; /27 em 0, 32, 64, 96. Usado: 128 dos 256 endereços; livre: 192.168.10.128/25.
+- Cada VLAN: 12 hosts nos offsets +1…+12; sobram +13 e +14. Pools de 11 endereços (10 PCs + 1 impressora) terminam em +11; servidor em +12.
 
-## 5. Limitações declaradas
-1. Nada foi executado em PT: sintaxe de CLI (`vtp mode transparent`, `trunk allowed vlan`) e o comportamento do DHCP do Server-PT são esperados, não testados.
-2. Modelo do switch não confirmado dentro do PT (site oficial inacessível a partir daqui).
-3. Sem roteador (por não estar no PDF): pings entre VLANs/departamentos **falham por projeto**.
-4. VLANs com IDs 11…42 em vez de 1 e 2: decisão técnica explicada, não literal.
+## 4. Auditoria lógica
+Cobre: contagem de dispositivos por switch e por VLAN; faixas de portas; IPs dentro do /28, sem rede/broadcast, únicos e sequenciais; 8 /28 sem sobreposição; 8 IDs de VLAN únicos; cada VLAN com portas em um único switch (sem domínio de broadcast compartilhado) e 1 servidor DHCP por VLAN; configs com 8 VLANs, VTP transparente, trunks apenas em Gi0/1-2 e nenhuma interface fora de Fa0/1-24; 3 enlaces, grafo conexo, sem laço; **guia:** 96 cabos corretos, 52 IPs estáticos idênticos à tabela, 4 pools idênticos, blocos de CLI idênticos a `configs/`, 31 testes coerentes com a tabela (sucesso ⇔ mesma /28), 43 prints numerados e figuras do relatório batendo com o checklist; **relatório:** dados do aluno presentes, seções obrigatórias, tabelas iguais à tabela de endereçamento, nenhuma saída de ping, nenhuma afirmação de execução.
+
+## 5. Ambiguidades do PDF (decididas, não alteradas)
+1. "227 / host de 25" → /27 e 2⁵.
+2. "VLAN 1 / VLAN 2" literais ou "primeira/segunda VLAN" → primeira/segunda, com IDs exclusivos (11/12, 21/22, 31/32, 41/42), pois IDs repetidos em switches em trunk unem os departamentos e geram conflito DHCP.
+3. Uma máscara ou duas → /27 para o departamento, /28 para cada VLAN; hosts com /28.
+4. Sem roteador → não incluído; pings entre sub-redes falham por projeto e a interligação se comprova por `show interfaces trunk` e `show cdp neighbors`.
+5. Desenho da interligação entre switches → cadeia ENG–COMP–TI–INFRA.
+6. Modelo "2950-24" sem portas livres para interligação → 2950T-24 (plano B 2960-24TT), confirmado só no PASSO 0.
+7. Gateway/DNS não definidos → vazios.
+
+## 6. Limites declarados
+Sintaxe de CLI e DHCP do Server-PT esperados, não testados; modelo do switch não confirmado dentro do PT; IPs de DHCP são previstos; nenhum `.pkt`, print ou ping foi produzido.
