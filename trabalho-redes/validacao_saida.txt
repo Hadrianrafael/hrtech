@@ -148,7 +148,7 @@
 [OK]   guia: 20 + 23 = 43 capturas no total
 [OK]   guia: todo teste aponta para uma captura existente
 [OK]   guia: cada captura de ping tem uma única origem
-[OK]   guia: PASSO 0 destacado no início, antes do PASSO 1
+[OK]   guia: PASSO 0 (concluído) destacado no início, antes do PASSO 1
 [OK]   guia: figura obrigatória contém 'show ip interface brief'
 [OK]   guia: figura obrigatória contém 'Topologia completa'
 [OK]   guia: figura obrigatória contém 'SW-ENG: `show vlan brief`'
@@ -162,9 +162,11 @@
 [OK]   guia: figura obrigatória contém 'PC-COMP-21-01: `ipconfig`'
 [OK]   guia: figura obrigatória contém 'PC-INFRA-41-01: `ipconfig`'
 [OK]   relatório: marcadores [INSERIR FIGURA 1..20] e legendas 1..20 batem com as 20 figuras obrigatórias
-[OK]   relatório: só existem marcadores INSERIR/ESCOLHER/COLAR ['COLAR', 'ESCOLHER', 'INSERIR']
+[OK]   relatório: só existem marcadores INSERIR/COLAR ['COLAR', 'INSERIR']
 [OK]   relatório: sem placeholders que independem da simulação
-[OK]   relatório: Opções A/B do modelo de switch prontas
+[OK]   relatório: modelo definitivo 2960-24TT, sem opções pendentes
+[OK]   guia/relatório/configs: nenhuma referência a 2950T-24
+[OK]   guia e configs: modelo 2960-24TT
 [OK]   relatório: 44 linhas de IP DHCP reais (22 PCs/impressoras em Compras e 22 em Infraestrutura) e 31 resultados de ping a preencher
 [OK]   guia: bloco CLI de SW-ENG idêntico a configs/SW-ENG.txt
 [OK]   guia: bloco CLI de SW-TI idêntico a configs/SW-TI.txt

@@ -1,23 +1,13 @@
 # GUIA FINAL – execução no Cisco Packet Tracer
 
-> # ▶ COMECE AQUI: PASSO 0
-> **Não monte nada antes de concluir o PASSO 0.** Ele define o modelo de switch que será usado em todo o projeto.
+> # ▶ PASSO 0 — CONCLUÍDO
+> **Modelo definitivo dos 4 switches: Cisco 2960-24TT.** Confirmado pelo aluno no Packet Tracer com `show ip interface brief`: FastEthernet0/1 a 0/24, GigabitEthernet0/1, GigabitEthernet0/2 e Vlan1.
 
-## PASSO 0 — verificar o switch (antes de montar o resto)
+## PASSO 0 — verificação do switch (feito)
 
-1. Na barra inferior esquerda, clique na categoria **Switches** (ícone do switch). Na lista ao lado, clique em **2950T-24** e clique uma vez na área de trabalho para colocá-lo.
-2. Clique no switch → aba **CLI** → pressione **Enter** (se aparecer `Continue with configuration dialog?`, digite `no` e Enter).
-3. Digite, linha a linha:
-```
-enable
-show ip interface brief
-```
-4. Confira na saída: **FastEthernet0/1 até FastEthernet0/24** e **GigabitEthernet0/1** e **GigabitEthernet0/2**.
-   - **Tem as portas** → este é o modelo para todo o projeto. **Capture a Figura 1** (a tela do CLI com a saída) e siga para o PASSO 1 (apague este switch de teste ou renomeie-o como SW-ENG).
-   - **Não tem Gi0/1 e Gi0/2** → apague o switch, escolha **2960-24TT** (categoria Switches; tem Fa0/1-24 e Gi0/1-2 com os mesmos nomes) e repita os passos 2 a 4. Os comandos deste guia funcionam sem alteração. No relatório você usará a **Opção B** da seção 2.1.
-   - **Nenhum dos dois tem as portas** → pare e me envie o texto exato da saída.
-5. Nos passos seguintes, onde está escrito `2950T-24`, leia o **modelo que passou neste teste**.
-6. **Envie-me**, antes de continuar: (a) o modelo que você escolheu; (b) o **texto copiado** da saída de `show ip interface brief`; (c) a Figura 1.
+Registro do que foi feito: switch **2960-24TT** (categoria Switches) colocado na área de trabalho → aba **CLI** → Enter → `enable` → `show ip interface brief` → saída com Fa0/1-24, Gi0/1, Gi0/2 e Vlan1. Essa captura é a **Figura 1** do relatório.
+
+Daqui em diante, **todos os switches são 2960-24TT**. Apague o switch de teste do PASSO 0 ou aproveite-o como SW-ENG (nesse caso, renomeie-o no PASSO 1).
 
 ---
 
@@ -25,30 +15,75 @@ Convenções do guia: **PC**, **Printer** e **Server** são os ícones da catego
 
 ---
 
-## PASSO 1 — adicionar equipamentos (total: 4 switches, 80 PCs, 8 impressoras, 8 servidores)
+## PASSO 1 — adicionar equipamentos (total: 100 equipamentos = 4 switches + 80 PCs + 8 impressoras + 8 servidores)
 
-Como colocar: escolha a categoria e o modelo, clique na área de trabalho (dica: segure **Ctrl** ao clicar no modelo para colocar vários seguidos). Para nomear: clique no equipamento → aba **Config** → **Display Name** → digite o nome → Enter. Em switches o `hostname` do CLI é ajustado pelo script do PASSO 3, mas ajuste também o Display Name.
+**Neste passo você só coloca e nomeia os equipamentos. Não ligue cabos e não configure nada.** Os cabos são o PASSO 2.
 
-| Departamento | Equipamento | Qtd | Modelo (categoria) | Nomes |
+### 1.1 Preparação
+1. Abra o Packet Tracer com o projeto vazio (ou o do PASSO 0). Confira que está na visão **Logical** (botão no canto superior esquerdo da área de trabalho).
+2. Para caber tudo na tela, aumente a janela e use o zoom: roda do mouse com **Ctrl**, ou os botões de zoom da barra lateral direita.
+3. Salve já: **File → Save As →** `SuperTech.pkt`. Salve de novo ao fim de cada passo.
+
+### 1.2 Onde estão os equipamentos (barra inferior esquerda)
+- **Switch:** clique no ícone **Switches** (o segundo da fileira de categorias) → na lista ao lado, clique em **2960-24TT**.
+- **PC, Impressora e Servidor:** clique no ícone **End Devices** (primeiro da fileira) → na lista ao lado, clique em **PC** (computador), **Printer** (impressora) ou **Server** (servidor).
+- **Como colocar:** clique no modelo e depois clique **uma vez** na área de trabalho. **Dica:** para colocar vários seguidos, segure **Ctrl** ao clicar no modelo e clique na área de trabalho quantas vezes quiser; aperte **Esc** para parar.
+
+### 1.3 Como nomear cada equipamento
+Clique no equipamento → aba **Config** → no topo, campo **Display Name** → apague o nome padrão, digite o nome da tabela abaixo e aperte **Enter**. O nome aparece embaixo do ícone. (Nos switches, o nome do CLI é ajustado no PASSO 3; aqui ajuste só o Display Name.) Confira a grafia: o resto do guia usa estes nomes exatos, em maiúsculas.
+
+### 1.4 Quantidades e nomes
+
+| Departamento | Equipamento | Qtd | Modelo (categoria) | Nomes exatos |
 |---|---|---|---|---|
-| Engenharia | Switch | 1 | 2950T-24 (Switches) | SW-ENG |
+| Engenharia | Switch | 1 | 2960-24TT (Switches) | SW-ENG |
 | | PC | 20 | PC (End Devices) | PC-ENG-11-01 a PC-ENG-11-10 e PC-ENG-12-01 a PC-ENG-12-10 |
 | | Impressora | 2 | Printer (End Devices) | IMP-ENG-11, IMP-ENG-12 |
 | | Servidor | 2 | Server (End Devices) | SRV-ENG-11, SRV-ENG-12 |
-| Compras | Switch | 1 | 2950T-24 (Switches) | SW-COMP |
+| Compras | Switch | 1 | 2960-24TT (Switches) | SW-COMP |
 | | PC | 20 | PC (End Devices) | PC-COMP-21-01 a PC-COMP-21-10 e PC-COMP-22-01 a PC-COMP-22-10 |
 | | Impressora | 2 | Printer (End Devices) | IMP-COMP-21, IMP-COMP-22 |
 | | Servidor | 2 | Server (End Devices) | SRV-COMP-21, SRV-COMP-22 |
-| TI Interno | Switch | 1 | 2950T-24 (Switches) | SW-TI |
+| TI Interno | Switch | 1 | 2960-24TT (Switches) | SW-TI |
 | | PC | 20 | PC (End Devices) | PC-TI-31-01 a PC-TI-31-10 e PC-TI-32-01 a PC-TI-32-10 |
 | | Impressora | 2 | Printer (End Devices) | IMP-TI-31, IMP-TI-32 |
 | | Servidor | 2 | Server (End Devices) | SRV-TI-31, SRV-TI-32 |
-| Infraestrutura | Switch | 1 | 2950T-24 (Switches) | SW-INFRA |
+| Infraestrutura | Switch | 1 | 2960-24TT (Switches) | SW-INFRA |
 | | PC | 20 | PC (End Devices) | PC-INFRA-41-01 a PC-INFRA-41-10 e PC-INFRA-42-01 a PC-INFRA-42-10 |
 | | Impressora | 2 | Printer (End Devices) | IMP-INFRA-41, IMP-INFRA-42 |
 | | Servidor | 2 | Server (End Devices) | SRV-INFRA-41, SRV-INFRA-42 |
 
-Posicione cada departamento em uma área separada da tela (o switch no centro, os 24 hosts em volta: topologia estrela).
+### 1.5 Onde posicionar
+Divida a área de trabalho em **4 colunas, da esquerda para a direita, na ordem da cadeia de switches**: Engenharia | Compras | TI Interno | Infraestrutura. Em cada coluna, o **switch fica no meio**; os 12 dispositivos da **1ª VLAN ficam acima** do switch e os 12 da **2ª VLAN ficam abaixo** (topologia estrela; cada grupo de 12 em 2 fileiras de 6):
+
+```
+  fileira 1 (acima):   PC-xx-v1-01 .. PC-xx-v1-06
+  fileira 2 (acima):   PC-xx-v1-07 .. PC-xx-v1-10, IMP-xx-v1, SRV-xx-v1
+
+                       [ SW-xxxx ]   <- centro da coluna
+
+  fileira 3 (abaixo):  PC-xx-v2-01 .. PC-xx-v2-06
+  fileira 4 (abaixo):  PC-xx-v2-07 .. PC-xx-v2-10, IMP-xx-v2, SRV-xx-v2
+```
+Mantenha a mesma ordem da esquerda para a direita em todas as fileiras (01, 02, 03…). Isso evita cruzar cabos no PASSO 2. Se a tela ficar apertada, afaste as colunas e use zoom menor; o que importa é a posição relativa, não a distância.
+
+As VLANs de cada departamento são (1ª VLAN = portas 1-12; 2ª VLAN = portas 13-24):
+
+| Departamento | 1ª VLAN (acima do switch) | 2ª VLAN (abaixo do switch) |
+|---|---|---|
+| Engenharia (SW-ENG) | 11 | 12 |
+| Compras (SW-COMP) | 21 | 22 |
+| TI Interno (SW-TI) | 31 | 32 |
+| Infraestrutura (SW-INFRA) | 41 | 42 |
+
+### 1.6 Checkpoint do PASSO 1 (confira antes de seguir)
+- [ ] 4 switches 2960-24TT, nomeados SW-ENG, SW-COMP, SW-TI, SW-INFRA, na ordem da esquerda para a direita.
+- [ ] Em cada departamento: 20 PCs, 2 impressoras e 2 servidores (24 equipamentos ao redor do switch).
+- [ ] Nenhum nome repetido ou com erro de grafia (compare com a tabela 1.4).
+- [ ] Nenhum cabo ligado e nenhuma configuração feita.
+- [ ] Arquivo salvo.
+
+**Envie-me ao terminar:** uma captura da área de trabalho inteira (zoom que mostre os 4 departamentos) e a confirmação de que o checkpoint está completo, com qualquer dúvida ou nome que não tenha conseguido digitar.
 
 ---
 
@@ -194,8 +229,8 @@ Para **cada switch**: clique no switch → aba **CLI** → Enter → cole o bloc
 
 ### SW-ENG (Engenharia)
 ```
-! SW-ENG - Cisco 2950T-24 - Departamento Engenharia
-! Requer modelo com Gi0/1-2 (2950T-24). Confirme com: show ip interface brief
+! SW-ENG - Cisco 2960-24TT - Departamento Engenharia
+! Modelo confirmado no PASSO 0: Fa0/1-24, Gi0/1-2 e Vlan1 (show ip interface brief)
 enable
 configure terminal
 hostname SW-ENG
@@ -248,8 +283,8 @@ write memory
 
 ### SW-COMP (Compras)
 ```
-! SW-COMP - Cisco 2950T-24 - Departamento Compras
-! Requer modelo com Gi0/1-2 (2950T-24). Confirme com: show ip interface brief
+! SW-COMP - Cisco 2960-24TT - Departamento Compras
+! Modelo confirmado no PASSO 0: Fa0/1-24, Gi0/1-2 e Vlan1 (show ip interface brief)
 enable
 configure terminal
 hostname SW-COMP
@@ -308,8 +343,8 @@ write memory
 
 ### SW-TI (TI Interno)
 ```
-! SW-TI - Cisco 2950T-24 - Departamento TI Interno
-! Requer modelo com Gi0/1-2 (2950T-24). Confirme com: show ip interface brief
+! SW-TI - Cisco 2960-24TT - Departamento TI Interno
+! Modelo confirmado no PASSO 0: Fa0/1-24, Gi0/1-2 e Vlan1 (show ip interface brief)
 enable
 configure terminal
 hostname SW-TI
@@ -368,8 +403,8 @@ write memory
 
 ### SW-INFRA (Infraestrutura)
 ```
-! SW-INFRA - Cisco 2950T-24 - Departamento Infraestrutura
-! Requer modelo com Gi0/1-2 (2950T-24). Confirme com: show ip interface brief
+! SW-INFRA - Cisco 2960-24TT - Departamento Infraestrutura
+! Modelo confirmado no PASSO 0: Fa0/1-24, Gi0/1-2 e Vlan1 (show ip interface brief)
 enable
 configure terminal
 hostname SW-INFRA

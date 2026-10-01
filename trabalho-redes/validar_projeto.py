@@ -165,7 +165,7 @@ chk(len(obr) + len(dia) == 43, "guia: 20 + 23 = 43 capturas no total")
 refs = {p for *_x, p in tst}
 chk(all((p.startswith("D-") and p[2:].isdigit() and int(p[2:]) <= len(dia)) or (p.startswith("Figura ") and int(p[7:]) <= len(obr)) for p in refs), "guia: todo teste aponta para uma captura existente")
 chk(all(len({s_ for tid, s_, *_r, p in tst if p == q}) == 1 for q in refs), "guia: cada captura de ping tem uma única origem")
-chk(guia.index("## PASSO 0") < guia.index("## PASSO 1") and guia.index("COMECE AQUI") < 600, "guia: PASSO 0 destacado no início, antes do PASSO 1")
+chk(guia.index("## PASSO 0") < guia.index("## PASSO 1") and guia.index("PASSO 0 — CONCLUÍDO") < 300, "guia: PASSO 0 (concluído) destacado no início, antes do PASSO 1")
 # obrigatórias esperadas
 tabA = guia.split("### A) OBRIGAT")[1].split("### B) APENAS")[0]
 for item in ["show ip interface brief", "Topologia completa", "SW-ENG: `show vlan brief`", "SW-INFRA: `show vlan brief`", "SW-COMP: `show interfaces trunk`", "SW-TI: `show interfaces trunk`",
@@ -175,9 +175,11 @@ figs = sorted({int(x) for x in re.findall(r"\[INSERIR FIGURA (\d+) —", rel)})
 legs = sorted({int(x) for x in re.findall(r"\*Figura (\d+) –", rel)})
 chk(figs == list(range(1, 21)) == legs, "relatório: marcadores [INSERIR FIGURA 1..20] e legendas 1..20 batem com as 20 figuras obrigatórias")
 marc = re.findall(r"\[([A-ZÇÃÕ]{4,})\b", rel)
-chk(set(marc) <= {"INSERIR", "ESCOLHER", "COLAR"}, f"relatório: só existem marcadores INSERIR/ESCOLHER/COLAR {sorted(set(marc))}")
+chk(set(marc) <= {"INSERIR", "COLAR"}, f"relatório: só existem marcadores INSERIR/COLAR {sorted(set(marc))}")
 chk("[edição" not in rel and "INFORMAR" not in rel and "AJUSTAR" not in rel, "relatório: sem placeholders que independem da simulação")
-chk("Opção A" in rel and "Opção B" in rel, "relatório: Opções A/B do modelo de switch prontas")
+chk("2960-24TT" in rel and "Opção A" not in rel and "ESCOLHER" not in rel, "relatório: modelo definitivo 2960-24TT, sem opções pendentes")
+chk("2950T" not in rel and "2950T" not in guia and all("2950T" not in t for t in cfg.values()), "guia/relatório/configs: nenhuma referência a 2950T-24")
+chk(guia.count("2960-24TT") >= 5 and all("2960-24TT" in t for t in cfg.values()), "guia e configs: modelo 2960-24TT")
 chk(len(re.findall(r"INSERIR IP REAL", rel)) == 44 and len(re.findall(r"INSERIR RESULTADO REAL DO PING", rel)) == 31, "relatório: 44 linhas de IP DHCP reais (22 PCs/impressoras em Compras e 22 em Infraestrutura) e 31 resultados de ping a preencher")
 # 6) configs embutidas no guia
 for sw, t in cfg.items():

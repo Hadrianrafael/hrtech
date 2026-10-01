@@ -1,5 +1,5 @@
-! SW-ENG - Cisco 2950T-24 - Departamento Engenharia
-! Requer modelo com Gi0/1-2 (2950T-24). Confirme com: show ip interface brief
+! SW-ENG - Cisco 2960-24TT - Departamento Engenharia
+! Modelo confirmado no PASSO 0: Fa0/1-24, Gi0/1-2 e Vlan1 (show ip interface brief)
 enable
 configure terminal
 hostname SW-ENG

@@ -15,7 +15,7 @@ UPLINKS = {"SW-ENG": ["Gi0/1"], "SW-COMP": ["Gi0/1", "Gi0/2"],
 LINKS = [("SW-ENG", "Gi0/1", "SW-COMP", "Gi0/1"),
          ("SW-COMP", "Gi0/2", "SW-TI", "Gi0/1"),
          ("SW-TI", "Gi0/2", "SW-INFRA", "Gi0/1")]
-MODELO = "2950T-24"
+MODELO = "2960-24TT"
 
 def papel(porta):
     q = (porta - 1) % 12 + 1
@@ -85,7 +85,7 @@ def tabela(d):
 def config(dep, todas):
     sw = dep["sw"]
     c = [f"! {sw} - Cisco {MODELO} - Departamento {dep['nome']}",
-         "! Requer modelo com Gi0/1-2 (2950T-24). Confirme com: show ip interface brief",
+         "! Modelo confirmado no PASSO 0: Fa0/1-24, Gi0/1-2 e Vlan1 (show ip interface brief)",
          "enable", "configure terminal", f"hostname {sw}", "!",
          "! VTP transparente: cada switch mantém o próprio banco de VLANs, sem anúncios",
          "vtp mode transparent", "!",

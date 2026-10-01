@@ -86,29 +86,34 @@ def guia():
     o = []
     A = o.append
     A("# GUIA FINAL – execução no Cisco Packet Tracer\n")
-    A("> # ▶ COMECE AQUI: PASSO 0\n> **Não monte nada antes de concluir o PASSO 0.** Ele define o modelo de switch que será usado em todo o projeto.\n")
-    A("## PASSO 0 — verificar o switch (antes de montar o resto)\n")
-    A("1. Na barra inferior esquerda, clique na categoria **Switches** (ícone do switch). Na lista ao lado, clique em **2950T-24** e clique uma vez na área de trabalho para colocá-lo.")
-    A("2. Clique no switch → aba **CLI** → pressione **Enter** (se aparecer `Continue with configuration dialog?`, digite `no` e Enter).")
-    A("3. Digite, linha a linha:\n```\nenable\nshow ip interface brief\n```")
-    A("4. Confira na saída: **FastEthernet0/1 até FastEthernet0/24** e **GigabitEthernet0/1** e **GigabitEthernet0/2**.")
-    A("   - **Tem as portas** → este é o modelo para todo o projeto. **Capture a Figura 1** (a tela do CLI com a saída) e siga para o PASSO 1 (apague este switch de teste ou renomeie-o como SW-ENG).")
-    A("   - **Não tem Gi0/1 e Gi0/2** → apague o switch, escolha **2960-24TT** (categoria Switches; tem Fa0/1-24 e Gi0/1-2 com os mesmos nomes) e repita os passos 2 a 4. Os comandos deste guia funcionam sem alteração. No relatório você usará a **Opção B** da seção 2.1.")
-    A("   - **Nenhum dos dois tem as portas** → pare e me envie o texto exato da saída.")
-    A("5. Nos passos seguintes, onde está escrito `2950T-24`, leia o **modelo que passou neste teste**.")
-    A("6. **Envie-me**, antes de continuar: (a) o modelo que você escolheu; (b) o **texto copiado** da saída de `show ip interface brief`; (c) a Figura 1.\n")
+    A("> # ▶ PASSO 0 — CONCLUÍDO\n> **Modelo definitivo dos 4 switches: Cisco 2960-24TT.** Confirmado pelo aluno no Packet Tracer com `show ip interface brief`: FastEthernet0/1 a 0/24, GigabitEthernet0/1, GigabitEthernet0/2 e Vlan1.\n")
+    A("## PASSO 0 — verificação do switch (feito)\n")
+    A("Registro do que foi feito: switch **2960-24TT** (categoria Switches) colocado na área de trabalho → aba **CLI** → Enter → `enable` → `show ip interface brief` → saída com Fa0/1-24, Gi0/1, Gi0/2 e Vlan1. Essa captura é a **Figura 1** do relatório.\n")
+    A("Daqui em diante, **todos os switches são 2960-24TT**. Apague o switch de teste do PASSO 0 ou aproveite-o como SW-ENG (nesse caso, renomeie-o no PASSO 1).\n")
     A("---\n")
     A("Convenções do guia: **PC**, **Printer** e **Server** são os ícones da categoria *End Devices* (parte inferior esquerda do Packet Tracer). Máscara de **todos** os hosts: `255.255.255.240`. Gateway e DNS: deixar **vazios** em todos os dispositivos. Nenhuma etapa deste guia foi executada pelo autor do projeto: os resultados saem do **seu** Packet Tracer. Valores marcados com `*` são IPs **previstos** pelo DHCP; use sempre o valor real mostrado por `ipconfig`.\n")
-    A("---\n\n## PASSO 1 — adicionar equipamentos (total: 4 switches, 80 PCs, 8 impressoras, 8 servidores)\n")
-    A("Como colocar: escolha a categoria e o modelo, clique na área de trabalho (dica: segure **Ctrl** ao clicar no modelo para colocar vários seguidos). Para nomear: clique no equipamento → aba **Config** → **Display Name** → digite o nome → Enter. Em switches o `hostname` do CLI é ajustado pelo script do PASSO 3, mas ajuste também o Display Name.\n")
-    A("| Departamento | Equipamento | Qtd | Modelo (categoria) | Nomes |\n|---|---|---|---|---|")
+    A("---\n\n## PASSO 1 — adicionar equipamentos (total: 100 equipamentos = 4 switches + 80 PCs + 8 impressoras + 8 servidores)\n")
+    A("**Neste passo você só coloca e nomeia os equipamentos. Não ligue cabos e não configure nada.** Os cabos são o PASSO 2.\n")
+    A("### 1.1 Preparação\n1. Abra o Packet Tracer com o projeto vazio (ou o do PASSO 0). Confira que está na visão **Logical** (botão no canto superior esquerdo da área de trabalho).\n2. Para caber tudo na tela, aumente a janela e use o zoom: roda do mouse com **Ctrl**, ou os botões de zoom da barra lateral direita.\n3. Salve já: **File → Save As →** `SuperTech.pkt`. Salve de novo ao fim de cada passo.\n")
+    A("### 1.2 Onde estão os equipamentos (barra inferior esquerda)\n- **Switch:** clique no ícone **Switches** (o segundo da fileira de categorias) → na lista ao lado, clique em **2960-24TT**.\n- **PC, Impressora e Servidor:** clique no ícone **End Devices** (primeiro da fileira) → na lista ao lado, clique em **PC** (computador), **Printer** (impressora) ou **Server** (servidor).\n- **Como colocar:** clique no modelo e depois clique **uma vez** na área de trabalho. **Dica:** para colocar vários seguidos, segure **Ctrl** ao clicar no modelo e clique na área de trabalho quantas vezes quiser; aperte **Esc** para parar.\n")
+    A("### 1.3 Como nomear cada equipamento\nClique no equipamento → aba **Config** → no topo, campo **Display Name** → apague o nome padrão, digite o nome da tabela abaixo e aperte **Enter**. O nome aparece embaixo do ícone. (Nos switches, o nome do CLI é ajustado no PASSO 3; aqui ajuste só o Display Name.) Confira a grafia: o resto do guia usa estes nomes exatos, em maiúsculas.\n")
+    A("### 1.4 Quantidades e nomes\n")
+    A("| Departamento | Equipamento | Qtd | Modelo (categoria) | Nomes exatos |\n|---|---|---|---|---|")
     for sw, dep in D.items():
         v1, v2 = dep["vlans"]; sg = sw.split("-")[1]
-        A(f"| {dep['nome']} | Switch | 1 | 2950T-24 (Switches) | {sw} |")
+        A(f"| {dep['nome']} | Switch | 1 | 2960-24TT (Switches) | {sw} |")
         A(f"| | PC | 20 | PC (End Devices) | PC-{sg}-{v1['id']}-01 a PC-{sg}-{v1['id']}-10 e PC-{sg}-{v2['id']}-01 a PC-{sg}-{v2['id']}-10 |")
         A(f"| | Impressora | 2 | Printer (End Devices) | IMP-{sg}-{v1['id']}, IMP-{sg}-{v2['id']} |")
         A(f"| | Servidor | 2 | Server (End Devices) | SRV-{sg}-{v1['id']}, SRV-{sg}-{v2['id']} |")
-    A("\nPosicione cada departamento em uma área separada da tela (o switch no centro, os 24 hosts em volta: topologia estrela).\n")
+    A("\n### 1.5 Onde posicionar\nDivida a área de trabalho em **4 colunas, da esquerda para a direita, na ordem da cadeia de switches**: Engenharia | Compras | TI Interno | Infraestrutura. Em cada coluna, o **switch fica no meio**; os 12 dispositivos da **1ª VLAN ficam acima** do switch e os 12 da **2ª VLAN ficam abaixo** (topologia estrela; cada grupo de 12 em 2 fileiras de 6):\n")
+    A("```\n  fileira 1 (acima):   PC-xx-v1-01 .. PC-xx-v1-06\n  fileira 2 (acima):   PC-xx-v1-07 .. PC-xx-v1-10, IMP-xx-v1, SRV-xx-v1\n\n                       [ SW-xxxx ]   <- centro da coluna\n\n  fileira 3 (abaixo):  PC-xx-v2-01 .. PC-xx-v2-06\n  fileira 4 (abaixo):  PC-xx-v2-07 .. PC-xx-v2-10, IMP-xx-v2, SRV-xx-v2\n```")
+    A("Mantenha a mesma ordem da esquerda para a direita em todas as fileiras (01, 02, 03…). Isso evita cruzar cabos no PASSO 2. Se a tela ficar apertada, afaste as colunas e use zoom menor; o que importa é a posição relativa, não a distância.\n")
+    A("As VLANs de cada departamento são (1ª VLAN = portas 1-12; 2ª VLAN = portas 13-24):\n")
+    A("| Departamento | 1ª VLAN (acima do switch) | 2ª VLAN (abaixo do switch) |\n|---|---|---|")
+    for sw, dep in D.items():
+        A(f"| {dep['nome']} ({sw}) | {dep['vlans'][0]['id']} | {dep['vlans'][1]['id']} |")
+    A("\n### 1.6 Checkpoint do PASSO 1 (confira antes de seguir)\n- [ ] 4 switches 2960-24TT, nomeados SW-ENG, SW-COMP, SW-TI, SW-INFRA, na ordem da esquerda para a direita.\n- [ ] Em cada departamento: 20 PCs, 2 impressoras e 2 servidores (24 equipamentos ao redor do switch).\n- [ ] Nenhum nome repetido ou com erro de grafia (compare com a tabela 1.4).\n- [ ] Nenhum cabo ligado e nenhuma configuração feita.\n- [ ] Arquivo salvo.\n")
+    A("**Envie-me ao terminar:** uma captura da área de trabalho inteira (zoom que mostre os 4 departamentos) e a confirmação de que o checkpoint está completo, com qualquer dúvida ou nome que não tenha conseguido digitar.\n")
     A("---\n\n## PASSO 2 — conectar equipamentos\n")
     A("### 2.1 Hosts → switch (96 cabos)\nCategoria **Connections** (ícone do raio) → **Copper Straight-Through** (linha preta contínua). Clique no host A, escolha a porta A; clique no switch B, escolha a porta B.\n")
     for sw, dep in D.items():
@@ -275,13 +280,7 @@ A atividade tem como finalidade simular, no **Cisco Packet Tracer**, a rede da e
 
 Foram utilizados o Cisco Packet Tracer, 4 switches, 80 PCs, 8 servidores e 8 impressoras. Cada departamento tem 20 estações, 2 servidores e 2 impressoras, totalizando 24 hosts por departamento e 96 hosts na rede.
 
-O enunciado pede o switch 2950-24. Como as 24 portas FastEthernet de cada switch são ocupadas pelos hosts, a interligação dos switches exige portas adicionais. Antes da montagem, o modelo foi verificado com o comando `show ip interface brief` (Figura 1).
-
-`[ESCOLHER UMA OPÇÃO E APAGAR A OUTRA — conforme a saída real do PASSO 0]`
-
-**Opção A (o 2950T-24 apresentou Fa0/1-24 e Gi0/1-2):** Foi utilizado o modelo 2950T-24, da mesma família do 2950-24, que além das 24 portas FastEthernet possui duas portas Gigabit (Gi0/1 e Gi0/2), usadas na interligação dos switches.
-
-**Opção B (o 2950T-24 não apresentou as portas Gigabit):** O modelo 2950T-24 não apresentou as portas Gigabit necessárias no simulador; por isso foi utilizado o modelo 2960-24TT, que possui 24 portas FastEthernet e duas portas Gigabit (Gi0/1 e Gi0/2). Trata-se de um modelo de outra família, e os comandos de configuração utilizados são os mesmos.
+O enunciado cita o switch 2950-24. Como as 24 portas FastEthernet de cada switch são ocupadas pelos hosts, a interligação dos switches exige portas adicionais. Antes da montagem, o modelo foi verificado no simulador com o comando `show ip interface brief`. Foi adotado o **Cisco 2960-24TT**, que apresentou 24 portas FastEthernet (Fa0/1 a Fa0/24), duas portas GigabitEthernet (Gi0/1 e Gi0/2) e a interface Vlan1 (Figura 1). As portas Gigabit são usadas na interligação dos switches. Trata-se de um modelo diferente do 2950-24 citado no enunciado, escolhido por possuir as portas necessárias para a interligação sem consumir as portas dos hosts.
 
 """ + ins("modelo", "SAÍDA REAL DE `show ip interface brief` DO SWITCH ESCOLHIDO") + """
 

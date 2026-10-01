@@ -1,5 +1,5 @@
-! SW-INFRA - Cisco 2950T-24 - Departamento Infraestrutura
-! Requer modelo com Gi0/1-2 (2950T-24). Confirme com: show ip interface brief
+! SW-INFRA - Cisco 2960-24TT - Departamento Infraestrutura
+! Modelo confirmado no PASSO 0: Fa0/1-24, Gi0/1-2 e Vlan1 (show ip interface brief)
 enable
 configure terminal
 hostname SW-INFRA
