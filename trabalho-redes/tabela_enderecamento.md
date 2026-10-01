@@ -1,4 +1,4 @@
-# Tabela de endereçamento (v2)
+# Tabela de endereçamento
 
 Bloco: **192.168.10.0/24** (Classe C). Cada departamento recebe um /27 (24 hosts + folga); dentro dele, cada VLAN recebe um /28 (12 hosts + 2 de folga). Os hosts são configurados com a máscara **/28 = 255.255.255.240**.
 

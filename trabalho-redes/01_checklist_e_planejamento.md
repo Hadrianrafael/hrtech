@@ -1,64 +1,60 @@
-# Super Tech – Checklist extraído do roteiro e planejamento (v2, aprovada como base)
+# Super Tech – Checklist do roteiro e planejamento
 
-> **v2.** A versão 1 reutilizava VLAN 1/2 nos quatro switches, com trunks, e colocava as duas VLANs de um departamento na mesma sub-rede. Isso criava domínio de broadcast compartilhado entre departamentos, conflito entre os servidores DHCP de Compras e Infraestrutura e duas VLANs sem separação IP. Esta versão corrige os três problemas (seção 3).
+## 1. Requisitos do roteiro (somente o que está no PDF)
 
-## 1. Checklist (somente o que está no PDF)
-- [ ] R1. Usar o Cisco Packet Tracer (checklist do roteiro: instalar e simular o cenário).
-- [ ] R2. 4 departamentos: Engenharia, Compras, TI Interno, Infraestrutura.
-- [ ] R3. Cada departamento: 20 estações + 2 servidores + 2 impressoras = 24 hosts.
-- [ ] R4. Máscara de sub-rede que atenda à necessidade apresentada.
-- [ ] R5. Rede Classe C, topologia estrela.
-- [ ] R6. Numeração IP em sequência nas sub-redes, de acordo com a máscara adotada.
-- [ ] R7. Descrever cada sub-rede: 1º IP válido, último IP válido e broadcast.
-- [ ] R8. Um switch Cisco 2950-24 por departamento, interligados entre si.
-- [ ] R9. Cada departamento em uma sub-rede.
-- [ ] R10. Em cada sub-rede, 2 VLANs com 12 portas cada: portas 1-12 = VLAN 1; 13-24 = VLAN 2.
-- [ ] R11. Cada VLAN: 10 estações, 1 impressora, 1 servidor.
-- [ ] R12. Engenharia e TI Interno: IPs estáticos.
-- [ ] R13. Compras e Infraestrutura: IPs dinâmicos, seguindo a sequência dos IPs estáticos.
-- [ ] R14. Relatório com introdução, métodos, resultados e conclusão.
+| # | Requisito | Onde é atendido |
+|---|---|---|
+| R1 | Usar o Cisco Packet Tracer (instalar e simular o cenário) | Projeto e configurações preparados para o Packet Tracer; modelo de switch verificado no simulador (Figura 1); procedimento de montagem em `02_guia_execucao_packet_tracer.md` |
+| R2 | 4 departamentos: Engenharia, Compras, TI Interno e Infraestrutura | Relatório, seções 2.1 e 3.1 (Tabela 1) |
+| R3 | 20 estações + 2 servidores + 2 impressoras = 24 hosts por departamento | Tabela 1; Anexo A |
+| R4 | Máscara de sub-rede que atenda à necessidade | Relatório, seção 2.2: /27 por departamento e /28 por VLAN |
+| R5 | Rede Classe C e topologia estrela | 192.168.10.0/24; uma estrela por departamento (seção 3.1) |
+| R6 | Numeração IP em sequência, de acordo com a máscara | Posição na VLAN = último octeto relativo (Tabela 7; Anexo A) |
+| R7 | 1º IP válido, último IP válido e broadcast de cada sub-rede | Tabelas 5 e 6 |
+| R8 | Switch 2950-24 por departamento, interligados entre si | 2960-24TT (ver ambiguidade 6); enlaces na Tabela 3 |
+| R9 | Cada departamento em uma sub-rede | Um /27 por departamento (Tabela 5) |
+| R10 | 2 VLANs de 12 portas: portas 1-12 e 13-24 | Tabela 2; configs em `configs/` e Anexo B |
+| R11 | Cada VLAN com 10 estações, 1 impressora e 1 servidor | Tabela 2; Anexo A |
+| R12 | Engenharia e TI Interno com IP estático | Seção 3.2; Anexo A |
+| R13 | Compras e Infraestrutura com IP dinâmico, seguindo a sequência dos estáticos | Seção 3.3; Tabela 4 |
+| R14 | Relatório com introdução, métodos, resultados e conclusão | `04_relatorio.md` (e `entrega/Relatorio_SuperTech.docx` e `.pdf`) |
 
-Itens que vêm da mensagem do aluno, não do PDF: tabela de endereçamento, testes de ping, auditoria. **Nenhum requisito foi acrescentado ao projeto** (não há roteador, ACL, gateway, SVI, DNS, etc.).
+Nada além disso foi acrescentado ao projeto: não há roteador, ACL, gateway, SVI nem DNS.
 
 ## 2. Interpretação de "rede seria de 227, host de 25"
-Tecnicamente inconsistente: 227 não é octeto de máscara válido (só 0, 128, 192, 224, 240, 248, 252, 254, 255), e "25" não é uma quantidade de hosts. Lido como **/27 e 2⁵**: com 5 bits de host há 32 endereços, 30 úteis (2⁵ − 2) ≥ 24. Por isso o **agregado de cada departamento é um /27**.
+O trecho é tecnicamente inconsistente: 227 não é octeto de máscara válido (só 0, 128, 192, 224, 240, 248, 252, 254 e 255) e 25 não é quantidade de hosts. Foi lido como **/27 e 2⁵**: 5 bits de host dão 32 endereços, 30 úteis (2⁵ − 2), suficientes para 24 hosts. O agregado de cada departamento é, portanto, um /27.
 
 ## 3. Duas interpretações analisadas
 
-### A) Interpretação literal
-Cada switch com VLAN 1 (portas 1-12) e VLAN 2 (13-24), IDs iguais nos 4 switches, o departamento inteiro em um /27.
-- **A1 – switches em trunk com VLAN 1/2:** a VLAN 1 vira um único domínio L2 com os 4 departamentos (o mesmo para a VLAN 2). Os departamentos deixam de estar separados (viola R9), os dois servidores DHCP (Compras e Infra) respondem aos mesmos broadcasts e as sub-redes se misturam.
-- **A2 – VLAN 1/2 sem atravessar os links:** elimina o conflito, mas só "interliga" o cabo. Foi descartada por você.
-- **Problema comum a A1 e A2:** VLAN 1 e VLAN 2 do mesmo departamento na mesma sub-rede /27. São dois domínios de broadcast para um único prefixo IP: um PC da VLAN 1 considera "local" um endereço que está na VLAN 2 e faz ARP que nunca chega lá. Tecnicamente incorreto.
+**A) Literal.** Cada switch com VLAN 1 (portas 1-12) e VLAN 2 (13-24), mesmos identificadores nos quatro switches, departamento inteiro em um /27.
+- Com os switches em trunk, a VLAN 1 passa a ser um único domínio de broadcast com os quatro departamentos (e a VLAN 2 também): os departamentos deixam de estar separados e os servidores DHCP de Compras e Infraestrutura respondem aos mesmos pedidos.
+- Impedir que as VLANs atravessem os enlaces eliminaria o conflito, mas deixaria os switches interligados só fisicamente.
+- Em qualquer variante, duas VLANs no mesmo /27 formam dois domínios de broadcast para um único prefixo IP, o que é incorreto.
 
-### B) Implementação tecnicamente correta (**escolhida**)
-- **Uma sub-rede IP por VLAN**: cada VLAN de 12 hosts recebe um **/28** (14 úteis). Duas VLANs /28 ocupam exatamente o /27 do departamento, então R9 e R10 continuam valendo (departamento = /27; VLAN = /28).
-- **IDs de VLAN exclusivos por departamento**: a "primeira VLAN" (portas 1-12) e a "segunda VLAN" (13-24) de cada switch são, respectivamente: Engenharia 11 e 12; Compras 21 e 22; TI 31 e 32; Infraestrutura 41 e 42 (dezena = departamento, unidade = 1ª/2ª VLAN).
-- **Trunks 802.1Q** entre os switches, com as 8 VLANs permitidas e o mesmo banco de VLANs nos 4 switches (VTP transparente). Cada VLAN só tem portas de acesso em **um** switch, então o trunk não cria domínio de broadcast compartilhado entre departamentos.
-- **DHCP:** um servidor DHCP por VLAN (cada VLAN já tem 1 servidor) dentro da própria VLAN, sem relay. Como as VLANs 21/22/41/42 são distintas e cada uma tem exatamente um servidor DHCP, não há conflito.
-
-**Por que B:** é a única que satisfaz ao mesmo tempo seus pontos 1 a 8 sem desligar trunks. A única "liberdade" tomada em relação ao texto é o número das VLANs (ver ambiguidade 2).
+**B) Tecnicamente correta (adotada).**
+- Uma sub-rede IP por VLAN: /28 (14 úteis) para 12 hosts. Os dois /28 de um departamento formam o seu /27.
+- Identificadores de VLAN exclusivos por departamento, mantendo a divisão das portas 1-12 e 13-24: Engenharia 11 e 12, Compras 21 e 22, TI Interno 31 e 32, Infraestrutura 41 e 42.
+- Trunks 802.1Q entre os switches, com o mesmo banco de VLANs nos quatro (VTP transparente); cada VLAN tem portas de acesso em um único switch, então não há domínio de broadcast compartilhado.
+- Um servidor DHCP por VLAN, na própria VLAN, sem relay.
 
 ## 4. Ambiguidades do enunciado e decisões
-1. **"227 / host de 25"** – lido como /27 e 2⁵ (seção 2).
-2. **"VLAN 1" e "VLAN 2" em todos os departamentos.** O texto não diz se são IDs literais ou apenas "a primeira e a segunda VLAN". IDs literais repetidos em 4 switches interligados contradizem a separação dos departamentos (A1). Adotado: primeira/segunda VLAN, com IDs únicos. Se o professor exigir os números 1 e 2 literais, não existe configuração que satisfaça isso e a separação sem desligar os trunks; nesse caso a defesa é este item.
-3. **Qual máscara?** O roteiro fala em "uma máscara". Aqui há duas, ambas explicadas: /27 para o departamento (24 hosts, R4/R9) e /28 para cada VLAN (12 hosts). Os **hosts são configurados com 255.255.255.240 (/28)**.
-4. **Roteador.** O PDF não prevê roteador nem L3. Não foi acrescentado. Consequência (esperada e correta): sem L3, não há comunicação entre VLANs nem entre departamentos; **pings entre sub-redes distintas falham**. Os trunks deixam a infraestrutura L2 pronta, mas nenhum tráfego de dados precisa atravessá-los neste escopo. A interligação é comprovada por `show interfaces trunk` e `show cdp neighbors`, não por ping.
-5. **Topologia entre switches.** "Interligando eles entre si" não define o desenho. Adotada cadeia ENG–COMP–TI–INFRA (3 enlaces, sem laço, sem STP relevante), usando as duas portas Gigabit; cada departamento é uma estrela.
-6. **Modelo do switch e portas.** Um 2950-24 tem 24 portas FastEthernet; usando todas para hosts não sobra porta para interligar. O **2950T-24** (mesma família, 24 Fast + 2 Gigabit) tem Gi0/1 e Gi0/2. Fontes consultadas indicam isso, mas **não consegui abrir o Packet Tracer neste ambiente**; confirme no passo 0 do guia. O PASSO 0 do guia testa o 2950T-24 no seu PT; se ele não tiver Gi0/1-2, o plano B é o **2960-24TT** (Fa0/1-24 + Gi0/1-2, mesmos nomes de interface, mesmos comandos) – outra família, a declarar no relatório.
-7. **Servidores DHCP.** Os "2 servidores" do departamento são Server-PT; em Compras/Infra, o de cada VLAN roda o serviço DHCP, com IP estático. PCs e impressoras usam DHCP.
-8. **Gateway/DNS** não definidos no PDF: ficam vazios/0.0.0.0.
+1. **"227 / host de 25"**: lido como /27 e 2⁵.
+2. **"VLAN 1" e "VLAN 2"**: o texto não diz se são números literais. Adotada a leitura "primeira e segunda VLAN", com identificadores exclusivos. Com números repetidos em switches interligados não existe configuração que mantenha os departamentos separados sem impedir as VLANs de atravessar os enlaces.
+3. **Quantas máscaras**: o roteiro fala em "uma máscara". São duas, ambas justificadas: /27 para o departamento e /28 para cada VLAN. Os hosts usam /28 (255.255.255.240).
+4. **Roteador**: o PDF não prevê roteador nem camada 3, e não foi acrescentado. Por consequência, VLANs diferentes e departamentos diferentes não se comunicam.
+5. **Desenho da interligação**: o enunciado não define; adotada a cadeia ENG–COMP–TI–INFRA (3 enlaces, sem laços).
+6. **Modelo do switch**: um 2950-24 não deixa porta livre para a interligação (as 24 portas são dos hosts). Foi adotado o **2960-24TT**, verificado no Packet Tracer: Fa0/1-24, Gi0/1, Gi0/2 e Vlan1 (Figura 1).
+7. **Servidores DHCP**: os "2 servidores" de cada departamento são Server-PT; em Compras e Infraestrutura, o de cada VLAN executa o DHCP com IP estático.
+8. **Gateway e DNS**: não definidos no PDF; ficam vazios.
 
 ## 5. Plano lógico
-Bloco **192.168.10.0/24**, quatro /27 (sobra 192.168.10.128/25 livre):
+Bloco 192.168.10.0/24, quatro /27 (192.168.10.128/25 fica livre):
 
-| Departamento | /27 | VLAN (portas 1-12) | /28 | VLAN (portas 13-24) | /28 |
-|---|---|---|---|---|---|
-| Engenharia (estático) | .0/27 | 11 | .0/28 | 12 | .16/28 |
-| Compras (DHCP) | .32/27 | 21 | .32/28 | 22 | .48/28 |
-| TI Interno (estático) | .64/27 | 31 | .64/28 | 32 | .80/28 |
-| Infraestrutura (DHCP) | .96/27 | 41 | .96/28 | 42 | .112/28 |
+| Departamento | /27 | 1ª VLAN (portas 1-12) | /28 | 2ª VLAN (portas 13-24) | /28 | Endereços |
+|---|---|---|---|---|---|---|
+| Engenharia | .0/27 | 11 | .0/28 | 12 | .16/28 | estático |
+| Compras | .32/27 | 21 | .32/28 | 22 | .48/28 | DHCP |
+| TI Interno | .64/27 | 31 | .64/28 | 32 | .80/28 | estático |
+| Infraestrutura | .96/27 | 41 | .96/28 | 42 | .112/28 | DHCP |
 
-Por VLAN: portas +1…+10 PCs, +11 impressora, +12 servidor (relativo ao endereço de rede do /28). Detalhes por porta, máscaras, 1º/último IP e broadcast: `tabela_enderecamento.md` (gerada por `gerar_projeto.py` e checada por `validar_projeto.py`).
-
-Cadeia de switches: SW-ENG Gi0/1 – SW-COMP Gi0/1; SW-COMP Gi0/2 – SW-TI Gi0/1; SW-TI Gi0/2 – SW-INFRA Gi0/1.
+Por VLAN: posições +1 a +10 para PCs, +11 impressora e +12 servidor (relativas ao endereço da rede /28). Interligação: SW-ENG Gi0/1 – SW-COMP Gi0/1; SW-COMP Gi0/2 – SW-TI Gi0/1; SW-TI Gi0/2 – SW-INFRA Gi0/1.

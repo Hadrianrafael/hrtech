@@ -103,101 +103,112 @@ while pilha:
     if x not in vis: vis.add(x); pilha += list(grafo[x])
 chk(vis == set(depts) and len(J["links"]) == 3, "4 switches conectados, 3 enlaces, sem laço")
 
-# ===================== guia final e relatório =====================
+# ===================== guia final, relatório e entrega =====================
 guia = open("02_guia_execucao_packet_tracer.md").read()
 rel = open("04_relatorio.md").read()
+J = __import__('json').load(open('projeto.json'))
 nome2 = {x[3]: (sw, x) for sw, d in depts.items() for x in d["rows"]}
 chk(len(nome2) == 96, "96 nomes de dispositivo distintos na tabela")
-# 1) cabos hosts -> switch
+# --- projeto.json × tabela × configs
+okj = True
+for sw, dep in J["depts"].items():
+    rows = depts[sw]["rows"]
+    jh = {(h["porta"]): (h["papel"], h["ip"], h["origem"]) for v in dep["vlans"] for h in v["hosts"]}
+    okj &= all(jh[x[0]] == (x[2], str(x[4]), x[5]) for x in rows)
+    okj &= [v["id"] for v in dep["vlans"]] == sorted({x[1] for x in rows})
+    okj &= [(v["id"], v["pool"]["inicio"], str(v["pool"]["max"])) for v in dep["vlans"] if "pool" in v] == [(int(a), c, d_) for a, b, c, d_ in depts[sw]["pools"]]
+chk(okj, "projeto.json × tabela: portas, papéis, IPs, origem, VLANs e pools idênticos nos 4 switches")
+chk(J["links"] == [list(l) for l in J["links"]] and len(J["links"]) == 3, "projeto.json: 3 enlaces")
+# --- guia: cabos
 cab = re.findall(r"\| (\S+) \| FastEthernet0 \| FastEthernet0/(\d+) \| Copper Straight-Through \|", guia)
 chk(len(cab) == 96, f"guia: 96 cabos host→switch ({len(cab)})")
-bloco_sw = {}
-partes = re.split(r"\n\*\*(?=[A-ZÇ][^\n]* – SW-)", guia.split("### 2.1")[1].split("### 2.2")[0])
-okc = True
-for nome, porta in cab:
-    sw, x = nome2[nome]
-    okc &= (x[0] == int(porta))
-chk(okc, "guia: cada host ligado à porta Fa0/N igual à da tabela")
-# cada switch recebe 24 cabos distintos
+chk(all(nome2[n][1][0] == int(p) for n, p in cab), "guia: cada host ligado à porta Fa0/N igual à da tabela")
 trecho = guia.split("### 2.1")[1].split("### 2.2")[0]
-cont = collections.Counter()
-for m in re.finditer(r"^\*\*[^\n]*? – (SW-\w+)\*\*[^\n]*\n\n(.*?)(?=\n\*\*|\Z)", trecho, re.M | re.S):
-    sw = m.group(1)
-    nomes = re.findall(r"\| (\S+) \| FastEthernet0 \|", m.group(2))
-    cont[sw] = len(nomes)
+cont = 0
+for m in re.finditer(r"^\*\*[^\n]*? – (SW-\w+)\*\*\n\n(.*?)(?=\n\*\*|\Z)", trecho, re.M | re.S):
+    sw = m.group(1); nomes = re.findall(r"\| (\S+) \| FastEthernet0 \|", m.group(2)); cont += 1
     chk(all(nome2[n][0] == sw for n in nomes) and sorted(nomes) == sorted(x[3] for x in depts[sw]["rows"]), f"guia: bloco de cabos de {sw} contém exatamente os 24 hosts do {sw}")
-chk(len(cont) == 4, "guia: 4 blocos de cabeamento")
+chk(cont == 4, "guia: 4 blocos de cabeamento")
 cx = re.findall(r"\| (SW-\w+) \| GigabitEthernet0/(\d) \| (SW-\w+) \| GigabitEthernet0/(\d) \| Copper Cross-Over \|", guia)
 chk([(a, f"Gi0/{pa}", b, f"Gi0/{pb}") for a, pa, b, pb in cx] == [tuple(l) for l in J["links"]], "guia: 3 cabos cruzados iguais aos enlaces do projeto")
-# 2) IPs estáticos
 est = re.findall(r"\| (\S+) \| (Desktop → IP Configuration|Config → FastEthernet0) \| ([\d.]+) \| 255\.255\.255\.240 \| (\d+) \|", guia)
 esperado = [(x[3], str(x[4]), str(x[1])) for sw, d in depts.items() for x in d["rows"] if x[5] == "estático"]
-chk(sorted((n, a, v) for n, _, a, v in est) == sorted(esperado), f"guia: {len(est)} IPs estáticos (48 Eng/TI + 4 servidores DHCP) idênticos à tabela, com VLAN")
-chk(len(est) == 52, "guia: 52 dispositivos estáticos no total")
+chk(sorted((n, a, v) for n, _, a, v in est) == sorted(esperado) and len(est) == 52, "guia: 52 IPs estáticos (48 Eng/TI + 4 servidores DHCP) idênticos à tabela, com VLAN")
 chk(all((o == "Desktop → IP Configuration") == n.startswith("PC-") for n, o, a, v in est), "guia: PC usa Desktop→IP Configuration; impressora/servidor usam Config→FastEthernet0")
-# 3) pools
 pl = re.findall(r"\| (SRV-\S+) \((\S+)\) \| POOL-(\d+) \| 0\.0\.0\.0 \| 0\.0\.0\.0 \| ([\d.]+) \| 255\.255\.255\.240 \| (\d+) \|", guia)
 esp_pools = sorted((vid, ini, mx) for d in depts.values() for vid, srv, ini, mx in d["pools"])
-chk(sorted((v, i, m) for _, _, v, i, m in pl) == esp_pools and len(pl) == 4, "guia: 4 pools DHCP idênticos aos da tabela")
-chk(all(nome2[n][1][4] == ip.ip_address(a) for n, a, *_ in pl), "guia: IP de cada servidor DHCP confere com a tabela")
-# 4) testes
-tst = re.findall(r"\| (T\d+) \| (\S+) \| ([\d.]+\*?) \| (\S+) \| ([\d.]+\*?) \| `ping ([\d.]+)` \| (Sucesso|Falha)[^|]*\| (Figura \d+|D-\d+) \|", guia)
-chk(len(tst) == 31, f"guia: 31 testes ({len(tst)})")
-ok_t = True; pos = collections.Counter(); neg_i = neg_x = 0
-for tid, src, ips, dst, ipd, cmd, res, pr in tst:
-    (sws, xs), (swd, xd) = nome2[src], nome2[dst]
-    ok_t &= src.startswith("PC-") and ips.rstrip("*") == str(xs[4]) and ipd.rstrip("*") == str(xd[4]) and cmd == str(xd[4])
-    ok_t &= ips.endswith("*") == (xs[5] == "DHCP" and xs[2] != "Servidor") and ipd.endswith("*") == (xd[5] == "DHCP" and xd[2] != "Servidor")
-    mesma = ip.ip_network(f"{xs[4]}/28", strict=False) == ip.ip_network(f"{xd[4]}/28", strict=False)
-    ok_t &= (res == "Sucesso") == mesma and xs[1] == xs[1]
-    if mesma: pos[xs[1]] += 1
-    elif sws == swd: neg_i += 1
-    else: neg_x += 1
-chk(ok_t, "guia: em todos os testes, nomes/IPs/comando conferem com a tabela; sucesso ⇔ mesma sub-rede /28; '*' só em DHCP não-servidor")
-chk(sorted(pos.items()) == [(v, 3) for v in sorted(vlan_ids)], "guia: 3 pings positivos (PC, impressora, servidor) em cada uma das 8 VLANs")
-chk(neg_i == 4 and neg_x == 3, f"guia: 4 testes negativos no mesmo departamento e 3 entre departamentos ({neg_i}/{neg_x})")
-# 5) prints / figuras
-obr = re.findall(r"^\| (\d+) \| .* \| \[[ x]\][^|]*\|$", guia, re.M)
-dia = re.findall(r"^\| (D-\d+) \| .* \| \[ \] \|$", guia, re.M)
-chk(obr == [str(i) for i in range(1, len(obr) + 1)] and len(obr) == 20, f"guia: {len(obr)} figuras obrigatórias numeradas em sequência")
-chk(dia == [f"D-{i:02d}" for i in range(1, len(dia) + 1)] and len(dia) == 23, f"guia: {len(dia)} capturas de diagnóstico D-01..D-23")
-chk(len(obr) + len(dia) == 43, "guia: 20 + 23 = 43 capturas no total")
-refs = {p for *_x, p in tst}
-chk(all((p.startswith("D-") and p[2:].isdigit() and int(p[2:]) <= len(dia)) or (p.startswith("Figura ") and int(p[7:]) <= len(obr)) for p in refs), "guia: todo teste aponta para uma captura existente")
-chk(all(len({s_ for tid, s_, *_r, p in tst if p == q}) == 1 for q in refs), "guia: cada captura de ping tem uma única origem")
-chk(guia.index("## PASSO 0") < guia.index("## PASSO 1") and guia.index("PASSO 0 — CONCLUÍDO") < 300, "guia: PASSO 0 (concluído) destacado no início, antes do PASSO 1")
-# obrigatórias esperadas
-tabA = guia.split("### A) OBRIGAT")[1].split("### B) APENAS")[0]
-for item in ["show ip interface brief", "Topologia completa", "SW-ENG: `show vlan brief`", "SW-INFRA: `show vlan brief`", "SW-COMP: `show interfaces trunk`", "SW-TI: `show interfaces trunk`",
-             "IP estático de PC-ENG-11-01", "IP estático de PC-TI-31-01", "DHCP de SRV-COMP-21", "DHCP de SRV-INFRA-41", "PC-COMP-21-01: `ipconfig`", "PC-INFRA-41-01: `ipconfig`"]:
-    chk(item in tabA, f"guia: figura obrigatória contém '{item}'")
-figs = sorted({int(x) for x in re.findall(r"\[INSERIR FIGURA (\d+) —", rel)})
-legs = sorted({int(x) for x in re.findall(r"\*Figura (\d+) –", rel)})
-chk(figs == list(range(2, 21)) and legs == list(range(1, 21)), "relatório: marcadores [INSERIR FIGURA 2..20] e legendas 1..20 (Figura 1 já é imagem real)")
-chk("![Figura 1 – Interfaces do switch utilizado](figuras/figura-01.png)" in rel, "relatório: Figura 1 incorporada como imagem")
+chk(sorted((v, i, m) for _, _, v, i, m in pl) == esp_pools and len(pl) == 4 and all(nome2[n][1][4] == ip.ip_address(a) for n, a, *_ in pl), "guia: 4 pools DHCP idênticos aos da tabela")
+for sw, t in cfg.items(): chk(t.rstrip() in guia, f"guia: bloco CLI de {sw} idêntico a configs/{sw}.txt")
+chk(guia.index("## PASSO 0") < guia.index("## PASSO 1"), "guia: PASSO 0 antes do PASSO 1")
+# --- plano de testes (guia e Anexo C do relatório)
+REG = r"\| (T\d+) \| (\S+) \| ([\d.]+\*?) \| (\S+) \| ([\d.]+\*?) \| `ping ([\d.]+)` \| (Respostas|Sem resposta)[^|]*\|"
+for nome_doc, txt in (("guia", guia), ("relatório (Anexo C)", rel)):
+    tst = re.findall(REG, txt)
+    chk(len(tst) == 31, f"{nome_doc}: 31 testes ({len(tst)})")
+    ok_t = True; pos = collections.Counter(); neg_i = neg_x = 0
+    for tid, src, ips, dst, ipd, cmd, res in tst:
+        (sws, xs), (swd, xd) = nome2[src], nome2[dst]
+        ok_t &= src.startswith("PC-") and ips.rstrip("*") == str(xs[4]) and ipd.rstrip("*") == str(xd[4]) and cmd == str(xd[4])
+        ok_t &= ips.endswith("*") == (xs[5] == "DHCP" and xs[2] != "Servidor") and ipd.endswith("*") == (xd[5] == "DHCP" and xd[2] != "Servidor")
+        mesma = ip.ip_network(f"{xs[4]}/28", strict=False) == ip.ip_network(f"{xd[4]}/28", strict=False)
+        ok_t &= (res == "Respostas") == mesma
+        if mesma: pos[xs[1]] += 1
+        elif sws == swd: neg_i += 1
+        else: neg_x += 1
+    chk(ok_t, f"{nome_doc}: nomes/IPs/comando conferem com a tabela; resposta esperada ⇔ mesma sub-rede /28; '*' só em DHCP não-servidor")
+    chk(sorted(pos.items()) == [(v, 3) for v in sorted(vlan_ids)] and neg_i == 4 and neg_x == 3, f"{nome_doc}: 3 pings positivos em cada uma das 8 VLANs, 4 negativos no departamento e 3 entre departamentos")
+# --- relatório: tabelas × tabela de endereçamento
+tab27 = {(m[0]): m[1:] for m in re.findall(r"\| (\w[\w ]*) \| (192\.168\.10\.\d+)/27 \| 255\.255\.255\.224 \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \|", md)}
+r27 = {m[0]: m[1:] for m in re.findall(r"\| (\w[\w ]*) \| (192\.168\.10\.\d+) \| 255\.255\.255\.224 \| /27 \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \|", rel)}
+chk(len(r27) == 4 and all(r27[k] == tab27[k] for k in tab27), "relatório: 4 sub-redes /27 (rede, 1º, último, broadcast) idênticas à tabela de endereçamento")
+r_nets = re.findall(r"\| (\w[\w ]*) \| (\d+) \| Fa0/[\d–]+ \| ([\d.]+) \| 255\.255\.255\.240 \| /28 \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \|", rel)
+tab_md = re.findall(r"\| (\w[\w ]*) \| (\d+) \| Fa0/[\d-]+ \| ([\d.]+) \| 255\.255\.255\.240 \| /28 \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \| 14 \|", md)
+chk(sorted(r_nets) == sorted(tab_md) and len(r_nets) == 8, "relatório: 8 sub-redes /28 (rede, 1º, último, broadcast) idênticas à tabela de endereçamento")
+r_pool = re.findall(r"\| (\d+) \| (SRV-\S+) \| ([\d.]+) \| ([\d.]+) \| (\d+) \| ([\d.]+) a ([\d.]+) \|", rel)
+chk(sorted((v, i, m) for v, n, a, i, m, f, l in r_pool) == esp_pools and all(nome2[n][1][4] == ip.ip_address(a) for v, n, a, i, m, f, l in r_pool) and len(r_pool) == 4, "relatório: Tabela 4 (pools DHCP) idêntica à tabela de endereçamento")
+r_link = re.findall(r"\| (\d) \| (SW-\w+) Gi0/(\d) \| (SW-\w+) Gi0/(\d) \|", rel)
+chk([(a, f"Gi0/{pa}", b, f"Gi0/{pb}") for _, a, pa, b, pb in r_link] == [tuple(l) for l in J["links"]], "relatório: Tabela 3 (enlaces) idêntica ao projeto.json")
+anexoA = rel.split("## Anexo A")[1].split("## Anexo B")[0]
+rowsA = re.findall(r"\| Fa0/(\d+) \| (\d+) \| (\w+) \| (\S+) \| ([\d.]+)/28 \| (\S+) \|", anexoA)
+chk(len(rowsA) == 96 and all(nome2[n][1][0] == int(p) and nome2[n][1][1] == int(v) and str(nome2[n][1][4]) == a and nome2[n][1][2] == pa for p, v, pa, n, a, o_ in rowsA), "relatório: Anexo A com os 96 dispositivos, portas, VLANs e IPs idênticos à tabela")
+anexoB = rel.split("## Anexo B")[1].split("## Anexo C")[0]
+for sw, t in cfg.items(): chk(t.rstrip() in anexoB, f"relatório: Anexo B contém configs/{sw}.txt idêntico")
+tab_hosts = re.findall(r"\| (\w[\w ]*) \| (\d+) \| (\d+) \| (\d+) \| (\d+) \| (\d+) \|", rel)
+chk(("Total", "4", "80", "8", "8", "96") in [tuple(x) for x in re.findall(r"\| (Total) \| (4) \| (80) \| (8) \| (8) \| (96) \|", rel)], "relatório: Tabela 1 (equipamentos) fecha em 4 switches, 80 PCs, 8 impressoras, 8 servidores, 96 hosts")
+# --- relatório: conteúdo exigido e proibições
+for dado in ["Hadrian Rafael Silva de Oliveira", "3502923907", "Superior de Tecnologia em Análise e Desenvolvimento de Sistemas", "Redes de Computadores", "2º semestre de 2026", "Suzano/SP – I(12563675)AC", "Formando", "Rogian Villa", "Anhanguera".upper()]:
+    chk(dado in rel, f"relatório: contém '{dado}'")
+for sec in ["## 1. Introdução", "## 2. Métodos", "## 3. Desenvolvimento", "## 4. Resultados", "## 5. Conclusão", "## Referências", "## Anexo A", "## Anexo B", "## Anexo C"]:
+    chk(sec in rel, f"relatório: seção '{sec}'")
+chk(sorted(set(re.findall(r"Figura (\d+)", rel))) == ["1"], "relatório: só a Figura 1 é citada (nenhuma Figura 2–20)")
+chk("![Saída do comando show ip interface brief no switch 2960-24TT, no Cisco Packet Tracer](figuras/figura-01.png)" in rel, "relatório: Figura 1 incorporada como imagem")
 png = open("figuras/figura-01.png", "rb").read()
 chk(png[:8] == b"\x89PNG\r\n\x1a\n" and len(png) > 10000, "figuras/figura-01.png existe e é um PNG válido")
-marc = re.findall(r"\[([A-ZÇÃÕ]{4,})\b", rel)
-chk(set(marc) <= {"INSERIR", "COLAR"}, f"relatório: só existem marcadores INSERIR/COLAR {sorted(set(marc))}")
-chk("[edição" not in rel and "INFORMAR" not in rel and "AJUSTAR" not in rel, "relatório: sem placeholders que independem da simulação")
-chk("2960-24TT" in rel and "Opção A" not in rel and "ESCOLHER" not in rel, "relatório: modelo definitivo 2960-24TT, sem opções pendentes")
-chk("2950T" not in rel and "2950T" not in guia and all("2950T" not in t for t in cfg.values()), "guia/relatório/configs: nenhuma referência a 2950T-24")
-chk(guia.count("2960-24TT") >= 5 and all("2960-24TT" in t for t in cfg.values()), "guia e configs: modelo 2960-24TT")
-chk(len(re.findall(r"INSERIR IP REAL", rel)) == 44 and len(re.findall(r"INSERIR RESULTADO REAL DO PING", rel)) == 31, "relatório: 44 linhas de IP DHCP reais (22 PCs/impressoras em Compras e 22 em Infraestrutura) e 31 resultados de ping a preencher")
-# 6) configs embutidas no guia
-for sw, t in cfg.items():
-    chk(t.rstrip() in guia, f"guia: bloco CLI de {sw} idêntico a configs/{sw}.txt")
-# 7) relatório: dados, tabelas e proibições
-for dado in ["Hadrian Rafael Silva de Oliveira", "3502923907", "Superior de Tecnologia em Análise e Desenvolvimento de Sistemas",
-             "Redes de Computadores", "2º semestre de 2026", "Suzano/SP – I(12563675)AC", "Formando", "Rogian Villa", "Anhanguera"]:
-    chk(dado in rel, f"relatório: contém '{dado}'")
-for sec in ["## 1. Introdução", "## 2. Métodos", "## 3. Desenvolvimento", "## 4. Resultados", "## 5. Conclusão", "## Referências"]:
-    chk(sec in rel, f"relatório: seção '{sec}'")
-r_nets = re.findall(r"\| (\d+) \| Fa0/[\d–]+ \| ([\d.]+) \| 255\.255\.255\.240 \| /28 \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \|", rel)
-tab_md = re.findall(r"\| (\w[\w ]*) \| (\d+) \| Fa0/[\d-]+ \| ([\d.]+) \| 255\.255\.255\.240 \| /28 \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \| 14 \|", md)
-chk(sorted(r_nets) == sorted((v, n, a, b, c) for _, v, n, a, b, c in tab_md) and len(r_nets) == 8, "relatório: 8 sub-redes /28 (rede, 1º, último, broadcast) idênticas à tabela_enderecamento.md")
-chk(len(re.findall(r"\| (192\.168\.10\.\d+) \| 255\.255\.255\.224 \| /27 \|", rel)) == 4, "relatório: 4 sub-redes /27")
-chk(not re.search(r"Reply from|bytes=32|time<1ms|TTL=\d+|Packets: Sent", rel), "relatório: nenhum resultado de ping inventado")
-chk(not re.search(r"foram executados|executamos|testes realizados|a simulação foi executada", rel, re.I), "relatório: não afirma execução")
-chk(rel.count("[INSERIR") >= 60, f"relatório: {rel.count('[INSERIR')} marcadores [INSERIR ...] para evidências reais")
+chk("2960-24TT" in rel and "2960-24TT" in guia and all("2960-24TT" in t for t in cfg.values()), "modelo 2960-24TT no relatório, no guia e nas 4 configs")
+PROIB = r"TODO|FIXME|XXX|INSERIR|COLAR|ESCOLHER|PENDENTE|rascunho|captura|screenshot|aguardando|a adicionar|ATENÇÃO|\[nome\]|\[ \]|\[x\]|<!--|2950T|Opção A|Opção B|Figura (?!1\b)\d+|Print "
+entregaveis = {"relatório": rel, "guia": guia, "tabela": md, **{f"config {k}": t for k, t in cfg.items()}}
+for nome_doc, txt in entregaveis.items():
+    chk(not re.search(PROIB, txt), f"{nome_doc}: sem placeholders, TODO, instruções internas, capturas pendentes nem referência a 2950T-24")
+chk(not re.search(r"Reply from|bytes=32|time<1ms|TTL=\d+|Packets: Sent", rel + guia), "relatório e guia: nenhuma saída de ping inventada")
+chk(not re.search(r"foram executados|executamos|testes realizados|a simulação foi executada|resultados? obtidos?|foi montad[ao] no Packet Tracer", rel, re.I), "relatório: não afirma execução nem resultados de simulação")
+for nome_doc in ("01_checklist_e_planejamento.md", "03_auditoria.md"):
+    t = open(nome_doc).read()
+    chk("2950T" not in t and "INSERIR" not in t and "TODO" not in t, f"{nome_doc}: sem referência a 2950T-24, INSERIR ou TODO")
+# --- entrega (DOCX/PDF)
+import zipfile, subprocess, os
+if os.path.exists("entrega/Relatorio_SuperTech.docx") and os.path.exists("entrega/Relatorio_SuperTech.pdf"):
+    z = zipfile.ZipFile("entrega/Relatorio_SuperTech.docx")
+    nm = z.namelist()
+    chk(any(n.startswith("word/media/") for n in nm), "DOCX: Figura 1 embutida (word/media)")
+    rels = z.read("word/_rels/document.xml.rels").decode()
+    chk("file:///" not in rels and 'TargetMode="External"' not in rels, "DOCX: sem vínculos externos (imagem embutida)")
+    ptxt = subprocess.run(["pdftotext", "-layout", "entrega/Relatorio_SuperTech.pdf", "-"], capture_output=True, text=True).stdout
+    info = subprocess.run(["pdfinfo", "entrega/Relatorio_SuperTech.pdf"], capture_output=True, text=True).stdout
+    pag = int(re.search(r"Pages:\s+(\d+)", info).group(1))
+    print(f"[INFO] PDF: {pag} páginas")
+    for dado in ["Hadrian Rafael Silva de Oliveira", "3502923907", "Rogian Villa", "Figura 1", "1. Introdução", "2. Métodos", "4. Resultados", "5. Conclusão", "Anexo C"]:
+        chk(dado in ptxt, f"PDF: contém '{dado}'")
+    chk(not re.search(PROIB, ptxt), "PDF: sem placeholders nem referência a 2950T-24 nem a Figuras 2–20")
+else:
+    chk(False, "entrega/Relatorio_SuperTech.docx e .pdf existem")
 print("\nRESULTADO:", "TUDO OK" if ok else "HÁ FALHAS"); sys.exit(0 if ok else 1)

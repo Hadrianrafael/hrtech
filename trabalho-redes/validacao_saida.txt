@@ -126,6 +126,8 @@
 [OK]   enlaces usam só portas Gi definidas nos trunks
 [OK]   4 switches conectados, 3 enlaces, sem laço
 [OK]   96 nomes de dispositivo distintos na tabela
+[OK]   projeto.json × tabela: portas, papéis, IPs, origem, VLANs e pools idênticos nos 4 switches
+[OK]   projeto.json: 3 enlaces
 [OK]   guia: 96 cabos host→switch (96)
 [OK]   guia: cada host ligado à porta Fa0/N igual à da tabela
 [OK]   guia: bloco de cabos de SW-ENG contém exatamente os 24 hosts do SW-ENG
@@ -135,45 +137,29 @@
 [OK]   guia: 4 blocos de cabeamento
 [OK]   guia: 3 cabos cruzados iguais aos enlaces do projeto
 [OK]   guia: 52 IPs estáticos (48 Eng/TI + 4 servidores DHCP) idênticos à tabela, com VLAN
-[OK]   guia: 52 dispositivos estáticos no total
 [OK]   guia: PC usa Desktop→IP Configuration; impressora/servidor usam Config→FastEthernet0
 [OK]   guia: 4 pools DHCP idênticos aos da tabela
-[OK]   guia: IP de cada servidor DHCP confere com a tabela
-[OK]   guia: 31 testes (31)
-[OK]   guia: em todos os testes, nomes/IPs/comando conferem com a tabela; sucesso ⇔ mesma sub-rede /28; '*' só em DHCP não-servidor
-[OK]   guia: 3 pings positivos (PC, impressora, servidor) em cada uma das 8 VLANs
-[OK]   guia: 4 testes negativos no mesmo departamento e 3 entre departamentos (4/3)
-[OK]   guia: 20 figuras obrigatórias numeradas em sequência
-[OK]   guia: 23 capturas de diagnóstico D-01..D-23
-[OK]   guia: 20 + 23 = 43 capturas no total
-[OK]   guia: todo teste aponta para uma captura existente
-[OK]   guia: cada captura de ping tem uma única origem
-[OK]   guia: PASSO 0 (concluído) destacado no início, antes do PASSO 1
-[OK]   guia: figura obrigatória contém 'show ip interface brief'
-[OK]   guia: figura obrigatória contém 'Topologia completa'
-[OK]   guia: figura obrigatória contém 'SW-ENG: `show vlan brief`'
-[OK]   guia: figura obrigatória contém 'SW-INFRA: `show vlan brief`'
-[OK]   guia: figura obrigatória contém 'SW-COMP: `show interfaces trunk`'
-[OK]   guia: figura obrigatória contém 'SW-TI: `show interfaces trunk`'
-[OK]   guia: figura obrigatória contém 'IP estático de PC-ENG-11-01'
-[OK]   guia: figura obrigatória contém 'IP estático de PC-TI-31-01'
-[OK]   guia: figura obrigatória contém 'DHCP de SRV-COMP-21'
-[OK]   guia: figura obrigatória contém 'DHCP de SRV-INFRA-41'
-[OK]   guia: figura obrigatória contém 'PC-COMP-21-01: `ipconfig`'
-[OK]   guia: figura obrigatória contém 'PC-INFRA-41-01: `ipconfig`'
-[OK]   relatório: marcadores [INSERIR FIGURA 2..20] e legendas 1..20 (Figura 1 já é imagem real)
-[OK]   relatório: Figura 1 incorporada como imagem
-[OK]   figuras/figura-01.png existe e é um PNG válido
-[OK]   relatório: só existem marcadores INSERIR/COLAR ['COLAR', 'INSERIR']
-[OK]   relatório: sem placeholders que independem da simulação
-[OK]   relatório: modelo definitivo 2960-24TT, sem opções pendentes
-[OK]   guia/relatório/configs: nenhuma referência a 2950T-24
-[OK]   guia e configs: modelo 2960-24TT
-[OK]   relatório: 44 linhas de IP DHCP reais (22 PCs/impressoras em Compras e 22 em Infraestrutura) e 31 resultados de ping a preencher
 [OK]   guia: bloco CLI de SW-ENG idêntico a configs/SW-ENG.txt
 [OK]   guia: bloco CLI de SW-TI idêntico a configs/SW-TI.txt
 [OK]   guia: bloco CLI de SW-COMP idêntico a configs/SW-COMP.txt
 [OK]   guia: bloco CLI de SW-INFRA idêntico a configs/SW-INFRA.txt
+[OK]   guia: PASSO 0 antes do PASSO 1
+[OK]   guia: 31 testes (31)
+[OK]   guia: nomes/IPs/comando conferem com a tabela; resposta esperada ⇔ mesma sub-rede /28; '*' só em DHCP não-servidor
+[OK]   guia: 3 pings positivos em cada uma das 8 VLANs, 4 negativos no departamento e 3 entre departamentos
+[OK]   relatório (Anexo C): 31 testes (31)
+[OK]   relatório (Anexo C): nomes/IPs/comando conferem com a tabela; resposta esperada ⇔ mesma sub-rede /28; '*' só em DHCP não-servidor
+[OK]   relatório (Anexo C): 3 pings positivos em cada uma das 8 VLANs, 4 negativos no departamento e 3 entre departamentos
+[OK]   relatório: 4 sub-redes /27 (rede, 1º, último, broadcast) idênticas à tabela de endereçamento
+[OK]   relatório: 8 sub-redes /28 (rede, 1º, último, broadcast) idênticas à tabela de endereçamento
+[OK]   relatório: Tabela 4 (pools DHCP) idêntica à tabela de endereçamento
+[OK]   relatório: Tabela 3 (enlaces) idêntica ao projeto.json
+[OK]   relatório: Anexo A com os 96 dispositivos, portas, VLANs e IPs idênticos à tabela
+[OK]   relatório: Anexo B contém configs/SW-ENG.txt idêntico
+[OK]   relatório: Anexo B contém configs/SW-TI.txt idêntico
+[OK]   relatório: Anexo B contém configs/SW-COMP.txt idêntico
+[OK]   relatório: Anexo B contém configs/SW-INFRA.txt idêntico
+[OK]   relatório: Tabela 1 (equipamentos) fecha em 4 switches, 80 PCs, 8 impressoras, 8 servidores, 96 hosts
 [OK]   relatório: contém 'Hadrian Rafael Silva de Oliveira'
 [OK]   relatório: contém '3502923907'
 [OK]   relatório: contém 'Superior de Tecnologia em Análise e Desenvolvimento de Sistemas'
@@ -182,17 +168,43 @@
 [OK]   relatório: contém 'Suzano/SP – I(12563675)AC'
 [OK]   relatório: contém 'Formando'
 [OK]   relatório: contém 'Rogian Villa'
-[OK]   relatório: contém 'Anhanguera'
+[OK]   relatório: contém 'ANHANGUERA'
 [OK]   relatório: seção '## 1. Introdução'
 [OK]   relatório: seção '## 2. Métodos'
 [OK]   relatório: seção '## 3. Desenvolvimento'
 [OK]   relatório: seção '## 4. Resultados'
 [OK]   relatório: seção '## 5. Conclusão'
 [OK]   relatório: seção '## Referências'
-[OK]   relatório: 8 sub-redes /28 (rede, 1º, último, broadcast) idênticas à tabela_enderecamento.md
-[OK]   relatório: 4 sub-redes /27
-[OK]   relatório: nenhum resultado de ping inventado
-[OK]   relatório: não afirma execução
-[OK]   relatório: 98 marcadores [INSERIR ...] para evidências reais
+[OK]   relatório: seção '## Anexo A'
+[OK]   relatório: seção '## Anexo B'
+[OK]   relatório: seção '## Anexo C'
+[OK]   relatório: só a Figura 1 é citada (nenhuma Figura 2–20)
+[OK]   relatório: Figura 1 incorporada como imagem
+[OK]   figuras/figura-01.png existe e é um PNG válido
+[OK]   modelo 2960-24TT no relatório, no guia e nas 4 configs
+[OK]   relatório: sem placeholders, TODO, instruções internas, capturas pendentes nem referência a 2950T-24
+[OK]   guia: sem placeholders, TODO, instruções internas, capturas pendentes nem referência a 2950T-24
+[OK]   tabela: sem placeholders, TODO, instruções internas, capturas pendentes nem referência a 2950T-24
+[OK]   config SW-ENG: sem placeholders, TODO, instruções internas, capturas pendentes nem referência a 2950T-24
+[OK]   config SW-TI: sem placeholders, TODO, instruções internas, capturas pendentes nem referência a 2950T-24
+[OK]   config SW-COMP: sem placeholders, TODO, instruções internas, capturas pendentes nem referência a 2950T-24
+[OK]   config SW-INFRA: sem placeholders, TODO, instruções internas, capturas pendentes nem referência a 2950T-24
+[OK]   relatório e guia: nenhuma saída de ping inventada
+[OK]   relatório: não afirma execução nem resultados de simulação
+[OK]   01_checklist_e_planejamento.md: sem referência a 2950T-24, INSERIR ou TODO
+[OK]   03_auditoria.md: sem referência a 2950T-24, INSERIR ou TODO
+[OK]   DOCX: Figura 1 embutida (word/media)
+[OK]   DOCX: sem vínculos externos (imagem embutida)
+[INFO] PDF: 21 páginas
+[OK]   PDF: contém 'Hadrian Rafael Silva de Oliveira'
+[OK]   PDF: contém '3502923907'
+[OK]   PDF: contém 'Rogian Villa'
+[OK]   PDF: contém 'Figura 1'
+[OK]   PDF: contém '1. Introdução'
+[OK]   PDF: contém '2. Métodos'
+[OK]   PDF: contém '4. Resultados'
+[OK]   PDF: contém '5. Conclusão'
+[OK]   PDF: contém 'Anexo C'
+[OK]   PDF: sem placeholders nem referência a 2950T-24 nem a Figuras 2–20
 
 RESULTADO: TUDO OK

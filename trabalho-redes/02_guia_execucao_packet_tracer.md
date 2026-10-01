@@ -1,40 +1,37 @@
-# GUIA FINAL – execução no Cisco Packet Tracer
+# Guia de montagem e verificação no Cisco Packet Tracer
 
-> # ▶ PASSO 0 — CONCLUÍDO
-> **Modelo definitivo dos 4 switches: Cisco 2960-24TT.** Confirmado pelo aluno no Packet Tracer com `show ip interface brief`: FastEthernet0/1 a 0/24, GigabitEthernet0/1, GigabitEthernet0/2 e Vlan1.
+Este guia descreve, em ordem, como montar e configurar a rede da Super Tech no Cisco Packet Tracer e como verificá-la. É um procedimento de reprodução: não contém resultados de execução. Todos os valores vêm de `tabela_enderecamento.md` e de `configs/`.
 
-## PASSO 0 — verificação do switch (feito)
-
-Registro do que foi feito: switch **2960-24TT** (categoria Switches) colocado na área de trabalho → aba **CLI** → Enter → `enable` → `show ip interface brief` → saída com Fa0/1-24, Gi0/1, Gi0/2 e Vlan1. Essa captura é a **Figura 1** do relatório.
-
-Daqui em diante, **todos os switches são 2960-24TT**. Apague o switch de teste do PASSO 0 ou aproveite-o como SW-ENG (nesse caso, renomeie-o no PASSO 1).
+Convenções: **PC**, **Printer** e **Server** são ícones da categoria *End Devices* (parte inferior esquerda do programa). Máscara de todos os hosts: `255.255.255.240`. Gateway e DNS: vazios em todos os dispositivos. Valores com `*` são endereços previstos para dispositivos em DHCP; vale o endereço efetivamente recebido.
 
 ---
 
-Convenções do guia: **PC**, **Printer** e **Server** são os ícones da categoria *End Devices* (parte inferior esquerda do Packet Tracer). Máscara de **todos** os hosts: `255.255.255.240`. Gateway e DNS: deixar **vazios** em todos os dispositivos. Nenhuma etapa deste guia foi executada pelo autor do projeto: os resultados saem do **seu** Packet Tracer. Valores marcados com `*` são IPs **previstos** pelo DHCP; use sempre o valor real mostrado por `ipconfig`.
+## PASSO 0 — modelo do switch (concluído)
+
+O modelo definitivo dos quatro switches é o **Cisco 2960-24TT**. Verificação feita no Packet Tracer: categoria *Switches* → **2960-24TT** → aba **CLI** → Enter → `enable` → `show ip interface brief`. A saída lista FastEthernet0/1 a 0/24, GigabitEthernet0/1, GigabitEthernet0/2 e Vlan1 (Figura 1 do relatório). Se houver outro modelo de switch na área de trabalho, apague-o.
 
 ---
 
-## PASSO 1 — adicionar equipamentos (total: 100 equipamentos = 4 switches + 80 PCs + 8 impressoras + 8 servidores)
+## PASSO 1 — adicionar e nomear os equipamentos (100 no total)
 
-**Neste passo você só coloca e nomeia os equipamentos. Não ligue cabos e não configure nada.** Os cabos são o PASSO 2.
+Neste passo apenas se colocam e nomeiam os equipamentos: 4 switches, 80 PCs, 8 impressoras e 8 servidores. Cabos e configurações ficam para os passos seguintes.
 
 ### 1.1 Preparação
-1. Abra o Packet Tracer com o projeto vazio (ou o do PASSO 0). Confira que está na visão **Logical** (botão no canto superior esquerdo da área de trabalho).
-2. Para caber tudo na tela, aumente a janela e use o zoom: roda do mouse com **Ctrl**, ou os botões de zoom da barra lateral direita.
-3. Salve já: **File → Save As →** `SuperTech.pkt`. Salve de novo ao fim de cada passo.
+1. Abra o Packet Tracer na visão **Logical** (botão no canto superior esquerdo da área de trabalho).
+2. Ajuste o zoom com **Ctrl + roda do mouse**.
+3. Salve: **File → Save As →** `SuperTech.pkt`. Salve novamente ao fim de cada passo.
 
 ### 1.2 Onde estão os equipamentos (barra inferior esquerda)
-- **Switch:** clique no ícone **Switches** (o segundo da fileira de categorias) → na lista ao lado, clique em **2960-24TT**.
-- **PC, Impressora e Servidor:** clique no ícone **End Devices** (primeiro da fileira) → na lista ao lado, clique em **PC** (computador), **Printer** (impressora) ou **Server** (servidor).
-- **Como colocar:** clique no modelo e depois clique **uma vez** na área de trabalho. **Dica:** para colocar vários seguidos, segure **Ctrl** ao clicar no modelo e clique na área de trabalho quantas vezes quiser; aperte **Esc** para parar.
+- **Switch:** categoria **Switches** → **2960-24TT**.
+- **PC, impressora e servidor:** categoria **End Devices** → **PC**, **Printer** ou **Server**.
+- **Como colocar:** clique no modelo e depois uma vez na área de trabalho. Para colocar vários seguidos, segure **Ctrl** ao clicar no modelo e clique na área de trabalho; **Esc** encerra.
 
-### 1.3 Como nomear cada equipamento
-Clique no equipamento → aba **Config** → no topo, campo **Display Name** → apague o nome padrão, digite o nome da tabela abaixo e aperte **Enter**. O nome aparece embaixo do ícone. (Nos switches, o nome do CLI é ajustado no PASSO 3; aqui ajuste só o Display Name.) Confira a grafia: o resto do guia usa estes nomes exatos, em maiúsculas.
+### 1.3 Como nomear
+Clique no equipamento → aba **Config** → campo **Display Name** → digite o nome → **Enter**. Nos switches, o nome do CLI (hostname) é definido no PASSO 3; aqui ajusta-se só o Display Name. Os nomes abaixo são usados em todo o guia.
 
 ### 1.4 Quantidades e nomes
 
-| Departamento | Equipamento | Qtd | Modelo (categoria) | Nomes exatos |
+| Departamento | Equipamento | Qtd | Modelo (categoria) | Nomes |
 |---|---|---|---|---|
 | Engenharia | Switch | 1 | 2960-24TT (Switches) | SW-ENG |
 | | PC | 20 | PC (End Devices) | PC-ENG-11-01 a PC-ENG-11-10 e PC-ENG-12-01 a PC-ENG-12-10 |
@@ -53,21 +50,19 @@ Clique no equipamento → aba **Config** → no topo, campo **Display Name** →
 | | Impressora | 2 | Printer (End Devices) | IMP-INFRA-41, IMP-INFRA-42 |
 | | Servidor | 2 | Server (End Devices) | SRV-INFRA-41, SRV-INFRA-42 |
 
-### 1.5 Onde posicionar
-Divida a área de trabalho em **4 colunas, da esquerda para a direita, na ordem da cadeia de switches**: Engenharia | Compras | TI Interno | Infraestrutura. Em cada coluna, o **switch fica no meio**; os 12 dispositivos da **1ª VLAN ficam acima** do switch e os 12 da **2ª VLAN ficam abaixo** (topologia estrela; cada grupo de 12 em 2 fileiras de 6):
+### 1.5 Posicionamento
+Quatro colunas, da esquerda para a direita, na ordem da cadeia de switches: Engenharia, Compras, TI Interno, Infraestrutura. Em cada coluna o switch fica no centro; os 12 dispositivos da 1ª VLAN ficam acima e os 12 da 2ª VLAN ficam abaixo, em duas fileiras de 6 (topologia estrela):
 
 ```
   fileira 1 (acima):   PC-xx-v1-01 .. PC-xx-v1-06
   fileira 2 (acima):   PC-xx-v1-07 .. PC-xx-v1-10, IMP-xx-v1, SRV-xx-v1
 
-                       [ SW-xxxx ]   <- centro da coluna
+                       [ SW-xxxx ]
 
   fileira 3 (abaixo):  PC-xx-v2-01 .. PC-xx-v2-06
   fileira 4 (abaixo):  PC-xx-v2-07 .. PC-xx-v2-10, IMP-xx-v2, SRV-xx-v2
 ```
-Mantenha a mesma ordem da esquerda para a direita em todas as fileiras (01, 02, 03…). Isso evita cruzar cabos no PASSO 2. Se a tela ficar apertada, afaste as colunas e use zoom menor; o que importa é a posição relativa, não a distância.
-
-As VLANs de cada departamento são (1ª VLAN = portas 1-12; 2ª VLAN = portas 13-24):
+Manter a mesma ordem da esquerda para a direita em todas as fileiras evita cruzamento de cabos no PASSO 2.
 
 | Departamento | 1ª VLAN (acima do switch) | 2ª VLAN (abaixo do switch) |
 |---|---|---|
@@ -76,24 +71,21 @@ As VLANs de cada departamento são (1ª VLAN = portas 1-12; 2ª VLAN = portas 13
 | TI Interno (SW-TI) | 31 | 32 |
 | Infraestrutura (SW-INFRA) | 41 | 42 |
 
-### 1.6 Checkpoint do PASSO 1 (confira antes de seguir)
-- [ ] 4 switches 2960-24TT, nomeados SW-ENG, SW-COMP, SW-TI, SW-INFRA, na ordem da esquerda para a direita.
-- [ ] Em cada departamento: 20 PCs, 2 impressoras e 2 servidores (24 equipamentos ao redor do switch).
-- [ ] Nenhum nome repetido ou com erro de grafia (compare com a tabela 1.4).
-- [ ] Nenhum cabo ligado e nenhuma configuração feita.
-- [ ] Arquivo salvo.
-
-**Envie-me ao terminar:** uma captura da área de trabalho inteira (zoom que mostre os 4 departamentos) e a confirmação de que o checkpoint está completo, com qualquer dúvida ou nome que não tenha conseguido digitar.
+### 1.6 Conferência do PASSO 1
+- 4 switches 2960-24TT nomeados SW-ENG, SW-COMP, SW-TI e SW-INFRA, nessa ordem.
+- Em cada departamento: 20 PCs, 2 impressoras e 2 servidores.
+- Nomes sem repetição e sem erro de grafia.
+- Nenhum cabo ligado e nenhuma configuração feita.
 
 ---
 
-## PASSO 2 — conectar equipamentos
+## PASSO 2 — conectar os equipamentos
 
 ### 2.1 Hosts → switch (96 cabos)
-Categoria **Connections** (ícone do raio) → **Copper Straight-Through** (linha preta contínua). Clique no host A, escolha a porta A; clique no switch B, escolha a porta B.
+Categoria **Connections** (ícone do raio) → **Copper Straight-Through** (linha contínua). Clique no host (Dispositivo A), escolha a porta A; clique no switch (Dispositivo B), escolha a porta B.
 
 
-**Engenharia – SW-ENG** (Dispositivo B = SW-ENG)
+**Engenharia – SW-ENG**
 
 | Dispositivo A | Porta A | Porta B (SW-ENG) | Cabo |
 |---|---|---|---|
@@ -122,7 +114,7 @@ Categoria **Connections** (ícone do raio) → **Copper Straight-Through** (linh
 | IMP-ENG-12 | FastEthernet0 | FastEthernet0/23 | Copper Straight-Through |
 | SRV-ENG-12 | FastEthernet0 | FastEthernet0/24 | Copper Straight-Through |
 
-**Compras – SW-COMP** (Dispositivo B = SW-COMP)
+**Compras – SW-COMP**
 
 | Dispositivo A | Porta A | Porta B (SW-COMP) | Cabo |
 |---|---|---|---|
@@ -151,7 +143,7 @@ Categoria **Connections** (ícone do raio) → **Copper Straight-Through** (linh
 | IMP-COMP-22 | FastEthernet0 | FastEthernet0/23 | Copper Straight-Through |
 | SRV-COMP-22 | FastEthernet0 | FastEthernet0/24 | Copper Straight-Through |
 
-**TI Interno – SW-TI** (Dispositivo B = SW-TI)
+**TI Interno – SW-TI**
 
 | Dispositivo A | Porta A | Porta B (SW-TI) | Cabo |
 |---|---|---|---|
@@ -180,7 +172,7 @@ Categoria **Connections** (ícone do raio) → **Copper Straight-Through** (linh
 | IMP-TI-32 | FastEthernet0 | FastEthernet0/23 | Copper Straight-Through |
 | SRV-TI-32 | FastEthernet0 | FastEthernet0/24 | Copper Straight-Through |
 
-**Infraestrutura – SW-INFRA** (Dispositivo B = SW-INFRA)
+**Infraestrutura – SW-INFRA**
 
 | Dispositivo A | Porta A | Porta B (SW-INFRA) | Cabo |
 |---|---|---|---|
@@ -210,7 +202,7 @@ Categoria **Connections** (ícone do raio) → **Copper Straight-Through** (linh
 | SRV-INFRA-42 | FastEthernet0 | FastEthernet0/24 | Copper Straight-Through |
 
 ### 2.2 Switch ↔ switch (3 cabos)
-Categoria **Connections** → **Copper Cross-Over** (linha preta tracejada).
+Categoria **Connections** → **Copper Cross-Over** (linha tracejada).
 
 | Dispositivo A | Porta A | Dispositivo B | Porta B | Cabo |
 |---|---|---|---|---|
@@ -218,13 +210,13 @@ Categoria **Connections** → **Copper Cross-Over** (linha preta tracejada).
 | SW-COMP | GigabitEthernet0/2 | SW-TI | GigabitEthernet0/1 | Copper Cross-Over |
 | SW-TI | GigabitEthernet0/2 | SW-INFRA | GigabitEthernet0/1 | Copper Cross-Over |
 
-Aguarde as luzes dos enlaces ficarem verdes (alguns segundos; use o botão de avanço de tempo, se necessário). Os enlaces entre switches só ficam verdes após o PASSO 3.
+Os enlaces entre switches só ficam ativos depois do PASSO 3.
 
 ---
 
 ## PASSO 3 — configurar os 4 switches (CLI)
 
-Para **cada switch**: clique no switch → aba **CLI** → Enter → cole o bloco inteiro (botão direito → Paste, ou Ctrl+V). Se faltarem linhas, cole em blocos de ~10 linhas. Os mesmos arquivos estão em `configs/`.
+Para cada switch: clique no switch → aba **CLI** → Enter → cole o bloco inteiro. Se faltarem linhas, cole em blocos de cerca de 10 linhas. Os mesmos textos estão em `configs/`.
 
 
 ### SW-ENG (Engenharia)
@@ -455,19 +447,19 @@ write memory
 ! Verificação: show vlan brief | show interfaces trunk | show running-config
 ```
 
-Se o Packet Tracer rejeitar **apenas** a linha `vtp mode transparent` ou a linha `switchport trunk allowed vlan ...`, apague essa linha e continue; o isolamento não depende delas (IDs de VLAN exclusivos). Anote qualquer linha rejeitada para me enviar.
+Se o Packet Tracer rejeitar apenas a linha `vtp mode transparent` ou a linha `switchport trunk allowed vlan ...`, remover essa linha e prosseguir: o isolamento entre departamentos não depende delas, pois os identificadores de VLAN são exclusivos.
 
 ---
 
 ## PASSO 4 — IPs estáticos
 
-Máscara em todos: `255.255.255.240`. Gateway e DNS vazios.
+Máscara `255.255.255.240`; gateway e DNS vazios.
 
-- **PC:** clique no PC → aba **Desktop** → ícone **IP Configuration** → marque **Static** → preencha **IP Address** e **Subnet Mask** → feche a janela.
-- **Impressora e Servidor:** clique no equipamento → aba **Config** → no menu da esquerda clique em **FastEthernet0** → em *IP Configuration* marque **Static** → preencha **IP Address** e **Subnet Mask**.
+- **PC:** clique no PC → aba **Desktop** → **IP Configuration** → **Static** → preencher **IP Address** e **Subnet Mask**.
+- **Impressora e servidor:** clique no equipamento → aba **Config** → **FastEthernet0** (menu lateral) → em *IP Configuration* marcar **Static** → preencher **IP Address** e **Subnet Mask**.
 
 
-### Engenharia – todos os 24 dispositivos (estático)
+### Engenharia – 24 dispositivos (estático)
 
 | Dispositivo | Onde configurar | IP Address | Subnet Mask | VLAN |
 |---|---|---|---|---|
@@ -496,7 +488,7 @@ Máscara em todos: `255.255.255.240`. Gateway e DNS vazios.
 | IMP-ENG-12 | Config → FastEthernet0 | 192.168.10.27 | 255.255.255.240 | 12 |
 | SRV-ENG-12 | Config → FastEthernet0 | 192.168.10.28 | 255.255.255.240 | 12 |
 
-### TI Interno – todos os 24 dispositivos (estático)
+### TI Interno – 24 dispositivos (estático)
 
 | Dispositivo | Onde configurar | IP Address | Subnet Mask | VLAN |
 |---|---|---|---|---|
@@ -525,7 +517,7 @@ Máscara em todos: `255.255.255.240`. Gateway e DNS vazios.
 | IMP-TI-32 | Config → FastEthernet0 | 192.168.10.91 | 255.255.255.240 | 32 |
 | SRV-TI-32 | Config → FastEthernet0 | 192.168.10.92 | 255.255.255.240 | 32 |
 
-### Compras e Infraestrutura – somente os 2 servidores de cada departamento (4 no total; estático; são os servidores DHCP)
+### Compras e Infraestrutura – servidores (estático; são os servidores DHCP)
 
 | Dispositivo | Onde configurar | IP Address | Subnet Mask | VLAN |
 |---|---|---|---|---|
@@ -536,9 +528,9 @@ Máscara em todos: `255.255.255.240`. Gateway e DNS vazios.
 
 ---
 
-## PASSO 5 — serviço DHCP nos 4 servidores (Compras e Infraestrutura)
+## PASSO 5 — serviço DHCP nos servidores de Compras e Infraestrutura
 
-Faça **antes** do PASSO 6. Para cada servidor da tabela: clique no servidor → aba **Services** → menu da esquerda **DHCP** → **Service: On** → na lista de pools, clique no pool existente (*serverPool*) e edite os campos abaixo → clique **Save**.
+Antes do PASSO 6. Em cada servidor: aba **Services** → **DHCP** → **Service: On** → editar o pool existente (*serverPool*) com os valores abaixo → **Save**.
 
 | Servidor | Pool Name | Default Gateway | DNS Server | Start IP Address | Subnet Mask | Maximum Number of Users |
 |---|---|---|---|---|---|---|
@@ -547,21 +539,20 @@ Faça **antes** do PASSO 6. Para cada servidor da tabela: clique no servidor →
 | SRV-INFRA-41 (192.168.10.108) | POOL-41 | 0.0.0.0 | 0.0.0.0 | 192.168.10.97 | 255.255.255.240 | 11 |
 | SRV-INFRA-42 (192.168.10.124) | POOL-42 | 0.0.0.0 | 0.0.0.0 | 192.168.10.113 | 255.255.255.240 | 11 |
 
-Se o campo *Pool Name* não puder ser editado, mantenha `serverPool`. Os demais campos (TFTP, WLC) ficam como estão.
+Se o nome do pool não puder ser editado, manter `serverPool`.
 
 ---
 
 ## PASSO 6 — PCs e impressoras em DHCP (Compras e Infraestrutura)
 
-- **PC:** clique no PC → **Desktop** → **IP Configuration** → marque **DHCP**. Aguarde aparecer `DHCP request successful` e o IP.
-- **Impressora:** clique → **Config** → **FastEthernet0** → em *IP Configuration* marque **DHCP**.
-
+- **PC:** **Desktop** → **IP Configuration** → **DHCP**.
+- **Impressora:** **Config** → **FastEthernet0** → *IP Configuration* → **DHCP**.
 
 **Compras – 22 dispositivos em DHCP:** PC-COMP-21-01, PC-COMP-21-02, PC-COMP-21-03, PC-COMP-21-04, PC-COMP-21-05, PC-COMP-21-06, PC-COMP-21-07, PC-COMP-21-08, PC-COMP-21-09, PC-COMP-21-10, IMP-COMP-21, PC-COMP-22-01, PC-COMP-22-02, PC-COMP-22-03, PC-COMP-22-04, PC-COMP-22-05, PC-COMP-22-06, PC-COMP-22-07, PC-COMP-22-08, PC-COMP-22-09, PC-COMP-22-10, IMP-COMP-22
 
 **Infraestrutura – 22 dispositivos em DHCP:** PC-INFRA-41-01, PC-INFRA-41-02, PC-INFRA-41-03, PC-INFRA-41-04, PC-INFRA-41-05, PC-INFRA-41-06, PC-INFRA-41-07, PC-INFRA-41-08, PC-INFRA-41-09, PC-INFRA-41-10, IMP-INFRA-41, PC-INFRA-42-01, PC-INFRA-42-02, PC-INFRA-42-03, PC-INFRA-42-04, PC-INFRA-42-05, PC-INFRA-42-06, PC-INFRA-42-07, PC-INFRA-42-08, PC-INFRA-42-09, PC-INFRA-42-10, IMP-INFRA-42
 
-IPs previstos (ordem em que cada um pede pode alterar a associação nome ↔ IP; o que vale é a faixa do pool):
+Endereços previstos (a associação nome ↔ endereço depende da ordem dos pedidos; o que vale é a faixa do pool):
 
 | Dispositivo | IP previsto |
 |---|---|
@@ -612,9 +603,9 @@ IPs previstos (ordem em que cada um pede pode alterar a associação nome ↔ IP
 
 ---
 
-## PASSO 7 — comandos de verificação nos switches
+## PASSO 7 — verificação nos switches
 
-Para **cada switch**: clique → **CLI** → Enter → `enable` → rode os comandos. Se aparecer `--More--`, pressione a barra de espaço.
+Em cada switch: aba **CLI** → Enter → `enable` → comandos abaixo. Se aparecer `--More--`, usar a barra de espaço.
 
 
 ### SW-ENG
@@ -624,9 +615,9 @@ show vlan brief
 show interfaces trunk
 show cdp neighbors
 ```
-- `show vlan brief`: VLAN **11** (ENG-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **12** (ENG-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Figura 3.**
+- `show vlan brief`: VLAN **11** (ENG-VLAN1) com Fa0/1 a Fa0/12; VLAN **12** (ENG-VLAN2) com Fa0/13 a Fa0/24; as outras 6 VLANs aparecem sem portas; a VLAN 1 (`default`) aparece sem as portas Fa0/1-24.
 - `show interfaces trunk`: Gi0/1 em modo `on`, encapsulamento `802.1q`, status `trunking`, VLANs permitidas `11-12,21-22,31-32,41-42`.
-- `show cdp neighbors`: SW-COMP (local Gig 0/1, porta remota Gig 0/1). **Print D-01** (os dois últimos comandos; se não couberem em um print, tire dois).
+- `show cdp neighbors`: SW-COMP (local Gig 0/1, porta remota Gig 0/1).
 
 ### SW-COMP
 ```
@@ -635,9 +626,9 @@ show vlan brief
 show interfaces trunk
 show cdp neighbors
 ```
-- `show vlan brief`: VLAN **21** (COMP-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **22** (COMP-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Figura 4.**
+- `show vlan brief`: VLAN **21** (COMP-VLAN1) com Fa0/1 a Fa0/12; VLAN **22** (COMP-VLAN2) com Fa0/13 a Fa0/24; as outras 6 VLANs aparecem sem portas; a VLAN 1 (`default`) aparece sem as portas Fa0/1-24.
 - `show interfaces trunk`: Gi0/1, Gi0/2 em modo `on`, encapsulamento `802.1q`, status `trunking`, VLANs permitidas `11-12,21-22,31-32,41-42`.
-- `show cdp neighbors`: SW-ENG (local Gig 0/1, porta remota Gig 0/1); SW-TI (local Gig 0/2, porta remota Gig 0/1). **Print 7** (os dois últimos comandos; se não couberem em um print, tire dois).
+- `show cdp neighbors`: SW-ENG (local Gig 0/1, porta remota Gig 0/1); SW-TI (local Gig 0/2, porta remota Gig 0/1).
 
 ### SW-TI
 ```
@@ -646,9 +637,9 @@ show vlan brief
 show interfaces trunk
 show cdp neighbors
 ```
-- `show vlan brief`: VLAN **31** (TI-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **32** (TI-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Figura 5.**
+- `show vlan brief`: VLAN **31** (TI-VLAN1) com Fa0/1 a Fa0/12; VLAN **32** (TI-VLAN2) com Fa0/13 a Fa0/24; as outras 6 VLANs aparecem sem portas; a VLAN 1 (`default`) aparece sem as portas Fa0/1-24.
 - `show interfaces trunk`: Gi0/1, Gi0/2 em modo `on`, encapsulamento `802.1q`, status `trunking`, VLANs permitidas `11-12,21-22,31-32,41-42`.
-- `show cdp neighbors`: SW-COMP (local Gig 0/1, porta remota Gig 0/2); SW-INFRA (local Gig 0/2, porta remota Gig 0/1). **Print 8** (os dois últimos comandos; se não couberem em um print, tire dois).
+- `show cdp neighbors`: SW-COMP (local Gig 0/1, porta remota Gig 0/2); SW-INFRA (local Gig 0/2, porta remota Gig 0/1).
 
 ### SW-INFRA
 ```
@@ -657,126 +648,54 @@ show vlan brief
 show interfaces trunk
 show cdp neighbors
 ```
-- `show vlan brief`: VLAN **41** (INFRA-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **42** (INFRA-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Figura 6.**
+- `show vlan brief`: VLAN **41** (INFRA-VLAN1) com Fa0/1 a Fa0/12; VLAN **42** (INFRA-VLAN2) com Fa0/13 a Fa0/24; as outras 6 VLANs aparecem sem portas; a VLAN 1 (`default`) aparece sem as portas Fa0/1-24.
 - `show interfaces trunk`: Gi0/1 em modo `on`, encapsulamento `802.1q`, status `trunking`, VLANs permitidas `11-12,21-22,31-32,41-42`.
-- `show cdp neighbors`: SW-TI (local Gig 0/1, porta remota Gig 0/2). **Print D-02** (os dois últimos comandos; se não couberem em um print, tire dois).
+- `show cdp neighbors`: SW-TI (local Gig 0/1, porta remota Gig 0/2).
 
 ---
 
-## PASSO 8 — testes
+## PASSO 8 — testes de conectividade
 
-Em cada teste: clique no PC de origem → aba **Desktop** → **Command Prompt** → digite o comando exato → Enter. Os pings do mesmo grupo (mesmo rótulo de captura) devem aparecer **na mesma tela** (rode em sequência, sem limpar). Antes de começar, em cada PC DHCP rode `ipconfig` e confirme o IP de origem.
+Em cada teste: clique no PC de origem → aba **Desktop** → **Command Prompt** → digitar o comando → Enter. Antes de começar, nos PCs em DHCP, rodar `ipconfig` e confirmar o endereço de origem.
 
-| Teste | Computador de origem | IP origem | Destino | IP destino | Comando | Resultado esperado | Print |
-|---|---|---|---|---|---|---|---|
-| T01 | PC-ENG-11-01 | 192.168.10.1 | PC-ENG-11-02 | 192.168.10.2 | `ping 192.168.10.2` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 15 |
-| T02 | PC-ENG-11-01 | 192.168.10.1 | IMP-ENG-11 | 192.168.10.11 | `ping 192.168.10.11` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 15 |
-| T03 | PC-ENG-11-01 | 192.168.10.1 | SRV-ENG-11 | 192.168.10.12 | `ping 192.168.10.12` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 15 |
-| T04 | PC-ENG-12-01 | 192.168.10.17 | PC-ENG-12-02 | 192.168.10.18 | `ping 192.168.10.18` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-15 |
-| T05 | PC-ENG-12-01 | 192.168.10.17 | IMP-ENG-12 | 192.168.10.27 | `ping 192.168.10.27` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-15 |
-| T06 | PC-ENG-12-01 | 192.168.10.17 | SRV-ENG-12 | 192.168.10.28 | `ping 192.168.10.28` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-15 |
-| T07 | PC-COMP-21-01 | 192.168.10.33* | PC-COMP-21-02 | 192.168.10.34* | `ping 192.168.10.34` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 16 |
-| T08 | PC-COMP-21-01 | 192.168.10.33* | IMP-COMP-21 | 192.168.10.43* | `ping 192.168.10.43` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 16 |
-| T09 | PC-COMP-21-01 | 192.168.10.33* | SRV-COMP-21 | 192.168.10.44 | `ping 192.168.10.44` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 16 |
-| T10 | PC-COMP-22-01 | 192.168.10.49* | PC-COMP-22-02 | 192.168.10.50* | `ping 192.168.10.50` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-16 |
-| T11 | PC-COMP-22-01 | 192.168.10.49* | IMP-COMP-22 | 192.168.10.59* | `ping 192.168.10.59` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-16 |
-| T12 | PC-COMP-22-01 | 192.168.10.49* | SRV-COMP-22 | 192.168.10.60 | `ping 192.168.10.60` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-16 |
-| T13 | PC-TI-31-01 | 192.168.10.65 | PC-TI-31-02 | 192.168.10.66 | `ping 192.168.10.66` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 17 |
-| T14 | PC-TI-31-01 | 192.168.10.65 | IMP-TI-31 | 192.168.10.75 | `ping 192.168.10.75` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 17 |
-| T15 | PC-TI-31-01 | 192.168.10.65 | SRV-TI-31 | 192.168.10.76 | `ping 192.168.10.76` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 17 |
-| T16 | PC-TI-32-01 | 192.168.10.81 | PC-TI-32-02 | 192.168.10.82 | `ping 192.168.10.82` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-17 |
-| T17 | PC-TI-32-01 | 192.168.10.81 | IMP-TI-32 | 192.168.10.91 | `ping 192.168.10.91` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-17 |
-| T18 | PC-TI-32-01 | 192.168.10.81 | SRV-TI-32 | 192.168.10.92 | `ping 192.168.10.92` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-17 |
-| T19 | PC-INFRA-41-01 | 192.168.10.97* | PC-INFRA-41-02 | 192.168.10.98* | `ping 192.168.10.98` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 18 |
-| T20 | PC-INFRA-41-01 | 192.168.10.97* | IMP-INFRA-41 | 192.168.10.107* | `ping 192.168.10.107` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 18 |
-| T21 | PC-INFRA-41-01 | 192.168.10.97* | SRV-INFRA-41 | 192.168.10.108 | `ping 192.168.10.108` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 18 |
-| T22 | PC-INFRA-42-01 | 192.168.10.113* | PC-INFRA-42-02 | 192.168.10.114* | `ping 192.168.10.114` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-18 |
-| T23 | PC-INFRA-42-01 | 192.168.10.113* | IMP-INFRA-42 | 192.168.10.123* | `ping 192.168.10.123` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-18 |
-| T24 | PC-INFRA-42-01 | 192.168.10.113* | SRV-INFRA-42 | 192.168.10.124 | `ping 192.168.10.124` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-18 |
-| T25 | PC-ENG-11-01 | 192.168.10.1 | SRV-ENG-12 | 192.168.10.28 | `ping 192.168.10.28` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | Figura 19 |
-| T26 | PC-COMP-21-01 | 192.168.10.33* | SRV-COMP-22 | 192.168.10.60 | `ping 192.168.10.60` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-19 |
-| T27 | PC-TI-31-01 | 192.168.10.65 | SRV-TI-32 | 192.168.10.92 | `ping 192.168.10.92` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-20 |
-| T28 | PC-INFRA-41-01 | 192.168.10.97* | SRV-INFRA-42 | 192.168.10.124 | `ping 192.168.10.124` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-21 |
-| T29 | PC-ENG-11-01 | 192.168.10.1 | SRV-COMP-21 | 192.168.10.44 | `ping 192.168.10.44` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | Figura 20 |
-| T30 | PC-COMP-21-01 | 192.168.10.33* | SRV-TI-31 | 192.168.10.76 | `ping 192.168.10.76` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-22 |
-| T31 | PC-TI-31-01 | 192.168.10.65 | SRV-INFRA-41 | 192.168.10.108 | `ping 192.168.10.108` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-23 |
+| Teste | Origem | IP origem | Destino | IP destino | Comando | Comportamento esperado |
+|---|---|---|---|---|---|---|
+| T01 | PC-ENG-11-01 | 192.168.10.1 | PC-ENG-11-02 | 192.168.10.2 | `ping 192.168.10.2` | Respostas do destino (comunicação na mesma VLAN) |
+| T02 | PC-ENG-11-01 | 192.168.10.1 | IMP-ENG-11 | 192.168.10.11 | `ping 192.168.10.11` | Respostas do destino (comunicação na mesma VLAN) |
+| T03 | PC-ENG-11-01 | 192.168.10.1 | SRV-ENG-11 | 192.168.10.12 | `ping 192.168.10.12` | Respostas do destino (comunicação na mesma VLAN) |
+| T04 | PC-ENG-12-01 | 192.168.10.17 | PC-ENG-12-02 | 192.168.10.18 | `ping 192.168.10.18` | Respostas do destino (comunicação na mesma VLAN) |
+| T05 | PC-ENG-12-01 | 192.168.10.17 | IMP-ENG-12 | 192.168.10.27 | `ping 192.168.10.27` | Respostas do destino (comunicação na mesma VLAN) |
+| T06 | PC-ENG-12-01 | 192.168.10.17 | SRV-ENG-12 | 192.168.10.28 | `ping 192.168.10.28` | Respostas do destino (comunicação na mesma VLAN) |
+| T07 | PC-COMP-21-01 | 192.168.10.33* | PC-COMP-21-02 | 192.168.10.34* | `ping 192.168.10.34` | Respostas do destino (comunicação na mesma VLAN) |
+| T08 | PC-COMP-21-01 | 192.168.10.33* | IMP-COMP-21 | 192.168.10.43* | `ping 192.168.10.43` | Respostas do destino (comunicação na mesma VLAN) |
+| T09 | PC-COMP-21-01 | 192.168.10.33* | SRV-COMP-21 | 192.168.10.44 | `ping 192.168.10.44` | Respostas do destino (comunicação na mesma VLAN) |
+| T10 | PC-COMP-22-01 | 192.168.10.49* | PC-COMP-22-02 | 192.168.10.50* | `ping 192.168.10.50` | Respostas do destino (comunicação na mesma VLAN) |
+| T11 | PC-COMP-22-01 | 192.168.10.49* | IMP-COMP-22 | 192.168.10.59* | `ping 192.168.10.59` | Respostas do destino (comunicação na mesma VLAN) |
+| T12 | PC-COMP-22-01 | 192.168.10.49* | SRV-COMP-22 | 192.168.10.60 | `ping 192.168.10.60` | Respostas do destino (comunicação na mesma VLAN) |
+| T13 | PC-TI-31-01 | 192.168.10.65 | PC-TI-31-02 | 192.168.10.66 | `ping 192.168.10.66` | Respostas do destino (comunicação na mesma VLAN) |
+| T14 | PC-TI-31-01 | 192.168.10.65 | IMP-TI-31 | 192.168.10.75 | `ping 192.168.10.75` | Respostas do destino (comunicação na mesma VLAN) |
+| T15 | PC-TI-31-01 | 192.168.10.65 | SRV-TI-31 | 192.168.10.76 | `ping 192.168.10.76` | Respostas do destino (comunicação na mesma VLAN) |
+| T16 | PC-TI-32-01 | 192.168.10.81 | PC-TI-32-02 | 192.168.10.82 | `ping 192.168.10.82` | Respostas do destino (comunicação na mesma VLAN) |
+| T17 | PC-TI-32-01 | 192.168.10.81 | IMP-TI-32 | 192.168.10.91 | `ping 192.168.10.91` | Respostas do destino (comunicação na mesma VLAN) |
+| T18 | PC-TI-32-01 | 192.168.10.81 | SRV-TI-32 | 192.168.10.92 | `ping 192.168.10.92` | Respostas do destino (comunicação na mesma VLAN) |
+| T19 | PC-INFRA-41-01 | 192.168.10.97* | PC-INFRA-41-02 | 192.168.10.98* | `ping 192.168.10.98` | Respostas do destino (comunicação na mesma VLAN) |
+| T20 | PC-INFRA-41-01 | 192.168.10.97* | IMP-INFRA-41 | 192.168.10.107* | `ping 192.168.10.107` | Respostas do destino (comunicação na mesma VLAN) |
+| T21 | PC-INFRA-41-01 | 192.168.10.97* | SRV-INFRA-41 | 192.168.10.108 | `ping 192.168.10.108` | Respostas do destino (comunicação na mesma VLAN) |
+| T22 | PC-INFRA-42-01 | 192.168.10.113* | PC-INFRA-42-02 | 192.168.10.114* | `ping 192.168.10.114` | Respostas do destino (comunicação na mesma VLAN) |
+| T23 | PC-INFRA-42-01 | 192.168.10.113* | IMP-INFRA-42 | 192.168.10.123* | `ping 192.168.10.123` | Respostas do destino (comunicação na mesma VLAN) |
+| T24 | PC-INFRA-42-01 | 192.168.10.113* | SRV-INFRA-42 | 192.168.10.124 | `ping 192.168.10.124` | Respostas do destino (comunicação na mesma VLAN) |
+| T25 | PC-ENG-11-01 | 192.168.10.1 | SRV-ENG-12 | 192.168.10.28 | `ping 192.168.10.28` | Sem resposta (sub-redes diferentes, sem roteador) |
+| T26 | PC-COMP-21-01 | 192.168.10.33* | SRV-COMP-22 | 192.168.10.60 | `ping 192.168.10.60` | Sem resposta (sub-redes diferentes, sem roteador) |
+| T27 | PC-TI-31-01 | 192.168.10.65 | SRV-TI-32 | 192.168.10.92 | `ping 192.168.10.92` | Sem resposta (sub-redes diferentes, sem roteador) |
+| T28 | PC-INFRA-41-01 | 192.168.10.97* | SRV-INFRA-42 | 192.168.10.124 | `ping 192.168.10.124` | Sem resposta (sub-redes diferentes, sem roteador) |
+| T29 | PC-ENG-11-01 | 192.168.10.1 | SRV-COMP-21 | 192.168.10.44 | `ping 192.168.10.44` | Sem resposta (sub-redes diferentes, sem roteador) |
+| T30 | PC-COMP-21-01 | 192.168.10.33* | SRV-TI-31 | 192.168.10.76 | `ping 192.168.10.76` | Sem resposta (sub-redes diferentes, sem roteador) |
+| T31 | PC-TI-31-01 | 192.168.10.65 | SRV-INFRA-41 | 192.168.10.108 | `ping 192.168.10.108` | Sem resposta (sub-redes diferentes, sem roteador) |
 
-Observação: `*` = IP previsto de dispositivo DHCP: **troque pelo IP real** (`ipconfig` no PC; tela *Config → FastEthernet0* da impressora) antes de digitar o `ping`. Os testes de **falha** são o resultado tecnicamente correto neste projeto (sub-redes distintas, sem roteador) e provam a segmentação; **não** são defeito.
+`*` indica endereço previsto para dispositivo em DHCP; na execução, usar o endereço efetivamente recebido. Os testes sem resposta decorrem do projeto (sub-redes distintas e ausência de roteador): demonstram a segmentação.
 
 ---
 
 ## PASSO 9 — salvar
-Menu **File → Save As** → nome `SuperTech.pkt`. Salve de novo ao final de todos os testes.
+**File → Save As →** `SuperTech.pkt`.
 
----
-
-## CHECKLIST DE PRINTS PARA O TRABALHO
-
-Capture cada tela (Windows: Win+Shift+S) e salve como `figura-NN.png` ou `D-NN.png`. Nada abaixo foi capturado ainda. Total: **43 capturas**, das quais **20 entram no relatório** e 23 servem só para validação.
-
-### A) OBRIGATÓRIOS PARA O RELATÓRIO (20 figuras)
-
-Cada um vira a **Figura de mesmo número** em `04_relatorio.md`. As demais saídas entram no relatório como **texto** (tabelas), não como imagem.
-
-| Figura | O que capturar | Feito |
-|---|---|---|
-| 1 | CLI do switch escolhido: `show ip interface brief` | [x] já capturada (`figuras/figura-01.png`) |
-| 2 | Topologia completa (workspace inteiro, zoom que mostre os 4 departamentos e os 3 enlaces entre switches) | [ ] |
-| 3 | CLI de SW-ENG: `show vlan brief` | [ ] |
-| 4 | CLI de SW-COMP: `show vlan brief` | [ ] |
-| 5 | CLI de SW-TI: `show vlan brief` | [ ] |
-| 6 | CLI de SW-INFRA: `show vlan brief` | [ ] |
-| 7 | CLI de SW-COMP: `show interfaces trunk` e `show cdp neighbors` | [ ] |
-| 8 | CLI de SW-TI: `show interfaces trunk` e `show cdp neighbors` | [ ] |
-| 9 | Tela de IP estático de PC-ENG-11-01 | [ ] |
-| 10 | Tela de IP estático de PC-TI-31-01 | [ ] |
-| 11 | Aba Services → DHCP de SRV-COMP-21 | [ ] |
-| 12 | Aba Services → DHCP de SRV-INFRA-41 | [ ] |
-| 13 | Command Prompt de PC-COMP-21-01: `ipconfig` | [ ] |
-| 14 | Command Prompt de PC-INFRA-41-01: `ipconfig` | [ ] |
-| 15 | Command Prompt de PC-ENG-11-01: pings dos testes T01, T02, T03 (tudo na mesma tela) | [ ] |
-| 16 | Command Prompt de PC-COMP-21-01: pings dos testes T07, T08, T09 (tudo na mesma tela) | [ ] |
-| 17 | Command Prompt de PC-TI-31-01: pings dos testes T13, T14, T15 (tudo na mesma tela) | [ ] |
-| 18 | Command Prompt de PC-INFRA-41-01: pings dos testes T19, T20, T21 (tudo na mesma tela) | [ ] |
-| 19 | Command Prompt de PC-ENG-11-01: pings dos testes T25 (tudo na mesma tela) | [ ] |
-| 20 | Command Prompt de PC-ENG-11-01: pings dos testes T29 (tudo na mesma tela) | [ ] |
-
-### B) APENAS PARA VALIDAÇÃO/DIAGNÓSTICO (23 capturas)
-
-**Não** vão para o relatório. Capture se puder (servem de prova pessoal e de diagnóstico se algo falhar); o **texto** dos pings e dos IPs correspondentes entra nas tabelas do relatório.
-
-| Rótulo | O que capturar | Feito |
-|---|---|---|
-| D-01 | CLI de SW-ENG: `show interfaces trunk` e `show cdp neighbors` | [ ] |
-| D-02 | CLI de SW-INFRA: `show interfaces trunk` e `show cdp neighbors` | [ ] |
-| D-03 | Tela de IP estático de IMP-ENG-11 | [ ] |
-| D-04 | Tela de IP estático de SRV-ENG-11 | [ ] |
-| D-05 | Tela de IP estático de IMP-TI-31 | [ ] |
-| D-06 | Tela de IP estático de SRV-TI-31 | [ ] |
-| D-07 | Tela de IP estático de SRV-COMP-21 | [ ] |
-| D-08 | Tela de IP estático de SRV-INFRA-41 | [ ] |
-| D-09 | Aba Services → DHCP de SRV-COMP-22 | [ ] |
-| D-10 | Aba Services → DHCP de SRV-INFRA-42 | [ ] |
-| D-11 | Command Prompt de PC-COMP-22-01: `ipconfig` | [ ] |
-| D-12 | Command Prompt de PC-INFRA-42-01: `ipconfig` | [ ] |
-| D-13 | Config → FastEthernet0 de IMP-COMP-21 (DHCP) | [ ] |
-| D-14 | Config → FastEthernet0 de IMP-INFRA-41 (DHCP) | [ ] |
-| D-15 | Command Prompt de PC-ENG-12-01: pings dos testes T04, T05, T06 (tudo na mesma tela) | [ ] |
-| D-16 | Command Prompt de PC-COMP-22-01: pings dos testes T10, T11, T12 (tudo na mesma tela) | [ ] |
-| D-17 | Command Prompt de PC-TI-32-01: pings dos testes T16, T17, T18 (tudo na mesma tela) | [ ] |
-| D-18 | Command Prompt de PC-INFRA-42-01: pings dos testes T22, T23, T24 (tudo na mesma tela) | [ ] |
-| D-19 | Command Prompt de PC-COMP-21-01: pings dos testes T26 (tudo na mesma tela) | [ ] |
-| D-20 | Command Prompt de PC-TI-31-01: pings dos testes T27 (tudo na mesma tela) | [ ] |
-| D-21 | Command Prompt de PC-INFRA-41-01: pings dos testes T28 (tudo na mesma tela) | [ ] |
-| D-22 | Command Prompt de PC-COMP-21-01: pings dos testes T30 (tudo na mesma tela) | [ ] |
-| D-23 | Command Prompt de PC-TI-31-01: pings dos testes T31 (tudo na mesma tela) | [ ] |
-
----
-
-## O QUE ME ENVIAR DEPOIS
-
-1. **Texto copiado** (não só imagem) das saídas: `show ip interface brief` (PASSO 0), os `show` dos 4 switches e os pings dos 31 testes (assim eu monto as tabelas de resultado sem erro de leitura).
-2. As figuras obrigatórias numeradas, ou ao menos a confirmação de quais foram tiradas.
-3. O modelo de switch que você de fato usou.
-4. Qualquer linha de configuração rejeitada, qualquer teste que **não** deu o resultado esperado (copie a saída) e os IPs reais recebidos por DHCP.
-5. O `SuperTech.pkt` (entrega sua, ao professor).
