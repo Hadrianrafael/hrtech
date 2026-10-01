@@ -1,0 +1,56 @@
+! SW-COMP - Cisco 2960-24TT - Departamento Compras
+! Modelo confirmado no PASSO 0: Fa0/1-24, Gi0/1-2 e Vlan1 (show ip interface brief)
+enable
+configure terminal
+hostname SW-COMP
+!
+! VTP transparente: cada switch mantém o próprio banco de VLANs, sem anúncios
+vtp mode transparent
+!
+! Banco de VLANs idêntico nos 4 switches (padrão corporativo; só as VLANs do
+! próprio departamento têm portas de acesso neste switch)
+vlan 11
+ name ENG-VLAN1
+vlan 12
+ name ENG-VLAN2
+vlan 21
+ name COMP-VLAN1
+vlan 22
+ name COMP-VLAN2
+vlan 31
+ name TI-VLAN1
+vlan 32
+ name TI-VLAN2
+vlan 41
+ name INFRA-VLAN1
+vlan 42
+ name INFRA-VLAN2
+exit
+!
+interface range FastEthernet0/1 - 12
+ switchport mode access
+ switchport access vlan 21
+ no shutdown
+exit
+interface range FastEthernet0/13 - 24
+ switchport mode access
+ switchport access vlan 22
+ no shutdown
+exit
+!
+interface GigabitEthernet0/1
+ switchport mode trunk
+ switchport trunk allowed vlan 11,12,21,22,31,32,41,42
+ no shutdown
+exit
+!
+interface GigabitEthernet0/2
+ switchport mode trunk
+ switchport trunk allowed vlan 11,12,21,22,31,32,41,42
+ no shutdown
+exit
+!
+end
+write memory
+!
+! Verificação: show vlan brief | show interfaces trunk | show running-config
