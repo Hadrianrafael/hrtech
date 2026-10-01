@@ -1,0 +1,28 @@
+! SW-INFRA - Switch Cisco 2950-24 - Departamento Infraestrutura
+enable
+configure terminal
+hostname SW-INFRA
+!
+vlan 2
+ name VLAN2-INFRAESTRUTURA
+exit
+!
+interface range FastEthernet0/1 - 12
+ switchport mode access
+ switchport access vlan 1
+ no shutdown
+exit
+interface range FastEthernet0/13 - 24
+ switchport mode access
+ switchport access vlan 2
+ no shutdown
+exit
+!
+interface Gi0/1
+ switchport mode trunk
+ no shutdown
+exit
+!
+end
+write memory
+! Verificação: show vlan brief | show interfaces trunk | show running-config
