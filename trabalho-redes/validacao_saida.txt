@@ -143,10 +143,29 @@
 [OK]   guia: em todos os testes, nomes/IPs/comando conferem com a tabela; sucesso ⇔ mesma sub-rede /28; '*' só em DHCP não-servidor
 [OK]   guia: 3 pings positivos (PC, impressora, servidor) em cada uma das 8 VLANs
 [OK]   guia: 4 testes negativos no mesmo departamento e 3 entre departamentos (4/3)
-[OK]   guia: cada print de ping tem uma única origem
-[OK]   guia: checklist de 43 prints numerados em sequência
-[OK]   guia: todo teste aponta para um print existente
-[OK]   relatório: marcadores [INSERIR FIGURA 1..N] e legendas 1..N batem com o checklist de prints
+[OK]   guia: 20 figuras obrigatórias numeradas em sequência
+[OK]   guia: 23 capturas de diagnóstico D-01..D-23
+[OK]   guia: 20 + 23 = 43 capturas no total
+[OK]   guia: todo teste aponta para uma captura existente
+[OK]   guia: cada captura de ping tem uma única origem
+[OK]   guia: PASSO 0 destacado no início, antes do PASSO 1
+[OK]   guia: figura obrigatória contém 'show ip interface brief'
+[OK]   guia: figura obrigatória contém 'Topologia completa'
+[OK]   guia: figura obrigatória contém 'SW-ENG: `show vlan brief`'
+[OK]   guia: figura obrigatória contém 'SW-INFRA: `show vlan brief`'
+[OK]   guia: figura obrigatória contém 'SW-COMP: `show interfaces trunk`'
+[OK]   guia: figura obrigatória contém 'SW-TI: `show interfaces trunk`'
+[OK]   guia: figura obrigatória contém 'IP estático de PC-ENG-11-01'
+[OK]   guia: figura obrigatória contém 'IP estático de PC-TI-31-01'
+[OK]   guia: figura obrigatória contém 'DHCP de SRV-COMP-21'
+[OK]   guia: figura obrigatória contém 'DHCP de SRV-INFRA-41'
+[OK]   guia: figura obrigatória contém 'PC-COMP-21-01: `ipconfig`'
+[OK]   guia: figura obrigatória contém 'PC-INFRA-41-01: `ipconfig`'
+[OK]   relatório: marcadores [INSERIR FIGURA 1..20] e legendas 1..20 batem com as 20 figuras obrigatórias
+[OK]   relatório: só existem marcadores INSERIR/ESCOLHER/COLAR ['COLAR', 'ESCOLHER', 'INSERIR']
+[OK]   relatório: sem placeholders que independem da simulação
+[OK]   relatório: Opções A/B do modelo de switch prontas
+[OK]   relatório: 44 linhas de IP DHCP reais (22 PCs/impressoras em Compras e 22 em Infraestrutura) e 31 resultados de ping a preencher
 [OK]   guia: bloco CLI de SW-ENG idêntico a configs/SW-ENG.txt
 [OK]   guia: bloco CLI de SW-TI idêntico a configs/SW-TI.txt
 [OK]   guia: bloco CLI de SW-COMP idêntico a configs/SW-COMP.txt
@@ -170,6 +189,6 @@
 [OK]   relatório: 4 sub-redes /27
 [OK]   relatório: nenhum resultado de ping inventado
 [OK]   relatório: não afirma execução
-[OK]   relatório: 76 marcadores [INSERIR ...] para evidências reais
+[OK]   relatório: 99 marcadores [INSERIR ...] para evidências reais
 
 RESULTADO: TUDO OK

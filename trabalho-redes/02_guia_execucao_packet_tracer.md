@@ -1,10 +1,7 @@
 # GUIA FINAL – execução no Cisco Packet Tracer
 
-Siga **na ordem**, sem decidir nada. Nenhuma etapa deste guia foi executada pelo autor do projeto: os resultados saem do **seu** Packet Tracer. Valores marcados com `*` são IPs **previstos** pelo DHCP; use sempre o valor real mostrado por `ipconfig`.
-
-Convenções: **PC**, **Printer** e **Server** são os ícones da categoria *End Devices* (parte inferior esquerda do Packet Tracer). Máscara de **todos** os hosts: `255.255.255.240`. Gateway e DNS: deixar **vazios** em todos os dispositivos.
-
----
+> # ▶ COMECE AQUI: PASSO 0
+> **Não monte nada antes de concluir o PASSO 0.** Ele define o modelo de switch que será usado em todo o projeto.
 
 ## PASSO 0 — verificar o switch (antes de montar o resto)
 
@@ -16,10 +13,15 @@ enable
 show ip interface brief
 ```
 4. Confira na saída: **FastEthernet0/1 até FastEthernet0/24** e **GigabitEthernet0/1** e **GigabitEthernet0/2**.
-   - **Tem as 3 condições** → este é o modelo para todo o projeto. **Tire o Print 1** e siga para o PASSO 1 (apague este switch de teste ou renomeie-o como SW-ENG).
-   - **Não tem Gi0/1 e Gi0/2** → apague o switch, escolha **2960-24TT** (categoria Switches; tem Fa0/1-24 e Gi0/1-2 com os mesmos nomes) e repita os passos 2 a 4. Os comandos deste guia funcionam sem alteração. Anote no relatório que o 2950T-24 não estava disponível e que o 2960-24TT foi usado.
+   - **Tem as portas** → este é o modelo para todo o projeto. **Capture a Figura 1** (a tela do CLI com a saída) e siga para o PASSO 1 (apague este switch de teste ou renomeie-o como SW-ENG).
+   - **Não tem Gi0/1 e Gi0/2** → apague o switch, escolha **2960-24TT** (categoria Switches; tem Fa0/1-24 e Gi0/1-2 com os mesmos nomes) e repita os passos 2 a 4. Os comandos deste guia funcionam sem alteração. No relatório você usará a **Opção B** da seção 2.1.
    - **Nenhum dos dois tem as portas** → pare e me envie o texto exato da saída.
 5. Nos passos seguintes, onde está escrito `2950T-24`, leia o **modelo que passou neste teste**.
+6. **Envie-me**, antes de continuar: (a) o modelo que você escolheu; (b) o **texto copiado** da saída de `show ip interface brief`; (c) a Figura 1.
+
+---
+
+Convenções do guia: **PC**, **Printer** e **Server** são os ícones da categoria *End Devices* (parte inferior esquerda do Packet Tracer). Máscara de **todos** os hosts: `255.255.255.240`. Gateway e DNS: deixar **vazios** em todos os dispositivos. Nenhuma etapa deste guia foi executada pelo autor do projeto: os resultados saem do **seu** Packet Tracer. Valores marcados com `*` são IPs **previstos** pelo DHCP; use sempre o valor real mostrado por `ipconfig`.
 
 ---
 
@@ -587,9 +589,9 @@ show vlan brief
 show interfaces trunk
 show cdp neighbors
 ```
-- `show vlan brief`: VLAN **11** (ENG-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **12** (ENG-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Print 3.**
+- `show vlan brief`: VLAN **11** (ENG-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **12** (ENG-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Figura 3.**
 - `show interfaces trunk`: Gi0/1 em modo `on`, encapsulamento `802.1q`, status `trunking`, VLANs permitidas `11-12,21-22,31-32,41-42`.
-- `show cdp neighbors`: SW-COMP (local Gig 0/1, porta remota Gig 0/1). **Print 7** (os dois últimos comandos; se não couberem em um print, tire dois).
+- `show cdp neighbors`: SW-COMP (local Gig 0/1, porta remota Gig 0/1). **Print D-01** (os dois últimos comandos; se não couberem em um print, tire dois).
 
 ### SW-COMP
 ```
@@ -598,9 +600,9 @@ show vlan brief
 show interfaces trunk
 show cdp neighbors
 ```
-- `show vlan brief`: VLAN **21** (COMP-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **22** (COMP-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Print 4.**
+- `show vlan brief`: VLAN **21** (COMP-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **22** (COMP-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Figura 4.**
 - `show interfaces trunk`: Gi0/1, Gi0/2 em modo `on`, encapsulamento `802.1q`, status `trunking`, VLANs permitidas `11-12,21-22,31-32,41-42`.
-- `show cdp neighbors`: SW-ENG (local Gig 0/1, porta remota Gig 0/1); SW-TI (local Gig 0/2, porta remota Gig 0/1). **Print 8** (os dois últimos comandos; se não couberem em um print, tire dois).
+- `show cdp neighbors`: SW-ENG (local Gig 0/1, porta remota Gig 0/1); SW-TI (local Gig 0/2, porta remota Gig 0/1). **Print 7** (os dois últimos comandos; se não couberem em um print, tire dois).
 
 ### SW-TI
 ```
@@ -609,9 +611,9 @@ show vlan brief
 show interfaces trunk
 show cdp neighbors
 ```
-- `show vlan brief`: VLAN **31** (TI-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **32** (TI-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Print 5.**
+- `show vlan brief`: VLAN **31** (TI-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **32** (TI-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Figura 5.**
 - `show interfaces trunk`: Gi0/1, Gi0/2 em modo `on`, encapsulamento `802.1q`, status `trunking`, VLANs permitidas `11-12,21-22,31-32,41-42`.
-- `show cdp neighbors`: SW-COMP (local Gig 0/1, porta remota Gig 0/2); SW-INFRA (local Gig 0/2, porta remota Gig 0/1). **Print 9** (os dois últimos comandos; se não couberem em um print, tire dois).
+- `show cdp neighbors`: SW-COMP (local Gig 0/1, porta remota Gig 0/2); SW-INFRA (local Gig 0/2, porta remota Gig 0/1). **Print 8** (os dois últimos comandos; se não couberem em um print, tire dois).
 
 ### SW-INFRA
 ```
@@ -620,49 +622,49 @@ show vlan brief
 show interfaces trunk
 show cdp neighbors
 ```
-- `show vlan brief`: VLAN **41** (INFRA-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **42** (INFRA-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Print 6.**
+- `show vlan brief`: VLAN **41** (INFRA-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **42** (INFRA-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Figura 6.**
 - `show interfaces trunk`: Gi0/1 em modo `on`, encapsulamento `802.1q`, status `trunking`, VLANs permitidas `11-12,21-22,31-32,41-42`.
-- `show cdp neighbors`: SW-TI (local Gig 0/1, porta remota Gig 0/2). **Print 10** (os dois últimos comandos; se não couberem em um print, tire dois).
+- `show cdp neighbors`: SW-TI (local Gig 0/1, porta remota Gig 0/2). **Print D-02** (os dois últimos comandos; se não couberem em um print, tire dois).
 
 ---
 
 ## PASSO 8 — testes
 
-Em cada teste: clique no PC de origem → aba **Desktop** → **Command Prompt** → digite o comando exato → Enter. Os pings do mesmo grupo (mesmo número de print) devem aparecer **na mesma tela** (rode em sequência, sem limpar). Antes de começar, em cada PC DHCP rode `ipconfig` e confirme o IP de origem.
+Em cada teste: clique no PC de origem → aba **Desktop** → **Command Prompt** → digite o comando exato → Enter. Os pings do mesmo grupo (mesmo rótulo de captura) devem aparecer **na mesma tela** (rode em sequência, sem limpar). Antes de começar, em cada PC DHCP rode `ipconfig` e confirme o IP de origem.
 
 | Teste | Computador de origem | IP origem | Destino | IP destino | Comando | Resultado esperado | Print |
 |---|---|---|---|---|---|---|---|
-| T01 | PC-ENG-11-01 | 192.168.10.1 | PC-ENG-11-02 | 192.168.10.2 | `ping 192.168.10.2` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 29 |
-| T02 | PC-ENG-11-01 | 192.168.10.1 | IMP-ENG-11 | 192.168.10.11 | `ping 192.168.10.11` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 29 |
-| T03 | PC-ENG-11-01 | 192.168.10.1 | SRV-ENG-11 | 192.168.10.12 | `ping 192.168.10.12` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 29 |
-| T04 | PC-ENG-12-01 | 192.168.10.17 | PC-ENG-12-02 | 192.168.10.18 | `ping 192.168.10.18` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 30 |
-| T05 | PC-ENG-12-01 | 192.168.10.17 | IMP-ENG-12 | 192.168.10.27 | `ping 192.168.10.27` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 30 |
-| T06 | PC-ENG-12-01 | 192.168.10.17 | SRV-ENG-12 | 192.168.10.28 | `ping 192.168.10.28` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 30 |
-| T07 | PC-COMP-21-01 | 192.168.10.33* | PC-COMP-21-02 | 192.168.10.34* | `ping 192.168.10.34` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 31 |
-| T08 | PC-COMP-21-01 | 192.168.10.33* | IMP-COMP-21 | 192.168.10.43* | `ping 192.168.10.43` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 31 |
-| T09 | PC-COMP-21-01 | 192.168.10.33* | SRV-COMP-21 | 192.168.10.44 | `ping 192.168.10.44` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 31 |
-| T10 | PC-COMP-22-01 | 192.168.10.49* | PC-COMP-22-02 | 192.168.10.50* | `ping 192.168.10.50` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 32 |
-| T11 | PC-COMP-22-01 | 192.168.10.49* | IMP-COMP-22 | 192.168.10.59* | `ping 192.168.10.59` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 32 |
-| T12 | PC-COMP-22-01 | 192.168.10.49* | SRV-COMP-22 | 192.168.10.60 | `ping 192.168.10.60` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 32 |
-| T13 | PC-TI-31-01 | 192.168.10.65 | PC-TI-31-02 | 192.168.10.66 | `ping 192.168.10.66` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 33 |
-| T14 | PC-TI-31-01 | 192.168.10.65 | IMP-TI-31 | 192.168.10.75 | `ping 192.168.10.75` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 33 |
-| T15 | PC-TI-31-01 | 192.168.10.65 | SRV-TI-31 | 192.168.10.76 | `ping 192.168.10.76` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 33 |
-| T16 | PC-TI-32-01 | 192.168.10.81 | PC-TI-32-02 | 192.168.10.82 | `ping 192.168.10.82` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 34 |
-| T17 | PC-TI-32-01 | 192.168.10.81 | IMP-TI-32 | 192.168.10.91 | `ping 192.168.10.91` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 34 |
-| T18 | PC-TI-32-01 | 192.168.10.81 | SRV-TI-32 | 192.168.10.92 | `ping 192.168.10.92` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 34 |
-| T19 | PC-INFRA-41-01 | 192.168.10.97* | PC-INFRA-41-02 | 192.168.10.98* | `ping 192.168.10.98` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 35 |
-| T20 | PC-INFRA-41-01 | 192.168.10.97* | IMP-INFRA-41 | 192.168.10.107* | `ping 192.168.10.107` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 35 |
-| T21 | PC-INFRA-41-01 | 192.168.10.97* | SRV-INFRA-41 | 192.168.10.108 | `ping 192.168.10.108` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 35 |
-| T22 | PC-INFRA-42-01 | 192.168.10.113* | PC-INFRA-42-02 | 192.168.10.114* | `ping 192.168.10.114` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 36 |
-| T23 | PC-INFRA-42-01 | 192.168.10.113* | IMP-INFRA-42 | 192.168.10.123* | `ping 192.168.10.123` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 36 |
-| T24 | PC-INFRA-42-01 | 192.168.10.113* | SRV-INFRA-42 | 192.168.10.124 | `ping 192.168.10.124` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | 36 |
-| T25 | PC-ENG-11-01 | 192.168.10.1 | SRV-ENG-12 | 192.168.10.28 | `ping 192.168.10.28` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | 37 |
-| T26 | PC-COMP-21-01 | 192.168.10.33* | SRV-COMP-22 | 192.168.10.60 | `ping 192.168.10.60` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | 38 |
-| T27 | PC-TI-31-01 | 192.168.10.65 | SRV-TI-32 | 192.168.10.92 | `ping 192.168.10.92` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | 39 |
-| T28 | PC-INFRA-41-01 | 192.168.10.97* | SRV-INFRA-42 | 192.168.10.124 | `ping 192.168.10.124` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | 40 |
-| T29 | PC-ENG-11-01 | 192.168.10.1 | SRV-COMP-21 | 192.168.10.44 | `ping 192.168.10.44` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | 41 |
-| T30 | PC-COMP-21-01 | 192.168.10.33* | SRV-TI-31 | 192.168.10.76 | `ping 192.168.10.76` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | 42 |
-| T31 | PC-TI-31-01 | 192.168.10.65 | SRV-INFRA-41 | 192.168.10.108 | `ping 192.168.10.108` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | 43 |
+| T01 | PC-ENG-11-01 | 192.168.10.1 | PC-ENG-11-02 | 192.168.10.2 | `ping 192.168.10.2` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 15 |
+| T02 | PC-ENG-11-01 | 192.168.10.1 | IMP-ENG-11 | 192.168.10.11 | `ping 192.168.10.11` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 15 |
+| T03 | PC-ENG-11-01 | 192.168.10.1 | SRV-ENG-11 | 192.168.10.12 | `ping 192.168.10.12` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 15 |
+| T04 | PC-ENG-12-01 | 192.168.10.17 | PC-ENG-12-02 | 192.168.10.18 | `ping 192.168.10.18` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-15 |
+| T05 | PC-ENG-12-01 | 192.168.10.17 | IMP-ENG-12 | 192.168.10.27 | `ping 192.168.10.27` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-15 |
+| T06 | PC-ENG-12-01 | 192.168.10.17 | SRV-ENG-12 | 192.168.10.28 | `ping 192.168.10.28` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-15 |
+| T07 | PC-COMP-21-01 | 192.168.10.33* | PC-COMP-21-02 | 192.168.10.34* | `ping 192.168.10.34` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 16 |
+| T08 | PC-COMP-21-01 | 192.168.10.33* | IMP-COMP-21 | 192.168.10.43* | `ping 192.168.10.43` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 16 |
+| T09 | PC-COMP-21-01 | 192.168.10.33* | SRV-COMP-21 | 192.168.10.44 | `ping 192.168.10.44` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 16 |
+| T10 | PC-COMP-22-01 | 192.168.10.49* | PC-COMP-22-02 | 192.168.10.50* | `ping 192.168.10.50` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-16 |
+| T11 | PC-COMP-22-01 | 192.168.10.49* | IMP-COMP-22 | 192.168.10.59* | `ping 192.168.10.59` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-16 |
+| T12 | PC-COMP-22-01 | 192.168.10.49* | SRV-COMP-22 | 192.168.10.60 | `ping 192.168.10.60` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-16 |
+| T13 | PC-TI-31-01 | 192.168.10.65 | PC-TI-31-02 | 192.168.10.66 | `ping 192.168.10.66` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 17 |
+| T14 | PC-TI-31-01 | 192.168.10.65 | IMP-TI-31 | 192.168.10.75 | `ping 192.168.10.75` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 17 |
+| T15 | PC-TI-31-01 | 192.168.10.65 | SRV-TI-31 | 192.168.10.76 | `ping 192.168.10.76` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 17 |
+| T16 | PC-TI-32-01 | 192.168.10.81 | PC-TI-32-02 | 192.168.10.82 | `ping 192.168.10.82` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-17 |
+| T17 | PC-TI-32-01 | 192.168.10.81 | IMP-TI-32 | 192.168.10.91 | `ping 192.168.10.91` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-17 |
+| T18 | PC-TI-32-01 | 192.168.10.81 | SRV-TI-32 | 192.168.10.92 | `ping 192.168.10.92` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-17 |
+| T19 | PC-INFRA-41-01 | 192.168.10.97* | PC-INFRA-41-02 | 192.168.10.98* | `ping 192.168.10.98` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 18 |
+| T20 | PC-INFRA-41-01 | 192.168.10.97* | IMP-INFRA-41 | 192.168.10.107* | `ping 192.168.10.107` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 18 |
+| T21 | PC-INFRA-41-01 | 192.168.10.97* | SRV-INFRA-41 | 192.168.10.108 | `ping 192.168.10.108` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | Figura 18 |
+| T22 | PC-INFRA-42-01 | 192.168.10.113* | PC-INFRA-42-02 | 192.168.10.114* | `ping 192.168.10.114` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-18 |
+| T23 | PC-INFRA-42-01 | 192.168.10.113* | IMP-INFRA-42 | 192.168.10.123* | `ping 192.168.10.123` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-18 |
+| T24 | PC-INFRA-42-01 | 192.168.10.113* | SRV-INFRA-42 | 192.168.10.124 | `ping 192.168.10.124` | Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas) | D-18 |
+| T25 | PC-ENG-11-01 | 192.168.10.1 | SRV-ENG-12 | 192.168.10.28 | `ping 192.168.10.28` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | Figura 19 |
+| T26 | PC-COMP-21-01 | 192.168.10.33* | SRV-COMP-22 | 192.168.10.60 | `ping 192.168.10.60` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-19 |
+| T27 | PC-TI-31-01 | 192.168.10.65 | SRV-TI-32 | 192.168.10.92 | `ping 192.168.10.92` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-20 |
+| T28 | PC-INFRA-41-01 | 192.168.10.97* | SRV-INFRA-42 | 192.168.10.124 | `ping 192.168.10.124` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-21 |
+| T29 | PC-ENG-11-01 | 192.168.10.1 | SRV-COMP-21 | 192.168.10.44 | `ping 192.168.10.44` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | Figura 20 |
+| T30 | PC-COMP-21-01 | 192.168.10.33* | SRV-TI-31 | 192.168.10.76 | `ping 192.168.10.76` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-22 |
+| T31 | PC-TI-31-01 | 192.168.10.65 | SRV-INFRA-41 | 192.168.10.108 | `ping 192.168.10.108` | Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador) | D-23 |
 
 Observação: `*` = IP previsto de dispositivo DHCP: **troque pelo IP real** (`ipconfig` no PC; tela *Config → FastEthernet0* da impressora) antes de digitar o `ping`. Os testes de **falha** são o resultado tecnicamente correto neste projeto (sub-redes distintas, sem roteador) e provam a segmentação; **não** são defeito.
 
@@ -675,9 +677,13 @@ Menu **File → Save As** → nome `SuperTech.pkt`. Salve de novo ao final de to
 
 ## CHECKLIST DE PRINTS PARA O TRABALHO
 
-Capture cada tela (Windows: Win+Shift+S) e salve como `print-NN.png`. Cada print vira a **Figura de mesmo número** no relatório. Nada abaixo foi capturado ainda.
+Capture cada tela (Windows: Win+Shift+S) e salve como `figura-NN.png` ou `D-NN.png`. Nada abaixo foi capturado ainda. Total: **43 capturas**, das quais **20 entram no relatório** e 23 servem só para validação.
 
-| Print / Figura | O que capturar | Feito |
+### A) OBRIGATÓRIOS PARA O RELATÓRIO (20 figuras)
+
+Cada um vira a **Figura de mesmo número** em `04_relatorio.md`. As demais saídas entram no relatório como **texto** (tabelas), não como imagem.
+
+| Figura | O que capturar | Feito |
 |---|---|---|
 | 1 | CLI do switch escolhido: `show ip interface brief` | [ ] |
 | 2 | Topologia completa (workspace inteiro, zoom que mostre os 4 departamentos e os 3 enlaces entre switches) | [ ] |
@@ -685,52 +691,57 @@ Capture cada tela (Windows: Win+Shift+S) e salve como `print-NN.png`. Cada print
 | 4 | CLI de SW-COMP: `show vlan brief` | [ ] |
 | 5 | CLI de SW-TI: `show vlan brief` | [ ] |
 | 6 | CLI de SW-INFRA: `show vlan brief` | [ ] |
-| 7 | CLI de SW-ENG: `show interfaces trunk` e `show cdp neighbors` | [ ] |
-| 8 | CLI de SW-COMP: `show interfaces trunk` e `show cdp neighbors` | [ ] |
-| 9 | CLI de SW-TI: `show interfaces trunk` e `show cdp neighbors` | [ ] |
-| 10 | CLI de SW-INFRA: `show interfaces trunk` e `show cdp neighbors` | [ ] |
-| 11 | Tela de IP estático de PC-ENG-11-01 | [ ] |
-| 12 | Tela de IP estático de IMP-ENG-11 | [ ] |
-| 13 | Tela de IP estático de SRV-ENG-11 | [ ] |
-| 14 | Tela de IP estático de PC-TI-31-01 | [ ] |
-| 15 | Tela de IP estático de IMP-TI-31 | [ ] |
-| 16 | Tela de IP estático de SRV-TI-31 | [ ] |
-| 17 | Tela de IP estático de SRV-COMP-21 | [ ] |
-| 18 | Tela de IP estático de SRV-INFRA-41 | [ ] |
-| 19 | Aba Services → DHCP de SRV-COMP-21 | [ ] |
-| 20 | Aba Services → DHCP de SRV-COMP-22 | [ ] |
-| 21 | Aba Services → DHCP de SRV-INFRA-41 | [ ] |
-| 22 | Aba Services → DHCP de SRV-INFRA-42 | [ ] |
-| 23 | Command Prompt de PC-COMP-21-01: `ipconfig` | [ ] |
-| 24 | Command Prompt de PC-COMP-22-01: `ipconfig` | [ ] |
-| 25 | Command Prompt de PC-INFRA-41-01: `ipconfig` | [ ] |
-| 26 | Command Prompt de PC-INFRA-42-01: `ipconfig` | [ ] |
-| 27 | Config → FastEthernet0 de IMP-COMP-21 (DHCP) | [ ] |
-| 28 | Config → FastEthernet0 de IMP-INFRA-41 (DHCP) | [ ] |
-| 29 | Command Prompt de PC-ENG-11-01: pings do grupo G11 | [ ] |
-| 30 | Command Prompt de PC-ENG-12-01: pings do grupo G12 | [ ] |
-| 31 | Command Prompt de PC-COMP-21-01: pings do grupo G21 | [ ] |
-| 32 | Command Prompt de PC-COMP-22-01: pings do grupo G22 | [ ] |
-| 33 | Command Prompt de PC-TI-31-01: pings do grupo G31 | [ ] |
-| 34 | Command Prompt de PC-TI-32-01: pings do grupo G32 | [ ] |
-| 35 | Command Prompt de PC-INFRA-41-01: pings do grupo G41 | [ ] |
-| 36 | Command Prompt de PC-INFRA-42-01: pings do grupo G42 | [ ] |
-| 37 | Command Prompt de PC-ENG-11-01: pings do grupo NSW-ENG | [ ] |
-| 38 | Command Prompt de PC-COMP-21-01: pings do grupo NSW-COMP | [ ] |
-| 39 | Command Prompt de PC-TI-31-01: pings do grupo NSW-TI | [ ] |
-| 40 | Command Prompt de PC-INFRA-41-01: pings do grupo NSW-INFRA | [ ] |
-| 41 | Command Prompt de PC-ENG-11-01: pings do grupo X1 | [ ] |
-| 42 | Command Prompt de PC-COMP-21-01: pings do grupo X2 | [ ] |
-| 43 | Command Prompt de PC-TI-31-01: pings do grupo X3 | [ ] |
+| 7 | CLI de SW-COMP: `show interfaces trunk` e `show cdp neighbors` | [ ] |
+| 8 | CLI de SW-TI: `show interfaces trunk` e `show cdp neighbors` | [ ] |
+| 9 | Tela de IP estático de PC-ENG-11-01 | [ ] |
+| 10 | Tela de IP estático de PC-TI-31-01 | [ ] |
+| 11 | Aba Services → DHCP de SRV-COMP-21 | [ ] |
+| 12 | Aba Services → DHCP de SRV-INFRA-41 | [ ] |
+| 13 | Command Prompt de PC-COMP-21-01: `ipconfig` | [ ] |
+| 14 | Command Prompt de PC-INFRA-41-01: `ipconfig` | [ ] |
+| 15 | Command Prompt de PC-ENG-11-01: pings dos testes T01, T02, T03 (tudo na mesma tela) | [ ] |
+| 16 | Command Prompt de PC-COMP-21-01: pings dos testes T07, T08, T09 (tudo na mesma tela) | [ ] |
+| 17 | Command Prompt de PC-TI-31-01: pings dos testes T13, T14, T15 (tudo na mesma tela) | [ ] |
+| 18 | Command Prompt de PC-INFRA-41-01: pings dos testes T19, T20, T21 (tudo na mesma tela) | [ ] |
+| 19 | Command Prompt de PC-ENG-11-01: pings dos testes T25 (tudo na mesma tela) | [ ] |
+| 20 | Command Prompt de PC-ENG-11-01: pings dos testes T29 (tudo na mesma tela) | [ ] |
 
-Total: 43 prints.
+### B) APENAS PARA VALIDAÇÃO/DIAGNÓSTICO (23 capturas)
+
+**Não** vão para o relatório. Capture se puder (servem de prova pessoal e de diagnóstico se algo falhar); o **texto** dos pings e dos IPs correspondentes entra nas tabelas do relatório.
+
+| Rótulo | O que capturar | Feito |
+|---|---|---|
+| D-01 | CLI de SW-ENG: `show interfaces trunk` e `show cdp neighbors` | [ ] |
+| D-02 | CLI de SW-INFRA: `show interfaces trunk` e `show cdp neighbors` | [ ] |
+| D-03 | Tela de IP estático de IMP-ENG-11 | [ ] |
+| D-04 | Tela de IP estático de SRV-ENG-11 | [ ] |
+| D-05 | Tela de IP estático de IMP-TI-31 | [ ] |
+| D-06 | Tela de IP estático de SRV-TI-31 | [ ] |
+| D-07 | Tela de IP estático de SRV-COMP-21 | [ ] |
+| D-08 | Tela de IP estático de SRV-INFRA-41 | [ ] |
+| D-09 | Aba Services → DHCP de SRV-COMP-22 | [ ] |
+| D-10 | Aba Services → DHCP de SRV-INFRA-42 | [ ] |
+| D-11 | Command Prompt de PC-COMP-22-01: `ipconfig` | [ ] |
+| D-12 | Command Prompt de PC-INFRA-42-01: `ipconfig` | [ ] |
+| D-13 | Config → FastEthernet0 de IMP-COMP-21 (DHCP) | [ ] |
+| D-14 | Config → FastEthernet0 de IMP-INFRA-41 (DHCP) | [ ] |
+| D-15 | Command Prompt de PC-ENG-12-01: pings dos testes T04, T05, T06 (tudo na mesma tela) | [ ] |
+| D-16 | Command Prompt de PC-COMP-22-01: pings dos testes T10, T11, T12 (tudo na mesma tela) | [ ] |
+| D-17 | Command Prompt de PC-TI-32-01: pings dos testes T16, T17, T18 (tudo na mesma tela) | [ ] |
+| D-18 | Command Prompt de PC-INFRA-42-01: pings dos testes T22, T23, T24 (tudo na mesma tela) | [ ] |
+| D-19 | Command Prompt de PC-COMP-21-01: pings dos testes T26 (tudo na mesma tela) | [ ] |
+| D-20 | Command Prompt de PC-TI-31-01: pings dos testes T27 (tudo na mesma tela) | [ ] |
+| D-21 | Command Prompt de PC-INFRA-41-01: pings dos testes T28 (tudo na mesma tela) | [ ] |
+| D-22 | Command Prompt de PC-COMP-21-01: pings dos testes T30 (tudo na mesma tela) | [ ] |
+| D-23 | Command Prompt de PC-TI-31-01: pings dos testes T31 (tudo na mesma tela) | [ ] |
 
 ---
 
 ## O QUE ME ENVIAR DEPOIS
 
-1. **Texto copiado** (não só imagem) das saídas: Print 1, os `show` dos 4 switches e os pings (assim eu monto as tabelas de resultado sem erro de leitura).
-2. Os prints numerados, ou ao menos a confirmação de quais foram tirados.
+1. **Texto copiado** (não só imagem) das saídas: `show ip interface brief` (PASSO 0), os `show` dos 4 switches e os pings dos 31 testes (assim eu monto as tabelas de resultado sem erro de leitura).
+2. As figuras obrigatórias numeradas, ou ao menos a confirmação de quais foram tiradas.
 3. O modelo de switch que você de fato usou.
 4. Qualquer linha de configuração rejeitada, qualquer teste que **não** deu o resultado esperado (copie a saída) e os IPs reais recebidos por DHCP.
 5. O `SuperTech.pkt` (entrega sua, ao professor).

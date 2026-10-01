@@ -37,39 +37,48 @@ novo("X1", find("SW-ENG", 11, "PC", 1), find("SW-COMP", 21, "Servidor"), False)
 novo("X2", find("SW-COMP", 21, "PC", 1), find("SW-TI", 31, "Servidor"), False)
 novo("X3", find("SW-TI", 31, "PC", 1), find("SW-INFRA", 41, "Servidor"), False)
 
-PRINTS = []   # (chave, descricao curta, legenda)
-def pr(chave, desc, leg): PRINTS.append((chave, desc, leg)); return len(PRINTS)
-FIG = {}
-FIG["modelo"] = pr("modelo", "CLI do switch escolhido: `show ip interface brief`", "Interfaces do switch 2950T-24 (Fa0/1-24 e Gi0/1-2) no Packet Tracer")
-FIG["topo"] = pr("topo", "Topologia completa (workspace inteiro, zoom que mostre os 4 departamentos e os 3 enlaces entre switches)", "Topologia completa da rede da Super Tech")
-for sw in D: FIG["vlan:"+sw] = pr("vlan", f"CLI de {sw}: `show vlan brief`", f"VLANs e portas de acesso do {sw}")
-for sw in D: FIG["trunk:"+sw] = pr("trunk", f"CLI de {sw}: `show interfaces trunk` e `show cdp neighbors`", f"Trunks e vizinhos CDP do {sw}")
+PRINTS = []   # (rótulo, descrição, legenda, obrigatório)
+FIG = {}      # chave -> int (Figura do relatório) ou "D-nn" (só validação/diagnóstico)
+_nf = [0]; _nd = [0]
+def pr(chave, desc, leg, obr):
+    if obr: _nf[0] += 1; rot = _nf[0]
+    else: _nd[0] += 1; rot = f"D-{_nd[0]:02d}"
+    PRINTS.append((rot, desc, leg, obr)); FIG[chave] = rot; return rot
+def rotl(r): return f"Figura {r}" if isinstance(r, int) else r
+OBR_PC = {"PC-ENG-11-01", "PC-TI-31-01"}
+OBR_DHCP = {"SRV-COMP-21", "SRV-INFRA-41"}
+OBR_IPC = {"PC-COMP-21-01", "PC-INFRA-41-01"}
+OBR_PING = {"G11", "G21", "G31", "G41", "NSW-ENG", "X1"}
+pr("modelo", "CLI do switch escolhido: `show ip interface brief`", "Interfaces do switch utilizado (Fa0/1-24 e Gi0/1-2) no Packet Tracer", True)
+pr("topo", "Topologia completa (workspace inteiro, zoom que mostre os 4 departamentos e os 3 enlaces entre switches)", "Topologia completa da rede da Super Tech", True)
+for sw in D: pr("vlan:"+sw, f"CLI de {sw}: `show vlan brief`", f"VLANs e portas de acesso do {sw}", True)
+for sw in D: pr("trunk:"+sw, f"CLI de {sw}: `show interfaces trunk` e `show cdp neighbors`", f"Trunks e vizinhos CDP do {sw}", sw in ("SW-COMP", "SW-TI"))
 STAT = {"SW-ENG": 11, "SW-TI": 31}
 for sw, vid in STAT.items():
     for papel in ("PC", "Impressora", "Servidor"):
-        h = find(sw, vid, papel); FIG["ip:"+h[3]] = pr("ip", f"Tela de IP estático de {h[3]}", f"Configuração de IP estático de {h[3]} ({h[4]}/28)")
+        h = find(sw, vid, papel); pr("ip:"+h[3], f"Tela de IP estático de {h[3]}", f"Configuração de IP estático de {h[3]} ({h[4]}/28)", h[3] in OBR_PC)
 for sw, vid in (("SW-COMP", 21), ("SW-INFRA", 41)):
-    h = find(sw, vid, "Servidor"); FIG["ip:"+h[3]] = pr("ip", f"Tela de IP estático de {h[3]}", f"Configuração de IP estático do servidor DHCP {h[3]} ({h[4]}/28)")
+    h = find(sw, vid, "Servidor"); pr("ip:"+h[3], f"Tela de IP estático de {h[3]}", f"Configuração de IP estático do servidor DHCP {h[3]} ({h[4]}/28)", False)
 for sw in ("SW-COMP", "SW-INFRA"):
     for v in D[sw]["vlans"]:
-        h = find(sw, v["id"], "Servidor"); FIG["dhcp:"+h[3]] = pr("dhcp", f"Aba Services → DHCP de {h[3]}", f"Pool DHCP do servidor {h[3]} (VLAN {v['id']})")
+        h = find(sw, v["id"], "Servidor"); pr("dhcp:"+h[3], f"Aba Services → DHCP de {h[3]}", f"Pool DHCP do servidor {h[3]} (VLAN {v['id']})", h[3] in OBR_DHCP)
 for sw in ("SW-COMP", "SW-INFRA"):
     for v in D[sw]["vlans"]:
-        h = find(sw, v["id"], "PC", 1); FIG["ipc:"+h[3]] = pr("ipc", f"Command Prompt de {h[3]}: `ipconfig`", f"Endereço obtido por DHCP por {h[3]} (VLAN {v['id']})")
+        h = find(sw, v["id"], "PC", 1); pr("ipc:"+h[3], f"Command Prompt de {h[3]}: `ipconfig`", f"Endereço obtido por DHCP por {h[3]} (VLAN {v['id']})", h[3] in OBR_IPC)
 for sw in ("SW-COMP", "SW-INFRA"):
-    h = find(sw, D[sw]["vlans"][0]["id"], "Impressora"); FIG["impd:"+h[3]] = pr("impd", f"Config → FastEthernet0 de {h[3]} (DHCP)", f"Impressora {h[3]} configurada em DHCP")
+    h = find(sw, D[sw]["vlans"][0]["id"], "Impressora"); pr("impd:"+h[3], f"Config → FastEthernet0 de {h[3]} (DHCP)", f"Impressora {h[3]} configurada em DHCP", False)
 GR = {}
 for t in TESTES:
     if t["grupo"] not in GR:
-        vid = t["src"][1]
         if t["grupo"].startswith("G"): leg = f"Testes de ping na VLAN {t['grupo'][1:]} (origem {t['src'][3]})"
-        elif t["grupo"].startswith("N"): leg = f"Ping entre VLANs do mesmo departamento: {t['src'][3]} → {t['dst'][3]} (falha esperada)"
-        else: leg = f"Ping entre departamentos: {t['src'][3]} → {t['dst'][3]} (falha esperada)"
-        GR[t["grupo"]] = pr("ping", f"Command Prompt de {t['src'][3]}: pings do grupo {t['grupo']}", leg)
+        elif t["grupo"].startswith("N"): leg = f"Ping entre VLANs do mesmo departamento: {t['src'][3]} → {t['dst'][3]} (falha esperada pelo projeto)"
+        else: leg = f"Ping entre departamentos: {t['src'][3]} → {t['dst'][3]} (falha esperada pelo projeto)"
+        GR[t["grupo"]] = pr("ping:"+t["grupo"], f"Command Prompt de {t['src'][3]}: pings dos testes " + ", ".join(x["id"] for x in TESTES if x["grupo"] == t["grupo"]) + " (tudo na mesma tela)", leg, t["grupo"] in OBR_PING)
     t["print"] = GR[t["grupo"]]
 def exp(t):
     if t["ok"]: return "Sucesso: `Reply from ...` (a 1ª tentativa pode dar `Request timed out` por causa do ARP; vale o conjunto: ao menos 3 de 4 respostas)"
     return "Falha: `Request timed out` ou `Destination host unreachable`, 100% de perda (sub-redes diferentes e sem roteador)"
+PRINTS_BY = {p[0]: p[2] for p in PRINTS if p[3]}
 def ipf(h): return h[4] + ("*" if h[5] == "DHCP" and h[2] != "Servidor" else "")
 
 # ---------- GUIA ----------
@@ -77,17 +86,19 @@ def guia():
     o = []
     A = o.append
     A("# GUIA FINAL – execução no Cisco Packet Tracer\n")
-    A("Siga **na ordem**, sem decidir nada. Nenhuma etapa deste guia foi executada pelo autor do projeto: os resultados saem do **seu** Packet Tracer. Valores marcados com `*` são IPs **previstos** pelo DHCP; use sempre o valor real mostrado por `ipconfig`.\n")
-    A("Convenções: **PC**, **Printer** e **Server** são os ícones da categoria *End Devices* (parte inferior esquerda do Packet Tracer). Máscara de **todos** os hosts: `255.255.255.240`. Gateway e DNS: deixar **vazios** em todos os dispositivos.\n")
-    A("---\n\n## PASSO 0 — verificar o switch (antes de montar o resto)\n")
+    A("> # ▶ COMECE AQUI: PASSO 0\n> **Não monte nada antes de concluir o PASSO 0.** Ele define o modelo de switch que será usado em todo o projeto.\n")
+    A("## PASSO 0 — verificar o switch (antes de montar o resto)\n")
     A("1. Na barra inferior esquerda, clique na categoria **Switches** (ícone do switch). Na lista ao lado, clique em **2950T-24** e clique uma vez na área de trabalho para colocá-lo.")
     A("2. Clique no switch → aba **CLI** → pressione **Enter** (se aparecer `Continue with configuration dialog?`, digite `no` e Enter).")
     A("3. Digite, linha a linha:\n```\nenable\nshow ip interface brief\n```")
     A("4. Confira na saída: **FastEthernet0/1 até FastEthernet0/24** e **GigabitEthernet0/1** e **GigabitEthernet0/2**.")
-    A("   - **Tem as 3 condições** → este é o modelo para todo o projeto. **Tire o Print 1** e siga para o PASSO 1 (apague este switch de teste ou renomeie-o como SW-ENG).")
-    A("   - **Não tem Gi0/1 e Gi0/2** → apague o switch, escolha **2960-24TT** (categoria Switches; tem Fa0/1-24 e Gi0/1-2 com os mesmos nomes) e repita os passos 2 a 4. Os comandos deste guia funcionam sem alteração. Anote no relatório que o 2950T-24 não estava disponível e que o 2960-24TT foi usado.")
+    A("   - **Tem as portas** → este é o modelo para todo o projeto. **Capture a Figura 1** (a tela do CLI com a saída) e siga para o PASSO 1 (apague este switch de teste ou renomeie-o como SW-ENG).")
+    A("   - **Não tem Gi0/1 e Gi0/2** → apague o switch, escolha **2960-24TT** (categoria Switches; tem Fa0/1-24 e Gi0/1-2 com os mesmos nomes) e repita os passos 2 a 4. Os comandos deste guia funcionam sem alteração. No relatório você usará a **Opção B** da seção 2.1.")
     A("   - **Nenhum dos dois tem as portas** → pare e me envie o texto exato da saída.")
-    A("5. Nos passos seguintes, onde está escrito `2950T-24`, leia o **modelo que passou neste teste**.\n")
+    A("5. Nos passos seguintes, onde está escrito `2950T-24`, leia o **modelo que passou neste teste**.")
+    A("6. **Envie-me**, antes de continuar: (a) o modelo que você escolheu; (b) o **texto copiado** da saída de `show ip interface brief`; (c) a Figura 1.\n")
+    A("---\n")
+    A("Convenções do guia: **PC**, **Printer** e **Server** são os ícones da categoria *End Devices* (parte inferior esquerda do Packet Tracer). Máscara de **todos** os hosts: `255.255.255.240`. Gateway e DNS: deixar **vazios** em todos os dispositivos. Nenhuma etapa deste guia foi executada pelo autor do projeto: os resultados saem do **seu** Packet Tracer. Valores marcados com `*` são IPs **previstos** pelo DHCP; use sempre o valor real mostrado por `ipconfig`.\n")
     A("---\n\n## PASSO 1 — adicionar equipamentos (total: 4 switches, 80 PCs, 8 impressoras, 8 servidores)\n")
     A("Como colocar: escolha a categoria e o modelo, clique na área de trabalho (dica: segure **Ctrl** ao clicar no modelo para colocar vários seguidos). Para nomear: clique no equipamento → aba **Config** → **Display Name** → digite o nome → Enter. Em switches o `hostname` do CLI é ajustado pelo script do PASSO 3, mas ajuste também o Display Name.\n")
     A("| Departamento | Equipamento | Qtd | Modelo (categoria) | Nomes |\n|---|---|---|---|---|")
@@ -154,7 +165,7 @@ def guia():
     for sw, dep in D.items():
         v1, v2 = dep["vlans"]
         A(f"\n### {sw}\n```\nenable\nshow vlan brief\nshow interfaces trunk\nshow cdp neighbors\n```")
-        A(f"- `show vlan brief`: VLAN **{v1['id']}** ({sw[3:]}-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **{v2['id']}** ({sw[3:]}-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **Print {FIG['vlan:'+sw]}.**")
+        A(f"- `show vlan brief`: VLAN **{v1['id']}** ({sw[3:]}-VLAN1) com **Fa0/1 a Fa0/12**; VLAN **{v2['id']}** ({sw[3:]}-VLAN2) com **Fa0/13 a Fa0/24**; as outras 6 VLANs (dos demais departamentos) aparecem na lista **sem portas**; a VLAN 1 (`default`) aparece sem nenhuma das portas Fa0/1-24. **{rotl(FIG['vlan:'+sw])}.**")
         gi = ", ".join(f"Gi0/{u[-1]}" for u in UPLINKS[sw])
         A(f"- `show interfaces trunk`: {gi} em modo `on`, encapsulamento `802.1q`, status `trunking`, VLANs permitidas `11-12,21-22,31-32,41-42`.")
         viz = []
@@ -163,26 +174,35 @@ def guia():
             if b == sw: viz.append(f"{a} (local Gig 0/{pb[-1]}, porta remota Gig 0/{pa[-1]})")
         A(f"- `show cdp neighbors`: " + "; ".join(viz) + f". **Print {FIG['trunk:'+sw]}** (os dois últimos comandos; se não couberem em um print, tire dois).")
     A("\n---\n\n## PASSO 8 — testes\n")
-    A("Em cada teste: clique no PC de origem → aba **Desktop** → **Command Prompt** → digite o comando exato → Enter. Os pings do mesmo grupo (mesmo número de print) devem aparecer **na mesma tela** (rode em sequência, sem limpar). Antes de começar, em cada PC DHCP rode `ipconfig` e confirme o IP de origem.\n")
+    A("Em cada teste: clique no PC de origem → aba **Desktop** → **Command Prompt** → digite o comando exato → Enter. Os pings do mesmo grupo (mesmo rótulo de captura) devem aparecer **na mesma tela** (rode em sequência, sem limpar). Antes de começar, em cada PC DHCP rode `ipconfig` e confirme o IP de origem.\n")
     A("| Teste | Computador de origem | IP origem | Destino | IP destino | Comando | Resultado esperado | Print |\n|---|---|---|---|---|---|---|---|")
     for t in TESTES:
         s, d = t["src"], t["dst"]
-        A(f"| {t['id']} | {s[3]} | {ipf(s)} | {d[3]} | {ipf(d)} | `ping {d[4]}` | {exp(t)} | {t['print']} |")
+        A(f"| {t['id']} | {s[3]} | {ipf(s)} | {d[3]} | {ipf(d)} | `ping {d[4]}` | {exp(t)} | {rotl(t['print'])} |")
     A("\nObservação: `*` = IP previsto de dispositivo DHCP: **troque pelo IP real** (`ipconfig` no PC; tela *Config → FastEthernet0* da impressora) antes de digitar o `ping`. Os testes de **falha** são o resultado tecnicamente correto neste projeto (sub-redes distintas, sem roteador) e provam a segmentação; **não** são defeito.\n")
     A("---\n\n## PASSO 9 — salvar\nMenu **File → Save As** → nome `SuperTech.pkt`. Salve de novo ao final de todos os testes.\n")
+    nobr = sum(1 for p in PRINTS if p[3]); ndia = len(PRINTS) - nobr
     A("---\n\n## CHECKLIST DE PRINTS PARA O TRABALHO\n")
-    A("Capture cada tela (Windows: Win+Shift+S) e salve como `print-NN.png`. Cada print vira a **Figura de mesmo número** no relatório. Nada abaixo foi capturado ainda.\n")
-    A("| Print / Figura | O que capturar | Feito |\n|---|---|---|")
-    for i, (k, desc, leg) in enumerate(PRINTS, 1): A(f"| {i} | {desc} | [ ] |")
-    A(f"\nTotal: {len(PRINTS)} prints.\n")
+    A(f"Capture cada tela (Windows: Win+Shift+S) e salve como `figura-NN.png` ou `D-NN.png`. Nada abaixo foi capturado ainda. Total: **{len(PRINTS)} capturas**, das quais **{nobr} entram no relatório** e {ndia} servem só para validação.\n")
+    A(f"### A) OBRIGATÓRIOS PARA O RELATÓRIO ({nobr} figuras)\n")
+    A("Cada um vira a **Figura de mesmo número** em `04_relatorio.md`. As demais saídas entram no relatório como **texto** (tabelas), não como imagem.\n")
+    A("| Figura | O que capturar | Feito |\n|---|---|---|")
+    for rot, desc, leg, obr in PRINTS:
+        if obr: A(f"| {rot} | {desc} | [ ] |")
+    A(f"\n### B) APENAS PARA VALIDAÇÃO/DIAGNÓSTICO ({ndia} capturas)\n")
+    A("**Não** vão para o relatório. Capture se puder (servem de prova pessoal e de diagnóstico se algo falhar); o **texto** dos pings e dos IPs correspondentes entra nas tabelas do relatório.\n")
+    A("| Rótulo | O que capturar | Feito |\n|---|---|---|")
+    for rot, desc, leg, obr in PRINTS:
+        if not obr: A(f"| {rot} | {desc} | [ ] |")
+    A("")
     A("---\n\n## O QUE ME ENVIAR DEPOIS\n")
-    A("1. **Texto copiado** (não só imagem) das saídas: Print 1, os `show` dos 4 switches e os pings (assim eu monto as tabelas de resultado sem erro de leitura).\n2. Os prints numerados, ou ao menos a confirmação de quais foram tirados.\n3. O modelo de switch que você de fato usou.\n4. Qualquer linha de configuração rejeitada, qualquer teste que **não** deu o resultado esperado (copie a saída) e os IPs reais recebidos por DHCP.\n5. O `SuperTech.pkt` (entrega sua, ao professor).")
+    A("1. **Texto copiado** (não só imagem) das saídas: `show ip interface brief` (PASSO 0), os `show` dos 4 switches e os pings dos 31 testes (assim eu monto as tabelas de resultado sem erro de leitura).\n2. As figuras obrigatórias numeradas, ou ao menos a confirmação de quais foram tiradas.\n3. O modelo de switch que você de fato usou.\n4. Qualquer linha de configuração rejeitada, qualquer teste que **não** deu o resultado esperado (copie a saída) e os IPs reais recebidos por DHCP.\n5. O `SuperTech.pkt` (entrega sua, ao professor).")
     return "\n".join(o) + "\n"
 
 # ---------- RELATÓRIO ----------
 def relatorio():
     F = FIG
-    def ins(chave, desc): return f"`[INSERIR FIGURA {F[chave]} — {desc}]`"
+    def ins(chave, desc): return f"`[INSERIR FIGURA {F[chave]} — {desc.replace(chr(96), chr(39))}]`"
     def leg(chave, txt): return f"*Figura {F[chave]} – {txt}.*"
     r = []; A = r.append
     A("""<!-- ATENÇÃO (apagar antes de entregar): a redação em tempo presente descreve o PROJETO. Só entregue depois de executar o guia e substituir TODOS os marcadores `[INSERIR ...]` por resultados reais obtidos no seu Packet Tracer. Não deixe resultado previsto como se fosse obtido. -->
@@ -253,13 +273,19 @@ A atividade tem como finalidade simular, no **Cisco Packet Tracer**, a rede da e
 
 ### 2.1 Equipamentos
 
-Foram utilizados o Cisco Packet Tracer, 4 switches (modelo **[INFORMAR O MODELO USADO — 2950T-24 ou o que passou no PASSO 0]**), 80 PCs, 8 servidores e 8 impressoras. Cada departamento tem 20 estações, 2 servidores e 2 impressoras, totalizando 24 hosts por departamento e 96 hosts na rede.
+Foram utilizados o Cisco Packet Tracer, 4 switches, 80 PCs, 8 servidores e 8 impressoras. Cada departamento tem 20 estações, 2 servidores e 2 impressoras, totalizando 24 hosts por departamento e 96 hosts na rede.
+
+O enunciado pede o switch 2950-24. Como as 24 portas FastEthernet de cada switch são ocupadas pelos hosts, a interligação dos switches exige portas adicionais. Antes da montagem, o modelo foi verificado com o comando `show ip interface brief` (Figura 1).
+
+`[ESCOLHER UMA OPÇÃO E APAGAR A OUTRA — conforme a saída real do PASSO 0]`
+
+**Opção A (o 2950T-24 apresentou Fa0/1-24 e Gi0/1-2):** Foi utilizado o modelo 2950T-24, da mesma família do 2950-24, que além das 24 portas FastEthernet possui duas portas Gigabit (Gi0/1 e Gi0/2), usadas na interligação dos switches.
+
+**Opção B (o 2950T-24 não apresentou as portas Gigabit):** O modelo 2950T-24 não apresentou as portas Gigabit necessárias no simulador; por isso foi utilizado o modelo 2960-24TT, que possui 24 portas FastEthernet e duas portas Gigabit (Gi0/1 e Gi0/2). Trata-se de um modelo de outra família, e os comandos de configuração utilizados são os mesmos.
 
 """ + ins("modelo", "SAÍDA REAL DE `show ip interface brief` DO SWITCH ESCOLHIDO") + """
 
 """ + leg("modelo", "Interfaces do switch utilizado") + """
-
-O enunciado pede o switch 2950-24. Como as 24 portas FastEthernet são ocupadas pelos hosts, a interligação dos switches exige portas adicionais; por isso foi utilizado o modelo da mesma família que possui duas portas Gigabit (Gi0/1 e Gi0/2), conforme a Figura """ + str(F["modelo"]) + """. **[AJUSTAR este parágrafo conforme o que o Packet Tracer realmente mostrou no PASSO 0.]**
 
 ### 2.2 Cálculo das sub-redes
 
@@ -317,42 +343,55 @@ A rede foi montada em quatro etapas: (1) inserção dos equipamentos e cabeament
             A(f"| {v['id']} | {h[3]} | {h[4]} | {p['inicio']} | {p['max']} | {p['inicio']} – {ini+p['max']-1} |")
     A("\nO endereçamento completo, porta por porta, está no Anexo A (`tabela_enderecamento.md`). As tabelas acima derivam apenas do planejamento; a confirmação no simulador está na seção 4.\n")
     A("## 4. Resultados\n")
-    A("Esta seção reúne **somente** o que foi obtido no Packet Tracer.\n")
+    A("Esta seção reúne **somente** o que foi obtido no Packet Tracer. As capturas de tela estão nas figuras; as demais saídas (testes de ping, IPs recebidos) estão em tabelas, em texto.\n")
     A("### 4.1 VLANs e portas\n")
     for sw in D:
         A(ins("vlan:"+sw, f"SAÍDA REAL DE `show vlan brief` DO {sw}") + "\n\n" + leg("vlan:"+sw, f"VLANs e portas de acesso do {sw}") + "\n")
     A("### 4.2 Trunks e interligação dos switches\n")
-    for sw in D:
+    A("Os switches SW-COMP e SW-TI, que ocupam as posições centrais da cadeia, têm duas portas de trunk cada; juntos, seus vizinhos CDP comprovam os três enlaces da Tabela 3.\n")
+    for sw in ("SW-COMP", "SW-TI"):
         A(ins("trunk:"+sw, f"SAÍDA REAL DE `show interfaces trunk` E `show cdp neighbors` DO {sw}") + "\n\n" + leg("trunk:"+sw, f"Trunks e vizinhos CDP do {sw}") + "\n")
+    for sw in ("SW-ENG", "SW-INFRA"):
+        A(f"`[COLAR AQUI A SAÍDA REAL (TEXTO) DE show interfaces trunk E show cdp neighbors DO {sw}, em bloco de código]`\n")
     A("### 4.3 IPs estáticos (Engenharia e TI Interno)\n")
     for k in FIG:
-        if k.startswith("ip:") and any(x in k for x in ("-ENG-", "-TI-")):
+        if k.startswith("ip:") and isinstance(FIG[k], int):
             nome = k[3:]; A(ins(k, f"TELA DE IP ESTÁTICO DE {nome}") + "\n\n" + leg(k, f"IP estático de {nome}") + "\n")
+    A("Os demais dispositivos de Engenharia e TI Interno foram configurados com os IPs da Tabela do Anexo A.\n")
     A("### 4.4 DHCP (Compras e Infraestrutura)\n")
     for k in FIG:
-        if k.startswith("ip:") and any(x in k for x in ("-COMP-", "-INFRA-")):
-            A(ins(k, f"TELA DE IP ESTÁTICO DE {k[3:]}") + "\n\n" + leg(k, f"IP estático do servidor DHCP {k[3:]}") + "\n")
-    for k in FIG:
-        if k.startswith(("dhcp:", "ipc:", "impd:")):
-            nome = k.split(":")[1]; tipo = {"dhcp": "POOL DHCP DO SERVIDOR", "ipc": "`ipconfig` DO PC", "impd": "IMPRESSORA EM DHCP"}[k.split(":")[0]]
-            A(ins(k, f"{tipo} {nome}") + "\n\n" + leg(k, {"dhcp": f"Pool DHCP do servidor {nome}", "ipc": f"Endereço obtido por DHCP por {nome}", "impd": f"Impressora {nome} em DHCP"}[k.split(":")[0]]) + "\n")
-    A("`[INSERIR TABELA — IPs REAIS RECEBIDOS POR DHCP, com o dispositivo e o IP lidos de `ipconfig`/Config]`\n")
+        if k.startswith(("dhcp:", "ipc:")) and isinstance(FIG[k], int):
+            nome = k.split(":")[1]; tipo = {"dhcp": "POOL DHCP DO SERVIDOR", "ipc": "`ipconfig` DO PC"}[k.split(":")[0]]
+            A(ins(k, f"{tipo} {nome}") + "\n\n" + leg(k, {"dhcp": f"Pool DHCP do servidor {nome}", "ipc": f"Endereço obtido por DHCP por {nome}"}[k.split(":")[0]]) + "\n")
+    A("**Tabela 5 – Endereços recebidos por DHCP (valores reais)**\n")
+    A("Preencha com o que `ipconfig` (PCs) e a tela *Config → FastEthernet0* (impressoras) mostraram. A coluna *IP previsto* vem do planejamento; *IP recebido* é o valor real.\n")
+    A("| Departamento | VLAN | Dispositivo | IP previsto | IP recebido |\n|---|---|---|---|---|")
+    for sw in ("SW-COMP", "SW-INFRA"):
+        for p, vid, papel, nome, a, o_ in H[sw]:
+            if o_ == "DHCP": A(f"| {D[sw]['nome']} | {vid} | {nome} | {a} | `[INSERIR IP REAL]` |")
+    A("")
     A("### 4.5 Testes de conectividade\n")
-    A("A Tabela 5 lista os testes de conectividade. A coluna *Resultado obtido* só pode ser preenchida com o que o simulador mostrou.\n")
-    A("**Tabela 5 – Testes de ping**\n\n| Teste | Origem | Destino | Comando | Resultado esperado pelo projeto | Resultado obtido | Figura |\n|---|---|---|---|---|---|---|")
+    A("A Tabela 6 lista os testes de conectividade. A coluna *Resultado obtido* só pode ser preenchida com o que o simulador mostrou (por exemplo: `4 respostas, 0% de perda`, ou `Request timed out, 100% de perda`). Nos testes cujo destino é PC ou impressora de Compras/Infraestrutura, o IP do comando é o IP **real** da Tabela 5 (o da tabela abaixo é o previsto).\n")
+    A("**Tabela 6 – Testes de ping**\n\n| Teste | Origem | Destino | Comando | Resultado esperado pelo projeto | Resultado obtido | Captura |\n|---|---|---|---|---|---|---|")
     for t in TESTES:
-        A(f"| {t['id']} | {t['src'][3]} | {t['dst'][3]} | `ping {t['dst'][4]}` | {'Sucesso' if t['ok'] else 'Falha (sub-redes diferentes, sem roteador)'} | `[INSERIR RESULTADO REAL DO PING {t['src'][3]} → {t['dst'][3]}]` | {t['print']} |")
-    A("\nNos testes cujo destino é PC ou impressora de Compras/Infraestrutura, o IP do comando é o IP **real** lido no simulador (o da tabela é o previsto).\n")
+        rp = t["print"]
+        cap = f"Figura {rp}" if isinstance(rp, int) else "—"
+        A(f"| {t['id']} | {t['src'][3]} | {t['dst'][3]} | `ping {t['dst'][4]}` | {'Sucesso' if t['ok'] else 'Falha (sub-redes diferentes, sem roteador)'} | `[INSERIR RESULTADO REAL DO PING {t['src'][3]} → {t['dst'][3]}]` | {cap} |")
+    A("")
     for g, n in GR.items():
-        tt = [t for t in TESTES if t["grupo"] == g]
-        A(f"`[INSERIR FIGURA {n} — PINGS REAIS DO GRUPO {g} A PARTIR DE {tt[0]['src'][3]}]`\n\n*Figura {n} – " + [x for x in PRINTS][n-1][2] + ".*\n")
-    A("### 4.6 Análise dos resultados\n")
-    A("`[ESCREVER APÓS OS TESTES, com base nos resultados reais: (a) pings dentro de cada VLAN; (b) falha entre VLANs do mesmo departamento e entre departamentos, e o que isso demonstra sobre segmentação e sobre a ausência de roteador; (c) endereços recebidos por DHCP dentro das faixas esperadas, sem endereço de um departamento aparecendo em outro; (d) interligação comprovada por trunk e CDP. Se qualquer resultado divergir do esperado, descrever a divergência e a causa.]`\n")
+        if isinstance(n, int):
+            tt = [t for t in TESTES if t["grupo"] == g]
+            A(f"`[INSERIR FIGURA {n} — PINGS REAIS DOS TESTES {', '.join(x['id'] for x in tt)} A PARTIR DE {tt[0]['src'][3]}]`\n\n*Figura {n} – " + PRINTS_BY[n] + ".*\n")
+    A("### 4.6 Interpretação\n")
+    A("O projeto prevê que (a) os dispositivos de uma mesma VLAN se comuniquem, pois compartilham o domínio de broadcast e a sub-rede /28; (b) dispositivos de VLANs diferentes do mesmo departamento, e de departamentos diferentes, **não** se comuniquem, pois estão em sub-redes distintas e o roteiro não prevê roteador (camada 3); (c) os PCs e impressoras de Compras e Infraestrutura recebam endereços das faixas dos pools da Tabela 4, sem endereços de um departamento aparecerem em outro, porque cada VLAN tem exatamente um servidor DHCP; e (d) os enlaces entre switches apareçam como trunk e como vizinhos CDP. Os resultados reais das Tabelas 5 e 6 e das Figuras devem ser comparados com essa previsão.\n")
+    A("`[INSERIR 1 A 3 FRASES: o que os resultados reais confirmaram e, se houver, o que divergiu da previsão e a causa]`\n")
+    A("### 4.7 Observações da execução\n")
+    A("`[INSERIR, SE HOUVER: comandos rejeitados pelo Packet Tracer e como foram contornados; ajustes feitos; qualquer comportamento inesperado. Se não houve, escrever \"Não houve observações relevantes\".]`\n")
     A("## 5. Conclusão\n")
-    A("`[AJUSTAR APÓS OS TESTES.]` A atividade permitiu simular uma rede com quatro departamentos, cada um em seu bloco de endereços, e mostrou como o subnetting dimensiona os endereços à necessidade: um /27 por departamento, com folga de seis endereços, e um /28 por VLAN. Também evidenciou que as VLANs segmentam o tráfego dentro do próprio switch, que cada VLAN deve ter sua sub-rede, e que repetir identificadores de VLAN em switches interligados une os domínios de broadcast e provoca conflito entre servidores DHCP. O DHCP automatizou a atribuição de endereços em Compras e Infraestrutura, desde que houvesse um servidor em cada VLAN. Por fim, a simulação mostrou que switches isolam o tráfego na camada 2 e que a comunicação entre sub-redes diferentes exige um dispositivo de camada 3, que o roteiro não inclui.\n")
+    A("A atividade permitiu projetar e simular uma rede com quatro departamentos, cada um em seu bloco de endereços, e mostrou como o subnetting dimensiona os endereços à necessidade: um /27 por departamento, com folga de seis endereços, e um /28 por VLAN. Também evidenciou que as VLANs segmentam o tráfego dentro do próprio switch, que cada VLAN deve ter sua própria sub-rede e que repetir identificadores de VLAN em switches interligados une os domínios de broadcast e provoca conflito entre servidores DHCP. O DHCP automatiza a atribuição de endereços em Compras e Infraestrutura, desde que haja um servidor em cada VLAN. Por fim, a atividade mostra que switches isolam o tráfego na camada 2 e que a comunicação entre sub-redes diferentes exige um dispositivo de camada 3, que o roteiro não inclui.\n")
+    A("`[INSERIR 1 FRASE FINAL sobre a execução, coerente com a seção 4.6: por exemplo, se a simulação confirmou todos os comportamentos previstos]`\n")
     A("## Referências\n")
-    A("*(Cite apenas as fontes que você de fato consultou; complete edição/ano dos livros conforme o seu exemplar.)*\n")
-    A("- CISCO. *Cisco Packet Tracer* (software de simulação de redes).\n- IEEE. *IEEE 802.1Q – Bridges and Bridged Networks* (VLANs e trunk).\n- IETF. *RFC 791 – Internet Protocol*, 1981.\n- IETF. *RFC 1918 – Address Allocation for Private Internets*, 1996.\n- IETF. *RFC 2131 – Dynamic Host Configuration Protocol*, 1997.\n- IETF. *RFC 4632 – Classless Inter-domain Routing (CIDR)*, 2006.\n- KUROSE, J. F.; ROSS, K. W. *Redes de Computadores e a Internet: uma abordagem top-down*. Pearson. `[edição/ano]`\n- TANENBAUM, A. S.; WETHERALL, D. *Redes de Computadores*. Pearson. `[edição/ano]`\n")
+    A("- CISCO. *Cisco Packet Tracer*. Software de simulação de redes.\n- IEEE. *IEEE 802.1Q – Bridges and Bridged Networks* (VLANs e trunk).\n- IETF. *RFC 791 – Internet Protocol*, 1981.\n- IETF. *RFC 1918 – Address Allocation for Private Internets*, 1996.\n- IETF. *RFC 2131 – Dynamic Host Configuration Protocol*, 1997.\n- IETF. *RFC 4632 – Classless Inter-domain Routing (CIDR)*, 2006.\n")
     A("## Anexo A – Tabela de endereçamento completa\n\nVer `tabela_enderecamento.md`.\n")
     return "\n".join(r) + "\n"
 

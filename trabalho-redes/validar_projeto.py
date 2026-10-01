@@ -141,7 +141,7 @@ esp_pools = sorted((vid, ini, mx) for d in depts.values() for vid, srv, ini, mx 
 chk(sorted((v, i, m) for _, _, v, i, m in pl) == esp_pools and len(pl) == 4, "guia: 4 pools DHCP idênticos aos da tabela")
 chk(all(nome2[n][1][4] == ip.ip_address(a) for n, a, *_ in pl), "guia: IP de cada servidor DHCP confere com a tabela")
 # 4) testes
-tst = re.findall(r"\| (T\d+) \| (\S+) \| ([\d.]+\*?) \| (\S+) \| ([\d.]+\*?) \| `ping ([\d.]+)` \| (Sucesso|Falha)[^|]*\| (\d+) \|", guia)
+tst = re.findall(r"\| (T\d+) \| (\S+) \| ([\d.]+\*?) \| (\S+) \| ([\d.]+\*?) \| `ping ([\d.]+)` \| (Sucesso|Falha)[^|]*\| (Figura \d+|D-\d+) \|", guia)
 chk(len(tst) == 31, f"guia: 31 testes ({len(tst)})")
 ok_t = True; pos = collections.Counter(); neg_i = neg_x = 0
 for tid, src, ips, dst, ipd, cmd, res, pr in tst:
@@ -156,17 +156,29 @@ for tid, src, ips, dst, ipd, cmd, res, pr in tst:
 chk(ok_t, "guia: em todos os testes, nomes/IPs/comando conferem com a tabela; sucesso ⇔ mesma sub-rede /28; '*' só em DHCP não-servidor")
 chk(sorted(pos.items()) == [(v, 3) for v in sorted(vlan_ids)], "guia: 3 pings positivos (PC, impressora, servidor) em cada uma das 8 VLANs")
 chk(neg_i == 4 and neg_x == 3, f"guia: 4 testes negativos no mesmo departamento e 3 entre departamentos ({neg_i}/{neg_x})")
-grp = collections.defaultdict(set)
-for tid, src, *_r, pr in tst: grp[int(pr)].add(src)
-chk(all(len(v) == 1 for v in grp.values()), "guia: cada print de ping tem uma única origem")
 # 5) prints / figuras
-pc = re.findall(r"^\| (\d+) \| .* \| \[ \] \|$", guia, re.M)
-N = len(pc)
-chk(pc == [str(i) for i in range(1, N + 1)] and N == 43, f"guia: checklist de {N} prints numerados em sequência")
-chk(all(1 <= int(p) <= N for *_x, p in tst), "guia: todo teste aponta para um print existente")
+obr = re.findall(r"^\| (\d+) \| .* \| \[ \] \|$", guia, re.M)
+dia = re.findall(r"^\| (D-\d+) \| .* \| \[ \] \|$", guia, re.M)
+chk(obr == [str(i) for i in range(1, len(obr) + 1)] and len(obr) == 20, f"guia: {len(obr)} figuras obrigatórias numeradas em sequência")
+chk(dia == [f"D-{i:02d}" for i in range(1, len(dia) + 1)] and len(dia) == 23, f"guia: {len(dia)} capturas de diagnóstico D-01..D-23")
+chk(len(obr) + len(dia) == 43, "guia: 20 + 23 = 43 capturas no total")
+refs = {p for *_x, p in tst}
+chk(all((p.startswith("D-") and p[2:].isdigit() and int(p[2:]) <= len(dia)) or (p.startswith("Figura ") and int(p[7:]) <= len(obr)) for p in refs), "guia: todo teste aponta para uma captura existente")
+chk(all(len({s_ for tid, s_, *_r, p in tst if p == q}) == 1 for q in refs), "guia: cada captura de ping tem uma única origem")
+chk(guia.index("## PASSO 0") < guia.index("## PASSO 1") and guia.index("COMECE AQUI") < 600, "guia: PASSO 0 destacado no início, antes do PASSO 1")
+# obrigatórias esperadas
+tabA = guia.split("### A) OBRIGAT")[1].split("### B) APENAS")[0]
+for item in ["show ip interface brief", "Topologia completa", "SW-ENG: `show vlan brief`", "SW-INFRA: `show vlan brief`", "SW-COMP: `show interfaces trunk`", "SW-TI: `show interfaces trunk`",
+             "IP estático de PC-ENG-11-01", "IP estático de PC-TI-31-01", "DHCP de SRV-COMP-21", "DHCP de SRV-INFRA-41", "PC-COMP-21-01: `ipconfig`", "PC-INFRA-41-01: `ipconfig`"]:
+    chk(item in tabA, f"guia: figura obrigatória contém '{item}'")
 figs = sorted({int(x) for x in re.findall(r"\[INSERIR FIGURA (\d+) —", rel)})
 legs = sorted({int(x) for x in re.findall(r"\*Figura (\d+) –", rel)})
-chk(figs == list(range(1, N + 1)) == legs, "relatório: marcadores [INSERIR FIGURA 1..N] e legendas 1..N batem com o checklist de prints")
+chk(figs == list(range(1, 21)) == legs, "relatório: marcadores [INSERIR FIGURA 1..20] e legendas 1..20 batem com as 20 figuras obrigatórias")
+marc = re.findall(r"\[([A-ZÇÃÕ]{4,})\b", rel)
+chk(set(marc) <= {"INSERIR", "ESCOLHER", "COLAR"}, f"relatório: só existem marcadores INSERIR/ESCOLHER/COLAR {sorted(set(marc))}")
+chk("[edição" not in rel and "INFORMAR" not in rel and "AJUSTAR" not in rel, "relatório: sem placeholders que independem da simulação")
+chk("Opção A" in rel and "Opção B" in rel, "relatório: Opções A/B do modelo de switch prontas")
+chk(len(re.findall(r"INSERIR IP REAL", rel)) == 44 and len(re.findall(r"INSERIR RESULTADO REAL DO PING", rel)) == 31, "relatório: 44 linhas de IP DHCP reais (22 PCs/impressoras em Compras e 22 em Infraestrutura) e 31 resultados de ping a preencher")
 # 6) configs embutidas no guia
 for sw, t in cfg.items():
     chk(t.rstrip() in guia, f"guia: bloco CLI de {sw} idêntico a configs/{sw}.txt")
