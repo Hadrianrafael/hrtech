@@ -1,0 +1,41 @@
+=== 1. DHCP ===
+pcadm: ip=192.168.10.44/24 gw=192.168.10.1 dns=192.168.40.10
+pccom: ip=192.168.20.44/24 gw=192.168.20.1 dns=192.168.40.10
+pcatd: ip=192.168.30.61/24 gw=192.168.30.1 dns=192.168.40.10
+wifi: ip=192.168.50.69/24 gw=192.168.50.1 dns=192.168.40.10
+[OK]    pcadm recebeu IP 192.168.10.11-254 (192.168.10.44)
+[OK]    faixa .11-.254 (ADM)
+[OK]    pccom recebeu IP 192.168.20.x (192.168.20.44)
+[OK]    pcatd recebeu IP 192.168.30.x (192.168.30.61)
+[OK]    wifi recebeu IP 192.168.50.x (192.168.50.69)
+[OK]    gateway e DNS entregues por DHCP (pcadm)
+=== 2. Roteamento e servidor ===
+[OK]    pcadm -> gateway 192.168.10.1
+[OK]    pcadm -> servidor 192.168.40.10
+[OK]    pcadm -> pccom (192.168.20.44) entre VLANs
+[OK]    pccom -> pcatd (192.168.30.61) entre VLANs
+[OK]    pcatd -> gerência 192.168.99.2
+=== 3. DNS e HTTP ===
+[OK]    DNS: intranet.aurora.local resolve para 192.168.40.10
+[OK]    HTTP: http://intranet.aurora.local (Intranet da Aurora)
+=== 4. Internet simulada e NAT ===
+[OK]    pcadm -> 203.0.113.10 (internet simulada)
+[OK]    DNS: www.exemplo.com.br resolve para 203.0.113.10
+[OK]    HTTP: http://www.exemplo.com.br (Servidor externo de teste)
+Origem vista pelo servidor externo (log HTTP): 198.51.100.2 Serving 
+[OK]    NAT: servidor externo só vê 198.51.100.2
+--- conntrack (R-EDGE), amostra:
+icmp     1 29 src=192.168.10.44 dst=203.0.113.10 type=8 code=0 id=1539 src=203.0.113.10 dst=198.51.100.2 type=0 code=0 id=1539 mark=0 use=1
+tcp      6 119 TIME_WAIT src=192.168.10.44 dst=203.0.113.10 sport=37116 dport=80 src=203.0.113.10 dst=198.51.100.2 sport=80 dport=37116 [ASSURED] mark=0 use=1
+=== 5. Wi-Fi sem ACL ===
+[OK]    wifi -> pcadm (192.168.10.44) ANTES da ACL (rede plana de política)
+=== 6. ACL WIFI-ENTRADA (equivalente em iptables) ===
+[OK]    wifi -> pcadm (192.168.10.44) bloqueado pela ACL (falhou como esperado)
+[OK]    wifi -> servidor 192.168.40.10 (ICMP) bloqueado (falhou como esperado)
+[OK]    wifi -> gateway 192.168.50.1 também deixa de responder (falhou como esperado)
+[OK]    wifi -> 203.0.113.10 (internet) continua funcionando
+[OK]    wifi resolve nomes pelo DNS 192.168.40.10 (UDP 53 permitido)
+[OK]    wifi -> HTTP externo continua funcionando
+[OK]    pcadm continua acessando tudo (ACL só afeta o Wi-Fi)
+
+RESULTADO: 25 verificações OK, 0 falhas
