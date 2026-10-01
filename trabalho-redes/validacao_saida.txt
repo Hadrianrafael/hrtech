@@ -161,7 +161,9 @@
 [OK]   guia: figura obrigatória contém 'DHCP de SRV-INFRA-41'
 [OK]   guia: figura obrigatória contém 'PC-COMP-21-01: `ipconfig`'
 [OK]   guia: figura obrigatória contém 'PC-INFRA-41-01: `ipconfig`'
-[OK]   relatório: marcadores [INSERIR FIGURA 1..20] e legendas 1..20 batem com as 20 figuras obrigatórias
+[OK]   relatório: marcadores [INSERIR FIGURA 2..20] e legendas 1..20 (Figura 1 já é imagem real)
+[OK]   relatório: Figura 1 incorporada como imagem
+[OK]   figuras/figura-01.png existe e é um PNG válido
 [OK]   relatório: só existem marcadores INSERIR/COLAR ['COLAR', 'INSERIR']
 [OK]   relatório: sem placeholders que independem da simulação
 [OK]   relatório: modelo definitivo 2960-24TT, sem opções pendentes
@@ -191,6 +193,6 @@
 [OK]   relatório: 4 sub-redes /27
 [OK]   relatório: nenhum resultado de ping inventado
 [OK]   relatório: não afirma execução
-[OK]   relatório: 99 marcadores [INSERIR ...] para evidências reais
+[OK]   relatório: 98 marcadores [INSERIR ...] para evidências reais
 
 RESULTADO: TUDO OK

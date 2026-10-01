@@ -70,7 +70,7 @@ Foram utilizados o Cisco Packet Tracer, 4 switches, 80 PCs, 8 servidores e 8 imp
 
 O enunciado cita o switch 2950-24. Como as 24 portas FastEthernet de cada switch são ocupadas pelos hosts, a interligação dos switches exige portas adicionais. Antes da montagem, o modelo foi verificado no simulador com o comando `show ip interface brief`. Foi adotado o **Cisco 2960-24TT**, que apresentou 24 portas FastEthernet (Fa0/1 a Fa0/24), duas portas GigabitEthernet (Gi0/1 e Gi0/2) e a interface Vlan1 (Figura 1). As portas Gigabit são usadas na interligação dos switches. Trata-se de um modelo diferente do 2950-24 citado no enunciado, escolhido por possuir as portas necessárias para a interligação sem consumir as portas dos hosts.
 
-`[INSERIR FIGURA 1 — SAÍDA REAL DE 'show ip interface brief' DO SWITCH ESCOLHIDO]`
+![Figura 1 – Interfaces do switch utilizado](figuras/figura-01.png)
 
 *Figura 1 – Interfaces do switch utilizado.*
 

@@ -720,7 +720,7 @@ Cada um vira a **Figura de mesmo número** em `04_relatorio.md`. As demais saíd
 
 | Figura | O que capturar | Feito |
 |---|---|---|
-| 1 | CLI do switch escolhido: `show ip interface brief` | [ ] |
+| 1 | CLI do switch escolhido: `show ip interface brief` | [x] já capturada (`figuras/figura-01.png`) |
 | 2 | Topologia completa (workspace inteiro, zoom que mostre os 4 departamentos e os 3 enlaces entre switches) | [ ] |
 | 3 | CLI de SW-ENG: `show vlan brief` | [ ] |
 | 4 | CLI de SW-COMP: `show vlan brief` | [ ] |
