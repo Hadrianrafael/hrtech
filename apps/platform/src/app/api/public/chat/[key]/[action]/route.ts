@@ -58,7 +58,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         if (limited(req, key, 'msg', 30, 60_000) || globallyLimited(key, 'msg', 2000)) {
           return NextResponse.json({ error: 'Você está enviando mensagens rápido demais.' }, { status: 429, headers });
         }
-        return NextResponse.json(await postVisitorMessage(key, origin, token, String(body.text ?? ''), (body.after as string) ?? null), { headers });
+        return NextResponse.json(await postVisitorMessage(key, origin, token, String(body.text ?? ''), (body.after as string) ?? null, typeof body.clientId === 'string' ? body.clientId : null), { headers });
       case 'human':
         if (limited(req, key, 'human', 5, 10 * 60_000)) return NextResponse.json({ error: 'Aguarde um instante.' }, { status: 429, headers });
         return NextResponse.json(await requestHumanFromWidget(key, origin, token), { headers });

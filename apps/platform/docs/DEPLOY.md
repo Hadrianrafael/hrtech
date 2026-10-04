@@ -68,6 +68,10 @@ O repositório já está preparado: `vercel.json` (build, instalação e cron), 
 
 ### 3. Variáveis de ambiente (Settings → Environment Variables, ambiente Production)
 
+> Gere os segredos com um **gerenciador de senhas** (gerador de senhas aleatórias) ou com `openssl` no seu
+> computador, e cole-os **diretamente na Vercel**. Não os envie por chat, e-mail ou issue, e não os coloque no
+> repositório. Marque-os como *Sensitive* na Vercel.
+
 | Variável | Valor |
 | --- | --- |
 | `AUTH_SECRET` | texto aleatório ≥ 32 caracteres — `openssl rand -base64 48` |

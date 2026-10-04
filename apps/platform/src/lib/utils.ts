@@ -10,8 +10,14 @@ export function normalizePhone(input: string | null | undefined): string | null 
   if (!input) return null;
   let digits = input.replace(/\D/g, '');
   if (!digits) return null;
+  // "+" ou "00" na frente = número já no formato internacional (ex.: wa_id do WhatsApp): não supõe Brasil.
+  const international = input.trim().startsWith('+') || digits.startsWith('00');
   if (digits.startsWith('00')) digits = digits.slice(2);
-  if (digits.length === 10 || digits.length === 11) digits = `55${digits}`;
+  if (!international && (digits.length === 10 || digits.length === 11)) digits = `55${digits}`;
+  // Celular brasileiro no formato antigo (sem o 9º dígito), comum no wa_id do WhatsApp: 55 + DDD + 8 dígitos
+  // iniciando em 6–9 → insere o 9, para casar com o número digitado em formulários. Fixos (2–5) não mudam.
+  const old = digits.match(/^55([1-9]{2})([6-9]\d{7})$/);
+  if (old) digits = `55${old[1]}9${old[2]}`;
   return digits.length >= 8 && digits.length <= 15 ? digits : null;
 }
 
@@ -19,6 +25,23 @@ export function formatPhone(digits: string | null | undefined): string {
   if (!digits) return '';
   const m = digits.match(/^55(\d{2})(\d{4,5})(\d{4})$/);
   return m ? `+55 (${m[1]}) ${m[2]}-${m[3]}` : `+${digits}`;
+}
+
+export const DEFAULT_TIMEZONE = 'America/Sao_Paulo';
+
+/** Fuso IANA aceito pelo runtime (um valor inválido derrubaria Intl.DateTimeFormat com RangeError). */
+export function isValidTimeZone(tz: unknown): tz is string {
+  if (typeof tz !== 'string' || !tz || tz.length > 60) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function safeTimeZone(...candidates: unknown[]): string {
+  return (candidates.find(isValidTimeZone) as string | undefined) ?? DEFAULT_TIMEZONE;
 }
 
 export function normalizeEmail(input: string | null | undefined): string | null {

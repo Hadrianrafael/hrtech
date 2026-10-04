@@ -1,11 +1,13 @@
 'use server';
 
+import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { formToObject } from '@/lib/action';
 import { withOrg, withOrgSchema } from '@/lib/action-ctx';
 import { audit } from '@/lib/audit';
 import { ALL_PERMISSIONS, isPermission } from '@/lib/auth/permissions';
 import { AppError } from '@/lib/errors';
+import { timeZoneSchema } from '@/lib/validation';
 import { assertGrantable, changeMemberRole, createInvitation, revokeInvitation, setMemberStatus } from '@/server/auth-service';
 import { getOrgPlan } from '@/server/billing/limits';
 import { getBillingProvider } from '@/server/billing/provider';
@@ -83,7 +85,7 @@ export async function saveOrganizationAction(form: FormData) {
     z.object({
       name: z.string().trim().min(2, 'Nome obrigatório.').max(120),
       segment: z.string().max(40).optional(),
-      timezone: z.string().max(60),
+      timezone: timeZoneSchema,
       retentionDays: z.union([z.literal(''), z.coerce.number().int().min(30, 'Mínimo de 30 dias.').max(3650)]).optional(),
     }),
     form,
@@ -92,6 +94,12 @@ export async function saveOrganizationAction(form: FormData) {
         where: { id: ctx.orgId },
         data: { name: d.name, segment: d.segment || null, timezone: d.timezone, retentionDays: d.retentionDays === '' || d.retentionDays === undefined ? null : d.retentionDays },
       });
+      // O horário de atendimento do chatbot segue o fuso da empresa (o assistente usa esse valor).
+      const chatbot = await ctx.db.chatbot.findFirst({});
+      const hours = (chatbot?.businessHours ?? null) as Record<string, unknown> | null;
+      if (chatbot && hours && hours.timezone !== d.timezone) {
+        await ctx.db.chatbot.update({ where: { id: chatbot.id }, data: { businessHours: { ...hours, timezone: d.timezone } as Prisma.InputJsonValue } });
+      }
       await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: 'organization.updated', entityType: 'Organization', entityId: ctx.orgId });
     },
     'Configurações salvas.',

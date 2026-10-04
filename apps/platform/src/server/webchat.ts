@@ -67,7 +67,14 @@ async function serializeMessages(conversationId: string, orgId: string, after?: 
     take: 100,
   });
   const messages = afterMsg ? found : found.reverse();
-  return messages.map((m) => ({ id: m.id, from: m.direction === 'INBOUND' ? 'visitor' : m.senderType === 'AI' ? 'bot' : 'agent', text: m.body, at: m.createdAt }));
+  return messages.map((m) => ({
+    id: m.id,
+    from: m.direction === 'INBOUND' ? 'visitor' : m.senderType === 'AI' ? 'bot' : 'agent',
+    text: m.body,
+    at: m.createdAt,
+    // id do eco local enviado pelo widget: permite reconhecer a própria mensagem em qualquer resposta (sem duplicar)
+    clientId: m.direction === 'INBOUND' ? ((m.metadata as { clientId?: string } | null)?.clientId ?? null) : null,
+  }));
 }
 
 export async function startVisitorSession(publicKey: string, origin: string | null, input: z.input<typeof startSchema>) {
@@ -110,7 +117,7 @@ async function visitorConversation(publicKey: string, origin: string | null, tok
   return { chatbot, conversation };
 }
 
-export async function postVisitorMessage(publicKey: string, origin: string | null, token: string, text: string, after?: string | null) {
+export async function postVisitorMessage(publicKey: string, origin: string | null, token: string, text: string, after?: string | null, clientId?: string | null) {
   const body = text.trim().slice(0, 2000);
   if (!body) throw new AppError('Mensagem vazia.');
   const { conversation } = await visitorConversation(publicKey, origin, token);
@@ -121,6 +128,7 @@ export async function postVisitorMessage(publicKey: string, origin: string | nul
     identityExternalId: conversation.contactId,
     contactDefaults: {},
     body,
+    metadata: clientId && /^[\w-]{1,64}$/.test(clientId) ? { clientId } : undefined,
   });
   // sentId permite ao widget substituir o "eco" local pela mensagem real (sem duplicar).
   return { sentId: r.message?.id ?? null, messages: await serializeMessages(conversation.id, conversation.organizationId, after) };

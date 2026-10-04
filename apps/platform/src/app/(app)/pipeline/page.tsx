@@ -25,7 +25,15 @@ export default async function PipelinePage({ searchParams }: { searchParams: Pro
         <KanbanBoard
           pipelines={board.pipelines.map((p) => ({ id: p.id, name: p.name }))}
           pipelineId={board.pipeline.id}
-          stages={board.pipeline.stages.map((s) => ({ id: s.id, name: s.name, color: s.color, kind: s.kind, probability: s.probability }))}
+          stages={board.pipeline.stages.map((s) => ({
+            id: s.id,
+            name: s.name,
+            color: s.color,
+            kind: s.kind,
+            probability: s.probability,
+            count: board.totals[s.id]?.count ?? 0,
+            value: board.totals[s.id]?.value ?? 0,
+          }))}
           cards={board.opportunities.map((o) => ({
             id: o.id,
             title: o.title,

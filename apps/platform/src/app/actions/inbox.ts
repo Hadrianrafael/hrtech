@@ -68,13 +68,21 @@ export async function getConversationAction(id: string) {
         senderUserId: m.senderUserId,
         body: m.body,
         contentType: m.contentType,
-        hasMedia: !!m.media && !!(m.media as { id?: string }).id,
+        mediaIndexes: mediaIndexes(m.media),
         status: m.status,
         error: m.error,
         createdAt: m.createdAt.toISOString(),
       })),
     };
   });
+}
+
+/** Índices dos anexos que o proxy /api/app/media consegue abrir (WhatsApp: a mídia do id; Instagram: os que têm URL). */
+function mediaIndexes(media: unknown): number[] {
+  const m = media as { id?: string; attachments?: { url?: string }[] } | null;
+  if (!m) return [];
+  if (m.id) return [0];
+  return Array.isArray(m.attachments) ? m.attachments.flatMap((a, i) => (a?.url ? [i] : [])) : [];
 }
 
 export async function sendMessageAction(conversationId: string, body: string, aiRunId?: string | null) {

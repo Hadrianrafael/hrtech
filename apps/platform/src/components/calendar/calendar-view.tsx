@@ -6,7 +6,7 @@ import {
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { AppointmentForm, APPOINTMENT_TYPES, type AppointmentValues } from '@/components/work/appointment-form';
@@ -30,7 +30,8 @@ export interface CalEvent {
 const TYPE_COLORS: Record<string, string> = {
   MEETING: '#6366f1', CALL: '#0ea5e9', VISIT: '#16a34a', SERVICE: '#f59e0b', FOLLOW_UP: '#ea580c', TASK: '#64748b', RETURN: '#db2777',
 };
-const HOURS = Array.from({ length: 15 }, (_, i) => i + 7); // 07h–21h
+const HOURS = Array.from({ length: 24 }, (_, i) => i); // 00h–23h (a grade abre rolada para as 07h)
+const FIRST_VISIBLE_HOUR = 7;
 
 export function CalendarView({
   view, date, events, members, contacts,
@@ -47,6 +48,14 @@ export function CalendarView({
   // Datas dependem do fuso do navegador: renderiza a grade somente no cliente.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  // Semana/dia: abre a grade no início do expediente (as horas da madrugada continuam acessíveis rolando para cima).
+  const gridRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = gridRef.current;
+    const row = el?.querySelector<HTMLElement>(`[data-hour="${FIRST_VISIBLE_HOUR}"]`);
+    const head = el?.querySelector<HTMLElement>('[data-head]');
+    if (el && row) el.scrollTop = row.offsetTop - (head?.offsetHeight ?? 0);
+  }, [mounted, view]);
   const nav = (v: string, d: Date) => router.push(`/calendar?view=${v}&date=${format(d, 'yyyy-MM-dd')}`);
   const step = (dir: 1 | -1) => nav(view, view === 'month' ? addMonths(current, dir) : view === 'week' ? addWeeks(current, dir) : addDays(current, dir));
   const eventsOn = (d: Date) => events.filter((e) => isSameDay(new Date(e.startsAt), d)).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
@@ -132,18 +141,18 @@ export function CalendarView({
       {mounted && view !== 'month' && (() => {
         const days = view === 'week' ? Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(current), i)) : [startOfDay(current)];
         return (
-          <div className="overflow-x-auto">
+          <div ref={gridRef} className="relative max-h-[70vh] overflow-auto">
             <div className={cn('grid', view === 'week' ? 'min-w-[760px] grid-cols-[56px_repeat(7,1fr)]' : 'grid-cols-[56px_1fr]')}>
-              <div className="border-b" />
+              <div data-head className="sticky top-0 z-10 border-b bg-surface" />
               {days.map((d) => (
-                <div key={d.toISOString()} className={cn('border-b border-l px-2 py-1.5 text-center text-xs', isToday(d) && 'font-semibold text-brand')}>
+                <div key={d.toISOString()} className={cn('sticky top-0 z-10 border-b border-l bg-surface px-2 py-1.5 text-center text-xs', isToday(d) && 'font-semibold text-brand')}>
                   {format(d, view === 'week' ? 'EEE dd' : "EEEE dd/MM", { locale: ptBR })}
                   <div className="mt-1 space-y-0.5">{eventsOn(d).filter((e) => e.allDay).map((e) => <Chip key={e.id} e={e} />)}</div>
                 </div>
               ))}
               {HOURS.map((h) => (
                 <div key={h} className="contents">
-                  <div className="h-14 border-b pr-1 pt-0.5 text-right text-[10px] text-fg-muted">{String(h).padStart(2, '0')}:00</div>
+                  <div data-hour={h} className="h-14 border-b pr-1 pt-0.5 text-right text-[10px] text-fg-muted">{String(h).padStart(2, '0')}:00</div>
                   {days.map((d) => {
                     const list = eventsOn(d).filter((e) => !e.allDay && new Date(e.startsAt).getHours() === h);
                     return (

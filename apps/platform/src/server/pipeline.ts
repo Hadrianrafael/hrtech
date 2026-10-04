@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { audit } from '@/lib/audit';
 import { assertCan, ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
 import { AppError, NotFoundError } from '@/lib/errors';
+import { toNumber } from '@/lib/utils';
 import { optionalDate, optionalId, optionalMoney, optionalString } from '@/lib/validation';
 import { assertContactAccessible, assertMember } from './contacts';
 import { emitEvent } from './events';
@@ -12,11 +13,14 @@ export async function listPipelines(ctx: ServiceCtx) {
   return ctx.db.pipeline.findMany({ orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }], include: { stages: { orderBy: { position: 'asc' } } } });
 }
 
+/** Cartões carregados por etapa; os totais (quantidade e valor) de cada etapa vêm do banco, sem limite. */
+export const BOARD_PER_STAGE = 150;
+
 export async function getBoard(ctx: ServiceCtx, pipelineId?: string | null, filters: { ownerId?: string; q?: string } = {}) {
   assertCan(ctx, 'contacts.read');
   const pipelines = await listPipelines(ctx);
   const pipeline = pipelines.find((p) => p.id === pipelineId) ?? pipelines[0];
-  if (!pipeline) return { pipelines, pipeline: null, opportunities: [] };
+  if (!pipeline) return { pipelines, pipeline: null, opportunities: [], totals: {} as Record<string, { count: number; value: number }> };
   const where: Prisma.OpportunityWhereInput = {
     AND: [
       { pipelineId: pipeline.id },
@@ -27,13 +31,26 @@ export async function getBoard(ctx: ServiceCtx, pipelineId?: string | null, filt
       { OR: [{ status: 'OPEN' }, { closedAt: { gte: new Date(Date.now() - 60 * 86400000) } }] },
     ],
   };
-  const opportunities = await ctx.db.opportunity.findMany({
-    where,
-    orderBy: [{ position: 'asc' }],
-    include: { contact: { select: { id: true, name: true, source: true, phone: true, email: true, tags: { include: { tag: true } } } } },
-    take: 1000,
-  });
-  return { pipelines, pipeline, opportunities };
+  const [groups, perStage] = await Promise.all([
+    ctx.db.opportunity.groupBy({ by: ['stageId'], where, _count: { _all: true }, _sum: { value: true } }),
+    Promise.all(
+      pipeline.stages.map((stage) =>
+        // Os mais recentes (novos leads e cartões recém-movidos têm position = Date.now()), exibidos em ordem crescente.
+        ctx.db.opportunity
+          .findMany({
+            where: { AND: [where, { stageId: stage.id }] },
+            orderBy: [{ position: 'desc' }],
+            include: { contact: { select: { id: true, name: true, source: true, phone: true, email: true, tags: { include: { tag: true } } } } },
+            take: BOARD_PER_STAGE,
+          })
+          .then((list) => list.reverse()),
+      ),
+    ),
+  ]);
+  const totals: Record<string, { count: number; value: number }> = Object.fromEntries(
+    groups.map((g) => [g.stageId, { count: g._count._all, value: toNumber(g._sum.value) }]),
+  );
+  return { pipelines, pipeline, opportunities: perStage.flat(), totals };
 }
 
 function statusForKind(kind: StageKind) {
@@ -126,11 +143,14 @@ export async function createOpportunity(ctx: ServiceCtx, input: z.input<typeof o
   assertCan(ctx, 'opportunities.write');
   const data = opportunitySchema.parse(input);
   const contact = await assertContactAccessible(ctx, data.contactId);
-  const pipeline = data.pipelineId
-    ? await ctx.db.pipeline.findFirst({ where: { id: data.pipelineId }, include: { stages: { orderBy: { position: 'asc' } } } })
-    : await ctx.db.pipeline.findFirst({ where: { isDefault: true }, include: { stages: { orderBy: { position: 'asc' } } } });
+  // Uma etapa informada define o funil (ex.: criar a partir de um funil que não é o padrão).
+  const chosenStage = data.stageId ? await ctx.db.pipelineStage.findFirst({ where: { id: data.stageId } }) : null;
+  if (data.stageId && !chosenStage) throw new NotFoundError('Etapa não encontrada.');
+  if (chosenStage && data.pipelineId && chosenStage.pipelineId !== data.pipelineId) throw new AppError('A etapa não pertence ao funil selecionado.');
+  const pipelineWhere = chosenStage ? { id: chosenStage.pipelineId } : data.pipelineId ? { id: data.pipelineId } : { isDefault: true };
+  const pipeline = await ctx.db.pipeline.findFirst({ where: pipelineWhere, include: { stages: { orderBy: { position: 'asc' } } } });
   if (!pipeline) throw new NotFoundError('Funil não encontrado.');
-  const stage = pipeline.stages.find((s) => s.id === data.stageId) ?? pipeline.stages[0];
+  const stage = chosenStage ?? pipeline.stages[0];
   if (!stage) throw new AppError('O funil não possui etapas.');
   if (data.ownerId) await assertMember(ctx, data.ownerId);
   const opp = await ctx.db.opportunity.create({
@@ -176,7 +196,8 @@ export const stageSchema = z.object({
   name: z.string().trim().min(1, 'Nome é obrigatório.').max(60),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Cor inválida.').default('#64748b'),
   kind: z.enum(['OPEN', 'WON', 'LOST']).default('OPEN'),
-  probability: z.coerce.number().int().min(0).max(100).optional().nullable(),
+  // Campo vazio no formulário = sem probabilidade (não 0%).
+  probability: z.preprocess((v) => (v === '' || v === undefined ? null : v), z.coerce.number().int().min(0).max(100).nullable()),
   defaultOwnerId: optionalId,
   key: optionalString(40),
   requireValue: z.union([z.literal('on'), z.boolean()]).optional(),
@@ -215,6 +236,8 @@ export async function updateStage(ctx: ServiceCtx, stageId: string, input: z.inp
   assertCan(ctx, 'pipeline.manage');
   const data = stageSchema.parse(input);
   if (data.defaultOwnerId) await assertMember(ctx, data.defaultOwnerId);
+  const before = await ctx.db.pipelineStage.findFirst({ where: { id: stageId } });
+  if (!before) throw new NotFoundError('Etapa não encontrada.');
   const stage = await ctx.db.pipelineStage.update({
     where: { id: stageId },
     data: {
@@ -227,8 +250,32 @@ export async function updateStage(ctx: ServiceCtx, stageId: string, input: z.inp
       rules: { requireValue: !!data.requireValue },
     },
   });
-  await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: 'pipeline.stage_updated', entityType: 'PipelineStage', entityId: stage.id });
+  const synced = before.kind !== stage.kind ? await syncStageStatus(ctx, stage.id, stage.kind) : 0;
+  await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: 'pipeline.stage_updated', entityType: 'PipelineStage', entityId: stage.id, metadata: synced ? { kind: { from: before.kind, to: stage.kind }, opportunitiesUpdated: synced } : undefined });
   return stage;
+}
+
+/**
+ * Mantém status/closedAt das oportunidades coerentes com o tipo da etapa (as métricas de ganho/perda usam esses
+ * campos). Usado quando o tipo de uma etapa muda ou quando oportunidades são movidas em massa.
+ */
+async function syncStageStatus(ctx: ServiceCtx, stageId: string, kind: StageKind, from?: { stageId: string }) {
+  const status = statusForKind(kind);
+  const sourceStageId = from?.stageId ?? stageId;
+  const where = { stageId: sourceStageId, status: { not: status } } as const;
+  const keepReason = status === 'LOST' ? {} : { lostReason: null };
+  let count = 0;
+  if (status === 'OPEN') {
+    count = (await ctx.db.opportunity.updateMany({ where, data: { status, closedAt: null, ...keepReason } })).count;
+  } else {
+    // Quem já estava fechado mantém a data de fechamento original (métricas por período dependem dela).
+    count += (await ctx.db.opportunity.updateMany({ where: { ...where, closedAt: null }, data: { status, closedAt: new Date(), ...keepReason } })).count;
+    count += (await ctx.db.opportunity.updateMany({ where, data: { status, ...keepReason } })).count;
+  }
+  if (status === 'WON') {
+    await ctx.db.contact.updateMany({ where: { opportunities: { some: { stageId: sourceStageId } } }, data: { kind: 'CUSTOMER', status: 'CUSTOMER' } });
+  }
+  return count;
 }
 
 export async function reorderStages(ctx: ServiceCtx, pipelineId: string, orderedIds: string[]) {
@@ -245,6 +292,8 @@ export async function deleteStage(ctx: ServiceCtx, stageId: string, moveToStageI
   const stage = await ctx.db.pipelineStage.findFirst({ where: { id: stageId } });
   const target = await ctx.db.pipelineStage.findFirst({ where: { id: moveToStageId, pipelineId: stage?.pipelineId } });
   if (!stage || !target || stage.id === target.id) throw new AppError('Selecione uma etapa de destino válida.');
+  // Ao mover para uma etapa de outro tipo (ex.: aberta → ganho), o status das oportunidades acompanha.
+  if (stage.kind !== target.kind) await syncStageStatus(ctx, target.id, target.kind, { stageId });
   await ctx.db.opportunity.updateMany({ where: { stageId }, data: { stageId: target.id } });
   await ctx.db.pipelineStage.delete({ where: { id: stageId } });
   await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: 'pipeline.stage_deleted', entityType: 'PipelineStage', entityId: stageId, severity: 'warning' });

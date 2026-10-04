@@ -40,7 +40,7 @@ async function handleEvent(ev: StoredEvent): Promise<{ orgId: string | null; ign
         channel: 'WHATSAPP',
         integrationId: integration.id,
         identityExternalId: m.from,
-        contactDefaults: { name: m.profileName, phone: m.from },
+        contactDefaults: { name: m.profileName, phone: `+${m.from}` }, // wa_id já vem com DDI
         body: m.text,
         contentType: m.media ? m.type : 'text',
         media: m.media,

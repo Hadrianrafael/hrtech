@@ -157,6 +157,7 @@ Todas documentadas em [`.env.example`](.env.example). Resumo:
 | `CRON_SECRET` | recomendado | Protege `/api/cron/tick` |
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | opcional | IA (sem ela, recursos de IA ficam desativados com aviso) |
 | `META_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `INSTAGRAM_VERIFY_TOKEN` | p/ Meta | Webhooks oficiais |
+| `INSTAGRAM_APP_SECRET` | p/ Instagram (login do Instagram) | Assinatura dos webhooks do Instagram |
 | `SMTP_*`, `EMAIL_FROM` | recomendado | E-mails transacionais |
 | `BILLING_PROVIDER`, `STRIPE_*`, `ASAAS_*` | opcional | Gateway de pagamento |
 

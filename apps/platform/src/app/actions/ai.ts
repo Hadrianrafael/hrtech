@@ -4,6 +4,7 @@ import type { AiMode, Channel, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { withOrg, withOrgSchema } from '@/lib/action-ctx';
 import { audit } from '@/lib/audit';
+import { safeTimeZone } from '@/lib/utils';
 import { testAssistant } from '@/server/ai/agent';
 import { deleteKnowledgeDocument, reindexAll, retrieve, saveKnowledgeDocument } from '@/server/ai/rag';
 import { deleteAutomation, saveAutomation, toggleAutomation, type AutomationInput } from '@/server/automations/service';
@@ -49,7 +50,7 @@ const chatbotSchema = z.object({
   maxAiTurns: z.coerce.number().int().min(0).max(100),
   handoffMessage: z.string().max(500),
   hoursEnabled: z.boolean(),
-  timezone: z.string().max(60),
+  timezone: z.string().max(60).optional(), // ignorado: o horário de atendimento usa o fuso da empresa
   days: z.record(z.enum(DAYS), z.tuple([z.string().regex(/^\d{2}:\d{2}$/), z.string().regex(/^\d{2}:\d{2}$/)]).nullable()),
   outOfHoursMessage: z.string().max(500),
   faq: z.array(z.object({ q: z.string().max(300), a: z.string().max(2000) })).max(100),
@@ -64,6 +65,8 @@ export async function saveChatbotAction(input: ChatbotForm) {
   return withOrgSchema('chatbot.manage', chatbotSchema, input, async (ctx, d) => {
     const bot = await ctx.db.chatbot.findFirst({ orderBy: { createdAt: 'asc' } });
     if (!bot) throw new Error('Chatbot não encontrado.');
+    // Fuso definido nas configurações da empresa (um formulário aberto há tempo não pode sobrescrevê-lo).
+    const org = await ctx.db.organization.findFirstOrThrow({ select: { timezone: true } });
     await ctx.db.chatbot.update({
       where: { id: bot.id },
       data: {
@@ -76,7 +79,7 @@ export async function saveChatbotAction(input: ChatbotForm) {
         collectFields: d.collectFields,
         channels: d.channels as Channel[],
         handoffRules: { keywords: d.handoffKeywords.split(',').map((k) => k.trim()).filter(Boolean), maxAiTurns: d.maxAiTurns || null, message: d.handoffMessage || null },
-        businessHours: { enabled: d.hoursEnabled, timezone: d.timezone, days: Object.fromEntries(Object.entries(d.days).filter(([, v]) => v)), outOfHoursMessage: d.outOfHoursMessage } as Prisma.InputJsonValue,
+        businessHours: { enabled: d.hoursEnabled, timezone: safeTimeZone(org.timezone), days: Object.fromEntries(Object.entries(d.days).filter(([, v]) => v)), outOfHoursMessage: d.outOfHoursMessage } as Prisma.InputJsonValue,
         faq: d.faq.filter((f) => f.q.trim() && f.a.trim()),
         allowedOrigins: d.allowedOrigins.filter(Boolean),
         widgetColor: d.widgetColor,

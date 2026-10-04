@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { assertCan, ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
 import { LimitExceededError, NotConfiguredError, NotFoundError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+import { safeTimeZone } from '@/lib/utils';
 import { checkLimit, incrementUsage, USAGE_METRICS } from '../billing/limits';
 import { CUSTOM_FIELD_LABELS } from '../contacts';
 import { getAiProvider, type AiProvider, type ChatMessage } from './provider';
@@ -38,9 +39,9 @@ export interface BusinessHours {
   outOfHoursMessage?: string;
 }
 
-export function isWithinBusinessHours(hours: BusinessHours | null | undefined, now = new Date()): boolean {
+export function isWithinBusinessHours(hours: BusinessHours | null | undefined, now = new Date(), orgTimezone?: string): boolean {
   if (!hours?.enabled || !hours.days) return true;
-  const fmt = new Intl.DateTimeFormat('en-US', { timeZone: hours.timezone ?? 'America/Sao_Paulo', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+  const fmt = new Intl.DateTimeFormat('en-US', { timeZone: safeTimeZone(hours.timezone, orgTimezone), weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
   const parts = Object.fromEntries(fmt.formatToParts(now).map((p) => [p.type, p.value]));
   const day = (parts.weekday ?? '').toLowerCase().slice(0, 3) as keyof NonNullable<BusinessHours['days']>;
   const range = hours.days[day];
@@ -121,6 +122,7 @@ export function buildSystemPrompt(input: {
   knowledge: { title: string; content: string }[];
   contactSummary: string;
   withinHours: boolean;
+  orgTimezone?: string;
   now?: Date;
 }) {
   const { chatbot } = input;
@@ -138,7 +140,7 @@ export function buildSystemPrompt(input: {
     `- Colete naturalmente, ao longo da conversa e sem interrogatório, estas informações: ${fields || 'nome e contato'}.`,
     '- Se o cliente pedir um humano, estiver insatisfeito ou o assunto exigir decisão da equipe, marque handoff=true.',
     chatbot.instructions ? `INSTRUÇÕES DA EMPRESA:\n${chatbot.instructions}` : '',
-    `Data/hora atual: ${(input.now ?? new Date()).toLocaleString('pt-BR', { timeZone: hours?.timezone ?? 'America/Sao_Paulo' })}.`,
+    `Data/hora atual: ${(input.now ?? new Date()).toLocaleString('pt-BR', { timeZone: safeTimeZone(hours?.timezone, input.orgTimezone) })}.`,
     input.withinHours
       ? 'A equipe humana está em horário de atendimento.'
       : `A equipe humana está FORA do horário de atendimento. ${hours?.outOfHoursMessage ?? ''}`,
@@ -245,7 +247,8 @@ export async function generateAssistantReply(ctx: ServiceCtx, conversationId: st
     chatbot,
     knowledge,
     contactSummary: contactSummary(conversation.contact),
-    withinHours: isWithinBusinessHours(chatbot.businessHours as BusinessHours),
+    withinHours: isWithinBusinessHours(chatbot.businessHours as BusinessHours, new Date(), org.timezone),
+    orgTimezone: org.timezone,
   });
   const messages: ChatMessage[] = [{ role: 'system', content: system }, ...historyToMessages(history)];
   if (kind === 'suggest') {
@@ -341,7 +344,14 @@ export async function testAssistant(ctx: ServiceCtx, messages: { role: 'user' | 
   const org = await ctx.db.organization.findFirstOrThrow({});
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
   const knowledge = await retrieve(ctx, lastUser, 5);
-  const system = buildSystemPrompt({ orgName: org.name, chatbot, knowledge, contactSummary: '', withinHours: isWithinBusinessHours(chatbot.businessHours as BusinessHours) });
+  const system = buildSystemPrompt({
+    orgName: org.name,
+    chatbot,
+    knowledge,
+    contactSummary: '',
+    withinHours: isWithinBusinessHours(chatbot.businessHours as BusinessHours, new Date(), org.timezone),
+    orgTimezone: org.timezone,
+  });
   const res = await trackedChat(ctx, 'test', [{ role: 'system', content: system }, ...messages.slice(-12)], { json: true });
   return { ...parseAssistantOutput(res.text), sources: knowledge.map((k) => k.title) };
 }

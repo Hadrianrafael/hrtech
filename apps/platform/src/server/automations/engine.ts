@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { audit } from '@/lib/audit';
-import type { ServiceCtx } from '@/lib/auth/ctx';
+import { systemCtx, type ServiceCtx } from '@/lib/auth/ctx';
 import { isUniqueViolation } from '@/lib/db';
 import { AppError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
@@ -191,9 +191,16 @@ export async function runAutomations(ctx: ServiceCtx, trigger: TriggerKey, paylo
     logger.warn('automation.max_depth', { orgId: ctx.orgId, trigger });
     return [];
   }
-  const automations = await ctx.db.automation.findMany({ where: { trigger, enabled: true }, orderBy: { createdAt: 'asc' } });
+  const all = await ctx.db.automation.findMany({ where: { trigger, enabled: true }, orderBy: { createdAt: 'asc' } });
+  if (!all.length) return [];
+  // Eventos já processados (ex.: varreduras periódicas do cron) saem aqui, sem carregar contato/oportunidade.
+  const done = await ctx.db.automationRun.findMany({ where: { eventKey: opts.eventKey, automationId: { in: all.map((a) => a.id) } }, select: { automationId: true } });
+  const doneIds = new Set(done.map((d) => d.automationId));
+  const automations = all.filter((a) => !doneIds.has(a.id));
   if (!automations.length) return [];
-  const autoCtx: ServiceCtx = { ...ctx, actorType: 'AUTOMATION' };
+  // Automações são configuradas pela empresa: rodam com contexto de sistema, não com as permissões/escopo de quem
+  // disparou o evento (um atendente sem "records.view_all", o visitante do widget etc.).
+  const autoCtx: ServiceCtx = systemCtx(ctx.orgId, 'AUTOMATION');
   const facts = await buildFacts(autoCtx, payload);
   const runs: { automationId: string; status: string }[] = [];
 

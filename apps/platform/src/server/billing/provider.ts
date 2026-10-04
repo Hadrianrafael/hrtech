@@ -34,6 +34,8 @@ export interface BillingWebhookEvent {
   externalSubscriptionId?: string;
   externalCustomerId?: string;
   periodEnd?: Date;
+  /** Quando o evento aconteceu no provedor (os provedores não garantem a ordem de entrega). */
+  occurredAt?: Date;
 }
 
 /** Billing manual: o super admin HR Tech controla plano/status pelo painel. */
@@ -106,21 +108,32 @@ export class StripeBillingProvider implements BillingProvider {
     if (Math.abs(Date.now() / 1000 - Number(t)) > 300) return null;
     const expected = createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
     if (!safeEqual(expected, v1)) return null;
-    const event = JSON.parse(rawBody) as { id: string; type: string; data: { object: Record<string, unknown> } };
+    const event = JSON.parse(rawBody) as { id: string; type: string; created?: number; data: { object: Record<string, unknown> } };
     const obj = event.data.object;
-    const meta = (obj.metadata ?? {}) as Record<string, string>;
+    type SubDetails = { subscription?: string; metadata?: Record<string, string> } | undefined;
+    // Faturas trazem os metadados da assinatura em subscription_details (ou parent.subscription_details nas
+    // versões mais novas da API), não em metadata. Sem isso a renovação/inadimplência não chegaria à empresa.
+    const details = (obj.subscription_details ?? (obj.parent as { subscription_details?: SubDetails } | undefined)?.subscription_details) as SubDetails;
+    const meta = { ...(details?.metadata ?? {}), ...((obj.metadata ?? {}) as Record<string, string>) };
     const map: Record<string, BillingWebhookEvent['type']> = {
       'checkout.session.completed': 'subscription.activated',
       'invoice.paid': 'subscription.renewed',
       'invoice.payment_failed': 'subscription.past_due',
       'customer.subscription.deleted': 'subscription.canceled',
     };
+    const isSubscription = event.type.startsWith('customer.subscription.');
+    const subscriptionId = isSubscription ? (obj.id as string) : ((obj.subscription as string | undefined) ?? details?.subscription);
+    // Itens avulsos/proporcionais podem vir antes da linha da assinatura: usa o maior fim de período entre as linhas.
+    const ends = ((obj.lines as { data?: { period?: { end?: number } }[] } | undefined)?.data ?? []).map((l) => l.period?.end ?? 0);
+    const periodEnd = Math.max(0, ...ends) || (obj.current_period_end as number | undefined);
     return {
       id: event.id,
       type: map[event.type] ?? 'other',
       organizationId: meta.organizationId ?? (obj.client_reference_id as string | undefined),
-      externalSubscriptionId: (obj.subscription as string | undefined) ?? (obj.id as string | undefined),
+      externalSubscriptionId: subscriptionId,
       externalCustomerId: obj.customer as string | undefined,
+      periodEnd: periodEnd ? new Date(periodEnd * 1000) : undefined,
+      occurredAt: event.created ? new Date(event.created * 1000) : undefined,
     } satisfies BillingWebhookEvent;
   }
 }

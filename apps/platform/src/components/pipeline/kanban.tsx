@@ -19,6 +19,9 @@ export interface KanbanStage {
   color: string;
   kind: string;
   probability: number | null;
+  /** Totais da etapa no banco (o quadro carrega um número limitado de cartões por etapa). */
+  count: number;
+  value: number;
 }
 
 export interface KanbanCard {
@@ -121,7 +124,12 @@ export function KanbanBoard({
         <div className="flex min-h-[60vh] gap-3">
           {stages.map((stage) => {
             const list = cards.filter((c) => c.stageId === stage.id);
-            const total = list.reduce((s, c) => s + (c.value ?? 0), 0);
+            // Totais do servidor + o efeito das movimentações otimistas ainda não recarregadas.
+            const loaded = initialCards.filter((c) => c.stageId === stage.id);
+            const sum = (cs: KanbanCard[]) => cs.reduce((s, c) => s + (c.value ?? 0), 0);
+            const count = Math.max(list.length, stage.count + list.length - loaded.length);
+            const total = stage.value + sum(list) - sum(loaded);
+            const hidden = count - list.length;
             return (
               <section
                 key={stage.id}
@@ -144,7 +152,7 @@ export function KanbanBoard({
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: stage.color }} />
                     <h2 className="flex-1 truncate text-sm font-semibold">{stage.name}</h2>
-                    <span className="rounded-full bg-surface px-2 text-xs text-fg-muted">{list.length}</span>
+                    <span className="rounded-full bg-surface px-2 text-xs text-fg-muted">{count}</span>
                   </div>
                   <p className="mt-0.5 text-xs text-fg-muted">{formatMoney(total)}{stage.probability !== null ? ` · ${stage.probability}%` : ''}</p>
                 </header>
@@ -186,6 +194,11 @@ export function KanbanBoard({
                     </article>
                   ))}
                   {!list.length && <p className="px-2 py-6 text-center text-xs text-fg-muted">Arraste oportunidades para cá</p>}
+                  {hidden > 0 && (
+                    <p className="px-2 py-3 text-center text-xs text-fg-muted">
+                      + {hidden} não exibida(s). Use a busca ou o filtro de responsável para encontrá-las.
+                    </p>
+                  )}
                 </div>
               </section>
             );

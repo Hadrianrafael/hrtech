@@ -100,10 +100,11 @@ const WIDGET_JS = String.raw`(function () {
 
     function render(list) {
       list.forEach(function (m) {
-        if (state.seen[m.id]) return;
-        state.seen[m.id] = true;
-        // Somente ids reais do servidor avançam o cursor de leitura (ecos locais não).
+        // As listas do servidor vêm em ordem: o cursor sempre avança para o último id real (mesmo já exibido).
         if (String(m.id).indexOf('local-') !== 0) state.lastId = m.id;
+        // A própria mensagem do visitante já está na tela como eco local (reconhecida pelo clientId).
+        if (state.seen[m.id] || (m.clientId && state.seen[m.clientId])) { state.seen[m.id] = true; return; }
+        state.seen[m.id] = true;
         var el = document.createElement('div');
         el.className = 'm ' + m.from;
         if (m.from !== 'visitor') {
@@ -129,12 +130,13 @@ const WIDGET_JS = String.raw`(function () {
         var text = input.value.trim();
         if (!text) return;
         input.value = '';
-        render([{ id: 'local-' + Date.now(), from: 'visitor', text: text }]);
+        var localId = 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        render([{ id: localId, from: 'visitor', text: text }]);
         var typing = document.createElement('div');
         typing.className = 'typing';
         typing.textContent = 'digitando…';
         state.msgsEl.appendChild(typing);
-        req('POST', '/messages', { text: text, after: state.lastId }, state.token)
+        req('POST', '/messages', { text: text, after: state.lastId, clientId: localId }, state.token)
           .then(function (r) {
             typing.remove();
             if (r.sentId) state.seen[r.sentId] = true; // a mensagem já está na tela (eco local)

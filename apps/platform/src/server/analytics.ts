@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { format } from 'date-fns';
 import { ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
 import { withTenant } from '@/lib/db';
 import { toNumber } from '@/lib/utils';
@@ -52,7 +53,7 @@ function dayKeys(range: Range) {
   const d = new Date(range.start);
   d.setHours(0, 0, 0, 0);
   while (d <= range.end && keys.length < 400) {
-    keys.push(d.toISOString().slice(0, 10));
+    keys.push(format(d, 'yyyy-MM-dd'));
     d.setDate(d.getDate() + 1);
   }
   return keys;
@@ -110,7 +111,7 @@ export async function getDashboard(ctx: ServiceCtx, range: Range) {
 
   const series = Object.fromEntries(dayKeys(range).map((k) => [k, 0]));
   for (const c of leadsSeriesRaw) {
-    const k = c.createdAt.toISOString().slice(0, 10);
+    const k = format(c.createdAt, 'yyyy-MM-dd'); // dia local (APP_TIMEZONE), igual às chaves do gráfico
     if (k in series) series[k]! += 1;
   }
 
@@ -154,19 +155,29 @@ export async function getAnalytics(ctx: ServiceCtx, range: Range) {
     // Tempo médio até a primeira resposta (humana ou IA) para cada mensagem do cliente.
     withTenant(ctx.orgId, (tx) =>
       tx.$queryRaw<{ sender: string; avg_seconds: number | null; samples: bigint }[]>`
-        WITH inbound AS (
-          SELECT m."conversationId", m."createdAt",
+        WITH convs AS (
+          SELECT DISTINCT m."conversationId" FROM "Message" m
+          WHERE m."organizationId" = ${ctx.orgId} AND m."direction" = 'INBOUND' AND m."createdAt" BETWEEN ${range.start} AND ${range.end}
+        ), seq AS (
+          -- A direção anterior é calculada sobre TODAS as mensagens da conversa (não só as do cliente).
+          SELECT m."conversationId", m."createdAt", m."direction",
                  lag(m."direction") OVER (PARTITION BY m."conversationId" ORDER BY m."createdAt") AS prev_dir
-          FROM "Message" m
-          WHERE m."organizationId" = ${ctx.orgId} AND m."createdAt" BETWEEN ${range.start} AND ${range.end}
-            AND m."direction" = 'INBOUND'
+          FROM "Message" m JOIN convs c ON c."conversationId" = m."conversationId"
+          WHERE m."organizationId" = ${ctx.orgId} AND m."createdAt" <= ${range.end}
+            -- só mensagens do cliente e respostas reais (humano/IA entregues) delimitam os blocos;
+            -- avisos automáticos do sistema não dividem um bloco do cliente
+            AND (m."direction" = 'INBOUND' OR (m."senderType" IN ('USER','AI') AND m."status" <> 'FAILED'))
         ), firsts AS (
-          SELECT i."conversationId", i."createdAt" AS in_at,
-                 (SELECT o."createdAt" FROM "Message" o WHERE o."conversationId" = i."conversationId" AND o."direction" = 'OUTBOUND'
-                    AND o."senderType" IN ('USER','AI') AND o."createdAt" > i."createdAt" ORDER BY o."createdAt" LIMIT 1) AS out_at,
-                 (SELECT o."senderType"::text FROM "Message" o WHERE o."conversationId" = i."conversationId" AND o."direction" = 'OUTBOUND'
-                    AND o."senderType" IN ('USER','AI') AND o."createdAt" > i."createdAt" ORDER BY o."createdAt" LIMIT 1) AS sender
-          FROM inbound i WHERE i.prev_dir IS DISTINCT FROM 'INBOUND'
+          -- Primeira mensagem de cada bloco do cliente e a primeira resposta (humana ou IA) depois dela.
+          SELECT s."createdAt" AS in_at, r.out_at, r.sender
+          FROM seq s
+          LEFT JOIN LATERAL (
+            SELECT o."createdAt" AS out_at, o."senderType"::text AS sender FROM "Message" o
+            WHERE o."conversationId" = s."conversationId" AND o."direction" = 'OUTBOUND'
+              AND o."senderType" IN ('USER','AI') AND o."status" <> 'FAILED' AND o."createdAt" > s."createdAt"
+            ORDER BY o."createdAt" LIMIT 1
+          ) r ON true
+          WHERE s."direction" = 'INBOUND' AND s."createdAt" >= ${range.start} AND s.prev_dir IS DISTINCT FROM 'INBOUND'
         )
         SELECT sender, avg(extract(epoch FROM (out_at - in_at)))::float AS avg_seconds, count(*) AS samples
         FROM firsts WHERE out_at IS NOT NULL GROUP BY sender`,

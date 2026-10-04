@@ -37,6 +37,9 @@ Somente a API oficial da Meta é usada — nenhuma biblioteca não oficial, auto
    - Assinar o campo **messages**.
 3. Na plataforma (empresa) → **Integrações → WhatsApp → Conectar**: informe Phone Number ID, WABA ID e o token.
    O token é cifrado (AES-256-GCM) e nunca mais exibido. Clique em **Testar conexão**.
+4. **Verificação de posse:** a integração só passa a receber mensagens depois do **Testar conexão**, que confirma
+   com o token informado que o Phone Number ID existe e pertence à WABA. Até lá ela fica "pendente" e os webhooks
+   desse número são ignorados — assim uma empresa não consegue "reservar" o número de outra.
 
 **Como funciona**
 - Um único app Meta atende todas as empresas: o `phone_number_id` do webhook identifica a empresa. O mesmo número
@@ -55,9 +58,14 @@ aprovados (`MessageTemplate` já modelado), Embedded Signup para clientes conect
 Disponível para **contas profissionais** elegíveis, com app aprovado no App Review para
 `instagram_business_manage_messages` (Instagram API com login do Instagram) ou via Página do Facebook.
 
-1. Variáveis: `META_APP_SECRET` e `INSTAGRAM_VERIFY_TOKEN` (ou reutiliza o do WhatsApp).
+1. Variáveis: `META_APP_SECRET`, `INSTAGRAM_VERIFY_TOKEN` (ou reutiliza o do WhatsApp) e, para a **Instagram API
+   com login do Instagram**, `INSTAGRAM_APP_SECRET` (o "Instagram App Secret" exibido em Instagram → Configuração da
+   API; é ele que assina os webhooks desse produto). A assinatura é aceita com qualquer um dos dois segredos.
 2. Webhook no painel da Meta: `https://SEU_DOMINIO/api/webhooks/instagram`, campo **messages**.
 3. Na plataforma → **Integrações → Instagram**: ID da conta profissional, tipo de login da API e token.
+4. **Testar conexão** confirma com o token que ele pertence à conta informada; só então a integração recebe
+   mensagens. Anexos recebidos (imagens, vídeos, áudios) abrem pelo proxy autenticado, que só redireciona para CDNs
+   da Meta.
 
 Limites respeitados: resposta apenas dentro de 24h após a última mensagem do cliente; ecos e mensagens apagadas são
 ignorados. Comentários de posts não fazem parte desta versão.

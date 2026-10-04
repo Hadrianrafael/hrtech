@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { parseMoney } from './utils';
+import { isValidTimeZone, parseMoney } from './utils';
 
 /** Helpers de validação para formulários (strings vazias viram undefined/null). */
 export const optionalString = (max = 500) =>
@@ -63,3 +63,5 @@ export const stringArray = z
   .union([z.string(), z.array(z.string())])
   .optional()
   .transform((v) => (v === undefined ? [] : Array.isArray(v) ? v : v === '' ? [] : [v]));
+
+export const timeZoneSchema = z.string().trim().max(60).refine(isValidTimeZone, 'Fuso horário inválido.');

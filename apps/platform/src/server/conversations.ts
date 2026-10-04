@@ -2,7 +2,7 @@ import type { Channel, ConversationStatus, Integration, Prisma, SenderType } fro
 import { audit } from '@/lib/audit';
 import { assertCan, ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
 import { decryptJson } from '@/lib/crypto';
-import { isUniqueViolation } from '@/lib/db';
+import { isUniqueViolation, withTenant } from '@/lib/db';
 import { AppError, NotFoundError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 import { truncate } from '@/lib/utils';
@@ -100,6 +100,38 @@ export interface InboundInput {
 const SOURCE_BY_CHANNEL: Record<Channel, string> = { WHATSAPP: 'whatsapp', INSTAGRAM: 'instagram', EMAIL: 'email', WEBCHAT: 'webchat' };
 
 /**
+ * Encontra (ou cria) a conversa do contato no canal. A busca e a criação rodam numa transação com advisory lock por
+ * contato/canal/thread: mensagens simultâneas do mesmo contato esperam umas pelas outras e usam a mesma conversa,
+ * sem criar duplicatas (e sem apagar conversas que outra requisição já esteja usando).
+ */
+async function findOrCreateConversation(ctx: ServiceCtx, contact: { id: string; ownerId: string | null }, input: InboundInput) {
+  const thread = input.channel === 'EMAIL' ? (input.externalThreadId ?? null) : null;
+  return withTenant(ctx.orgId, async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`conversation:${ctx.orgId}:${contact.id}:${input.channel}:${thread ?? ''}`}))`;
+    const base = { organizationId: ctx.orgId, contactId: contact.id, channel: input.channel };
+    let conversation = await tx.conversation.findFirst({
+      where: { ...base, ...(thread ? { externalThreadId: thread } : {}), ...(input.channel !== 'EMAIL' ? { status: { in: ['OPEN', 'PENDING'] } } : {}) },
+      orderBy: { createdAt: 'desc' },
+    });
+    // Conversas resolvidas de chat são reabertas na mesma thread do contato
+    if (!conversation && input.channel !== 'EMAIL') {
+      conversation = await tx.conversation.findFirst({ where: base, orderBy: { createdAt: 'desc' } });
+    }
+    if (conversation) return { conversation, created: false };
+    const created = await tx.conversation.create({
+      data: {
+        ...base,
+        integrationId: input.integrationId ?? null,
+        externalThreadId: input.externalThreadId ?? null,
+        subject: input.subject ?? null,
+        assigneeId: contact.ownerId,
+      },
+    });
+    return { conversation: created, created: true };
+  });
+}
+
+/**
  * Registra mensagem recebida de qualquer canal. Idempotente pelo `externalId`
  * (reentregas de webhook não duplicam mensagens nem disparam automações duas vezes).
  */
@@ -119,48 +151,9 @@ export async function receiveInbound(ctx: ServiceCtx, input: InboundInput) {
     });
     contactId = contact.id;
     contactCreated = created;
-    conversation = await ctx.db.conversation.findFirst({
-      where: {
-        contactId: contact.id,
-        channel: input.channel,
-        ...(input.channel === 'EMAIL' && input.externalThreadId ? { externalThreadId: input.externalThreadId } : {}),
-        ...(input.channel !== 'EMAIL' ? { status: { in: ['OPEN', 'PENDING'] } } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    // Conversas resolvidas de chat são reabertas na mesma thread do contato
-    if (!conversation && input.channel !== 'EMAIL') {
-      conversation = await ctx.db.conversation.findFirst({ where: { contactId: contact.id, channel: input.channel }, orderBy: { createdAt: 'desc' } });
-    }
-    if (!conversation) {
-      const created = await ctx.db.conversation.create({
-        data: {
-          organizationId: ctx.orgId,
-          contactId: contact.id,
-          channel: input.channel,
-          integrationId: input.integrationId ?? null,
-          externalThreadId: input.externalThreadId ?? null,
-          subject: input.subject ?? null,
-          assigneeId: contact.ownerId,
-        },
-      });
-      // Mensagens simultâneas do mesmo contato podem criar duas conversas: fica a mais antiga, a outra é descartada.
-      const oldest = await ctx.db.conversation.findFirst({
-        where: {
-          contactId: contact.id,
-          channel: input.channel,
-          ...(input.channel === 'EMAIL' && input.externalThreadId ? { externalThreadId: input.externalThreadId } : {}),
-        },
-        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      });
-      if (oldest && oldest.id !== created.id) {
-        await ctx.db.conversation.delete({ where: { id: created.id } });
-        conversation = oldest;
-      } else {
-        conversation = created;
-        await incrementUsage(ctx.orgId, USAGE_METRICS.conversations);
-      }
-    }
+    const found = await findOrCreateConversation(ctx, contact, input);
+    conversation = found.conversation;
+    if (found.created) await incrementUsage(ctx.orgId, USAGE_METRICS.conversations);
   }
   if (!contactId) throw new AppError('Contato não identificado.');
 

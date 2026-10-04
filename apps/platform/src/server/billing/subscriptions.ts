@@ -50,9 +50,10 @@ export async function requestCancellation(organizationId: string, actorUserId: s
 
 /** Aplica eventos normalizados vindos de qualquer gateway. */
 export async function applyBillingEvent(event: BillingWebhookEvent) {
-  if (!event.organizationId) return;
-  const sub = await systemDb.subscription.findUnique({ where: { organizationId: event.organizationId } });
-  if (!sub) return;
+  // Primeiro pela assinatura do provedor já vinculada; depois pela empresa informada nos metadados.
+  let sub = event.externalSubscriptionId ? await systemDb.subscription.findFirst({ where: { externalSubscriptionId: event.externalSubscriptionId } }) : null;
+  if (!sub && event.organizationId) sub = await systemDb.subscription.findUnique({ where: { organizationId: event.organizationId } });
+  if (!sub) return null;
   const statusMap: Partial<Record<BillingWebhookEvent['type'], SubscriptionStatus>> = {
     'subscription.activated': 'ACTIVE',
     'subscription.renewed': 'ACTIVE',
@@ -60,7 +61,18 @@ export async function applyBillingEvent(event: BillingWebhookEvent) {
     'subscription.canceled': 'CANCELED',
   };
   const status = statusMap[event.type];
-  if (!status) return;
+  if (!status) return sub.organizationId;
+  const ignore = async (reason: string) => {
+    await audit({ organizationId: sub.organizationId, action: 'billing.webhook.ignored', actorType: 'SYSTEM', metadata: { eventId: event.id, type: event.type, reason } });
+    return sub.organizationId;
+  };
+  // Eventos de outra assinatura do provedor (ex.: a anterior a uma troca de plano) não mexem na atual;
+  // apenas um checkout concluído vincula uma assinatura nova.
+  if (sub.externalSubscriptionId && event.externalSubscriptionId && event.externalSubscriptionId !== sub.externalSubscriptionId && event.type !== 'subscription.activated') {
+    return ignore('other_subscription');
+  }
+  // Entrega fora de ordem (ex.: reenvio de uma falha de pagamento antiga) não desfaz um estado mais novo.
+  if (event.occurredAt && sub.lastBillingEventAt && event.occurredAt < sub.lastBillingEventAt) return ignore('stale');
   await systemDb.subscription.update({
     where: { id: sub.id },
     data: {
@@ -71,7 +83,9 @@ export async function applyBillingEvent(event: BillingWebhookEvent) {
         ? { currentPeriodStart: new Date(), currentPeriodEnd: event.periodEnd ?? new Date(Date.now() + 30 * DAY) }
         : {}),
       ...(status === 'CANCELED' ? { canceledAt: new Date() } : {}),
+      ...(event.occurredAt ? { lastBillingEventAt: event.occurredAt } : {}),
     },
   });
-  await audit({ organizationId: event.organizationId, action: `billing.webhook.${event.type}`, actorType: 'SYSTEM', metadata: { eventId: event.id } });
+  await audit({ organizationId: sub.organizationId, action: `billing.webhook.${event.type}`, actorType: 'SYSTEM', metadata: { eventId: event.id } });
+  return sub.organizationId;
 }

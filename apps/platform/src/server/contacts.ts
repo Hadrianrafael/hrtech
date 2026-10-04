@@ -159,6 +159,11 @@ export async function createContact(
     inbound?: boolean;
     /** Quando false, quem chamou dispara o evento lead.created depois (ex.: após vencer uma corrida). */
     emitLeadEvent?: boolean;
+    /**
+     * Identidade de canal gravada no MESMO insert do contato: se outra requisição já registrou essa identidade, o
+     * insert inteiro falha (P2002) antes de qualquer efeito colateral — nenhum contato "perdedor" chega a existir.
+     */
+    identity?: { channel: Channel; externalId: string };
   } = {},
 ) {
   assertCan(ctx, 'contacts.write');
@@ -198,6 +203,7 @@ export async function createContact(
       consentAt: data.consent ? new Date() : null,
       consentSource: data.consent ? data.source ?? 'manual' : null,
       lastInteractionAt: new Date(),
+      ...(opts.identity ? { identities: { create: { organizationId: ctx.orgId, channel: opts.identity.channel, externalId: opts.identity.externalId } } } : {}),
     },
   });
   if (data.tagIds.length) await setContactTags(ctx, contact.id, data.tagIds, { silent: true });
@@ -378,11 +384,15 @@ export async function findOrCreateContactByIdentity(
   const rawEmail = normalizeEmail(defaults.email);
   // Endereços fora do padrão (comuns em e-mails recebidos) não podem impedir o registro do lead.
   const email = rawEmail && z.string().email().max(254).safeParse(rawEmail).success ? rawEmail : null;
+  // Também casa com cadastros antigos gravados sem o 9º dígito (55 + DDD + 8 dígitos).
+  const legacy = phone?.replace(/^55(\d{2})9([6-9]\d{7})$/, '55$1$2');
+  const phones = phone ? [...new Set([phone, legacy!])] : [];
   const existing = await ctx.db.contact.findFirst({
     where: {
       anonymizedAt: null,
-      OR: [...(phone ? [{ whatsapp: phone }, { phone }] : []), ...(email ? [{ email }] : [])],
+      OR: [...phones.flatMap((p) => [{ whatsapp: p }, { phone: p }]), ...(email ? [{ email }] : [])],
     },
+    orderBy: { createdAt: 'asc' },
   });
   if (existing) {
     await ctx.db.contactIdentity.upsert({
@@ -393,26 +403,26 @@ export async function findOrCreateContactByIdentity(
     return { contact: existing, created: false };
   }
 
-  const contact = await createContact(
-    { ...ctx, permissions: new Set([...ctx.permissions, 'contacts.write']) },
-    {
-      name: (defaults.name?.trim() || phone || email || 'Visitante').slice(0, 160),
-      email,
-      phone,
-      whatsapp: channel === 'WHATSAPP' ? phone : null,
-      instagram: defaults.instagram?.slice(0, 80) ?? null,
-      source: defaults.source,
-      consent: false,
-    },
-    { inbound: true, emitLeadEvent: false },
-  );
-  // A identidade é única por (empresa, canal, id externo): se duas mensagens do mesmo remetente novo chegarem ao
-  // mesmo tempo, só uma vence; a outra descarta o contato recém-criado (antes de disparar automações).
+  // Contato e identidade nascem juntos; se duas mensagens do mesmo remetente novo chegarem ao mesmo tempo, só uma
+  // cria o contato e a outra usa o vencedor (sem criar e apagar contatos que outra requisição já poderia estar usando).
+  let contact;
   try {
-    await ctx.db.contactIdentity.create({ data: { organizationId: ctx.orgId, contactId: contact.id, channel, externalId } });
+    contact = await createContact(
+      { ...ctx, permissions: new Set([...ctx.permissions, 'contacts.write']) },
+      {
+        name: (defaults.name?.trim() || phone || email || 'Visitante').slice(0, 160),
+        email,
+        // Valores normalizados já têm DDI: o "+" evita que createContact os trate de novo como número nacional.
+        phone: phone ? `+${phone}` : null,
+        whatsapp: channel === 'WHATSAPP' && phone ? `+${phone}` : null,
+        instagram: defaults.instagram?.slice(0, 80) ?? null,
+        source: defaults.source,
+        consent: false,
+      },
+      { inbound: true, emitLeadEvent: false, identity: { channel, externalId } },
+    );
   } catch (err) {
     if (!isUniqueViolation(err)) throw err;
-    await ctx.db.contact.delete({ where: { id: contact.id } });
     const winner = await ctx.db.contactIdentity.findFirst({ where: { channel, externalId }, include: { contact: true } });
     if (!winner) throw err;
     return { contact: winner.contact, created: false };

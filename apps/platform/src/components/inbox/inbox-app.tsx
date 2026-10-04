@@ -328,9 +328,11 @@ function ChatPane({
                 {m.senderType === 'AI' && <p className="mb-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase text-brand"><Bot className="h-3 w-3" /> Assistente IA</p>}
                 {out && m.senderType === 'USER' && m.senderUserId && <p className="mb-0.5 text-[10px] font-medium opacity-80">{names.get(m.senderUserId)}</p>}
                 <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                {m.hasMedia && (
-                  <a href={`/api/app/media/${m.id}`} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs underline">Abrir mídia</a>
-                )}
+                {m.mediaIndexes.map((i, n) => (
+                  <a key={i} href={`/api/app/media/${m.id}${i ? `?i=${i}` : ''}`} target="_blank" rel="noreferrer" className="mr-2 mt-1 inline-block text-xs underline">
+                    {m.mediaIndexes.length > 1 ? `Abrir mídia ${n + 1}` : 'Abrir mídia'}
+                  </a>
+                ))}
                 <p className={cn('mt-1 flex items-center justify-end gap-1 text-[10px]', out && m.senderType === 'USER' ? 'text-brand-fg/80' : 'text-fg-muted')}>
                   {fmtDateTime(m.createdAt)}
                   {out && m.status === 'FAILED' && <TriangleAlert className="h-3 w-3 text-danger" aria-label="Falhou" />}
