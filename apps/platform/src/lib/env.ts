@@ -1,0 +1,57 @@
+/**
+ * Acesso centralizado às variáveis de ambiente.
+ * Lido sob demanda (não no import) para que `next build` funcione sem segredos.
+ */
+const isProd = process.env.NODE_ENV === 'production';
+
+function read(name: string): string | undefined {
+  const v = process.env[name];
+  return v && v.trim() !== '' ? v.trim() : undefined;
+}
+
+function required(name: string, devFallback?: string): string {
+  const v = read(name);
+  if (v) return v;
+  if (!isProd && devFallback !== undefined) return devFallback;
+  throw new Error(`Variável de ambiente obrigatória ausente: ${name}`);
+}
+
+export const env = {
+  isProd,
+  isTest: process.env.NODE_ENV === 'test' || !!process.env.VITEST,
+  appUrl: () => (read('APP_URL') ?? 'http://localhost:3000').replace(/\/$/, ''),
+  authSecret: () => required('AUTH_SECRET', 'dev-only-insecure-secret-please-set-AUTH_SECRET'),
+  encryptionKey: () => read('ENCRYPTION_KEY'),
+  cronSecret: () => read('CRON_SECRET'),
+  // IA
+  aiProvider: () => (read('AI_PROVIDER') ?? (read('OPENAI_API_KEY') ? 'openai' : 'none')).toLowerCase(),
+  openaiKey: () => read('OPENAI_API_KEY'),
+  openaiBaseUrl: () => read('OPENAI_BASE_URL') ?? 'https://api.openai.com/v1',
+  openaiModel: () => read('OPENAI_MODEL') ?? 'gpt-4o-mini',
+  openaiEmbeddingModel: () => read('OPENAI_EMBEDDING_MODEL') ?? 'text-embedding-3-small',
+  // Meta (WhatsApp / Instagram)
+  metaAppId: () => read('META_APP_ID'),
+  metaAppSecret: () => read('META_APP_SECRET'),
+  metaGraphVersion: () => read('META_GRAPH_VERSION') ?? 'v21.0',
+  whatsappVerifyToken: () => read('WHATSAPP_VERIFY_TOKEN'),
+  instagramVerifyToken: () => read('INSTAGRAM_VERIFY_TOKEN') ?? read('WHATSAPP_VERIFY_TOKEN'),
+  // E-mail transacional
+  smtp: () => {
+    const host = read('SMTP_HOST');
+    if (!host) return null;
+    return {
+      host,
+      port: Number(read('SMTP_PORT') ?? 587),
+      secure: read('SMTP_SECURE') === 'true',
+      user: read('SMTP_USER'),
+      pass: read('SMTP_PASSWORD'),
+      from: read('EMAIL_FROM') ?? 'HR Tech <no-reply@hrtechsistemas.com.br>',
+    };
+  },
+  // Billing
+  billingProvider: () => (read('BILLING_PROVIDER') ?? 'manual').toLowerCase(),
+  stripeSecretKey: () => read('STRIPE_SECRET_KEY'),
+  stripeWebhookSecret: () => read('STRIPE_WEBHOOK_SECRET'),
+  asaasApiKey: () => read('ASAAS_API_KEY'),
+  asaasWebhookToken: () => read('ASAAS_WEBHOOK_TOKEN'),
+};

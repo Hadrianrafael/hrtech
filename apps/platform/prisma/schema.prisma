@@ -1,0 +1,816 @@
+// HR Tech Platform — modelo de dados multi-tenant.
+//
+// Regra de ouro: toda tabela com dados de cliente possui `organizationId`.
+// O isolamento é aplicado em duas camadas:
+//   1. Aplicação: `tenantDb(orgId)` injeta o filtro por organização em toda consulta.
+//   2. Banco: Row-Level Security (ver migration `rls`) usando `app.org_id` por transação.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Plataforma / Tenancy ─────────────────────────────
+
+enum OrgStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model Organization {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  status          OrgStatus @default(ACTIVE)
+  segment         String? // hotel, pousada, turismo, servicos...
+  timezone        String    @default("America/Sao_Paulo")
+  locale          String    @default("pt-BR")
+  isPlatformOwner Boolean   @default(false) // a própria HR Tech
+  retentionDays   Int? // retenção de conversas (LGPD). null = indefinido
+  settings        Json      @default("{}")
+  suspendedReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  memberships   Membership[]
+  roles         Role[]
+  invitations   Invitation[]
+  subscription  Subscription?
+  usage         Usage[]
+  contacts      Contact[]
+  pipelines     Pipeline[]
+  conversations Conversation[]
+  integrations  Integration[]
+  chatbots      Chatbot[]
+  automations   Automation[]
+  auditLogs     AuditLog[]
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  passwordHash    String?
+  isPlatformAdmin Boolean   @default(false)
+  disabled        Boolean   @default(false)
+  avatarUrl       String?
+  lastLoginAt     DateTime?
+  failedLogins    Int       @default(0)
+  lockedUntil     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  memberships    Membership[]
+  sessions       Session[]
+  passwordResets PasswordReset[]
+  accounts       AuthAccount[]
+}
+
+/// Contas de login social (Google, Microsoft...) — preparado para o futuro.
+model AuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  activeOrgId String?
+  expiresAt   DateTime
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Papéis. `organizationId = null` → papel de sistema (compartilhado, imutável).
+/// Organizações podem criar papéis personalizados combinando permissões do catálogo.
+model Role {
+  id             String        @id @default(cuid())
+  organizationId String?
+  key            String
+  name           String
+  description    String?
+  permissions    String[]
+  isSystem       Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships    Membership[]
+  invitations    Invitation[]
+
+  @@unique([organizationId, key])
+}
+
+enum MembershipStatus {
+  ACTIVE
+  DISABLED
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  roleId         String
+  status         MembershipStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now())
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role             @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+model Invitation {
+  id             String       @id @default(cuid())
+  organizationId String
+  email          String
+  name           String?
+  roleId         String
+  tokenHash      String       @unique
+  invitedById    String?
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role         @relation(fields: [roleId], references: [id])
+
+  @@index([organizationId])
+}
+
+// ───────────────────────────── Planos / Billing ─────────────────────────────
+
+model Plan {
+  id            String         @id @default(cuid())
+  key           String         @unique
+  name          String
+  description   String?
+  priceCents    Int            @default(0)
+  currency      String         @default("BRL")
+  interval      String         @default("month")
+  limits        Json           @default("{}")
+  features      String[]
+  active        Boolean        @default(true)
+  isPublic      Boolean        @default(true)
+  position      Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions Subscription[]
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  PAUSED
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  organizationId         String             @unique
+  planId                 String
+  status                 SubscriptionStatus @default(TRIALING)
+  provider               String             @default("manual")
+  externalCustomerId     String?
+  externalSubscriptionId String?
+  currentPeriodStart     DateTime           @default(now())
+  currentPeriodEnd       DateTime
+  trialEndsAt            DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  organization           Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan                   Plan               @relation(fields: [planId], references: [id])
+}
+
+/// Contador de consumo por métrica e período (AAAA-MM).
+model Usage {
+  id             String       @id @default(cuid())
+  organizationId String
+  metric         String
+  period         String
+  count          Int          @default(0)
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, metric, period])
+}
+
+// ───────────────────────────── CRM ─────────────────────────────
+
+enum ContactKind {
+  LEAD
+  CUSTOMER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  IN_CONVERSATION
+  QUALIFIED
+  CUSTOMER
+  UNQUALIFIED
+  LOST
+}
+
+model Contact {
+  id                String       @id @default(cuid())
+  organizationId    String
+  kind              ContactKind  @default(LEAD)
+  status            LeadStatus   @default(NEW)
+  name              String
+  email             String?
+  phone             String?
+  whatsapp          String?
+  instagram         String?
+  companyName       String?
+  city              String?
+  state             String?
+  source            String       @default("manual") // manual, whatsapp, instagram, email, webchat, form, import, api
+  sourceDetail      String?
+  ownerId           String?
+  potentialValue    Decimal?     @db.Decimal(12, 2)
+  notes             String?
+  interest          String?
+  /// Campos extensíveis por segmento (ex.: hotelaria: checkIn, checkOut, guests, roomType).
+  customFields      Json         @default("{}")
+  lastInteractionAt DateTime?
+  nextActionAt      DateTime?
+  nextActionNote    String?
+  // LGPD
+  consentAt         DateTime?
+  consentSource     String?
+  marketingOptIn    Boolean      @default(false)
+  anonymizedAt      DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  tags           ContactTag[]
+  identities     ContactIdentity[]
+  opportunities  Opportunity[]
+  conversations  Conversation[]
+  notesList      Note[]
+  tasks          Task[]
+  appointments   Appointment[]
+  timelineEvents TimelineEvent[]
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, email])
+  @@index([organizationId, whatsapp])
+  @@index([organizationId, ownerId])
+}
+
+/// Identidade do contato em um canal (telefone WhatsApp, IGSID do Instagram, e-mail, visitante do site).
+model ContactIdentity {
+  id             String   @id @default(cuid())
+  organizationId String
+  contactId      String
+  channel        Channel
+  externalId     String
+  createdAt      DateTime @default(now())
+  contact        Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, channel, externalId])
+}
+
+model Tag {
+  id             String            @id @default(cuid())
+  organizationId String
+  name           String
+  color          String            @default("#64748b")
+  createdAt      DateTime          @default(now())
+  contacts       ContactTag[]
+  conversations  ConversationTag[]
+
+  @@unique([organizationId, name])
+}
+
+model ContactTag {
+  organizationId String
+  contactId      String
+  tagId          String
+  contact        Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag            Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, tagId])
+}
+
+model Note {
+  id             String   @id @default(cuid())
+  organizationId String
+  contactId      String
+  authorId       String?
+  body           String
+  createdAt      DateTime @default(now())
+  contact        Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+model Pipeline {
+  id             String          @id @default(cuid())
+  organizationId String
+  name           String
+  isDefault      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stages         PipelineStage[]
+  opportunities  Opportunity[]
+}
+
+enum StageKind {
+  OPEN
+  WON
+  LOST
+}
+
+model PipelineStage {
+  id             String        @id @default(cuid())
+  organizationId String
+  pipelineId     String
+  name           String
+  key            String? // chave estável usada por automações (ex.: "proposal")
+  position       Int
+  kind           StageKind     @default(OPEN)
+  color          String        @default("#64748b")
+  probability    Int? // % de chance
+  defaultOwnerId String?
+  /// Regras da etapa (ex.: { requireValue: true, followUpDays: 2 }).
+  rules          Json          @default("{}")
+  pipeline       Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  opportunities  Opportunity[]
+
+  @@index([pipelineId, position])
+}
+
+enum OpportunityStatus {
+  OPEN
+  WON
+  LOST
+}
+
+model Opportunity {
+  id             String            @id @default(cuid())
+  organizationId String
+  pipelineId     String
+  stageId        String
+  contactId      String
+  title          String
+  value          Decimal?          @db.Decimal(12, 2)
+  ownerId        String?
+  status         OpportunityStatus @default(OPEN)
+  position       Float             @default(0)
+  expectedCloseAt DateTime?
+  closedAt       DateTime?
+  lostReason     String?
+  stageChangedAt DateTime          @default(now())
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  pipeline       Pipeline          @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  stage          PipelineStage     @relation(fields: [stageId], references: [id])
+  contact        Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, stageId])
+}
+
+/// Timeline unificada do contato (exceto mensagens, que são mescladas na leitura).
+model TimelineEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  contactId      String
+  type           String // note, stage_changed, task_created, task_completed, appointment, ai_action, assigned, field_changed, lead_created...
+  actorType      String   @default("USER") // USER, AI, SYSTEM, CONTACT, AUTOMATION
+  actorId        String?
+  title          String
+  data           Json     @default("{}")
+  createdAt      DateTime @default(now())
+  contact        Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, contactId, createdAt])
+}
+
+// ───────────────────────────── Omnichannel ─────────────────────────────
+
+enum Channel {
+  WHATSAPP
+  INSTAGRAM
+  EMAIL
+  WEBCHAT
+}
+
+enum IntegrationStatus {
+  NOT_CONFIGURED
+  PENDING
+  CONNECTED
+  ERROR
+  DISABLED
+}
+
+/// Conexão de um canal/serviço externo por organização. Segredos ficam cifrados (AES-256-GCM).
+model Integration {
+  id               String            @id @default(cuid())
+  organizationId   String
+  type             String // WHATSAPP, INSTAGRAM, EMAIL, WEBCHAT
+  name             String
+  status           IntegrationStatus @default(NOT_CONFIGURED)
+  /// Identificador externo usado para rotear webhooks (phone_number_id, IG account id...).
+  externalId       String?
+  config           Json              @default("{}")
+  secretsEnc       String?
+  lastError        String?
+  lastErrorAt      DateTime?
+  lastEventAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  emailAccount     EmailAccount?
+  conversations    Conversation[]
+  templates        MessageTemplate[]
+
+  @@unique([type, externalId])
+  @@index([organizationId])
+}
+
+model EmailAccount {
+  id             String      @id @default(cuid())
+  organizationId String
+  integrationId  String      @unique
+  address        String
+  displayName    String?
+  smtpHost       String
+  smtpPort       Int         @default(587)
+  smtpSecure     Boolean     @default(false)
+  imapHost       String?
+  imapPort       Int         @default(993)
+  username       String
+  passwordEnc    String
+  lastUid        Int         @default(0)
+  lastSyncAt     DateTime?
+  syncError      String?
+  integration    Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+}
+
+model MessageTemplate {
+  id             String      @id @default(cuid())
+  organizationId String
+  integrationId  String
+  name           String
+  language       String      @default("pt_BR")
+  category       String      @default("UTILITY")
+  body           String
+  status         String      @default("PENDING") // status de aprovação na Meta
+  createdAt      DateTime    @default(now())
+  integration    Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, name, language])
+}
+
+enum ConversationStatus {
+  OPEN
+  PENDING
+  RESOLVED
+}
+
+model Conversation {
+  id                 String             @id @default(cuid())
+  organizationId     String
+  contactId          String
+  channel            Channel
+  integrationId      String?
+  externalThreadId   String?
+  subject            String?
+  status             ConversationStatus @default(OPEN)
+  assigneeId         String?
+  aiPaused           Boolean            @default(false)
+  humanRequested     Boolean            @default(false)
+  awaitingReply      Boolean            @default(false) // última mensagem é do cliente
+  unreadCount        Int                @default(0)
+  lastMessageAt      DateTime?
+  lastMessagePreview String?
+  lastInboundAt      DateTime?
+  lastOutboundAt     DateTime?
+  summary            String?
+  intent             String?
+  /// Token do visitante do widget (hash) para webchat.
+  visitorTokenHash   String?            @unique
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact            Contact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  integration        Integration?       @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+  messages           Message[]
+  tags               ConversationTag[]
+
+  @@index([organizationId, lastMessageAt])
+  @@index([organizationId, contactId])
+}
+
+model ConversationTag {
+  organizationId String
+  conversationId String
+  tagId          String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tag            Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, tagId])
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum SenderType {
+  CONTACT
+  USER
+  AI
+  SYSTEM
+}
+
+enum MessageStatus {
+  RECEIVED
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model Message {
+  id             String           @id @default(cuid())
+  organizationId String
+  conversationId String
+  direction      MessageDirection
+  senderType     SenderType
+  senderUserId   String?
+  body           String
+  contentType    String           @default("text") // text, image, audio, video, document, template, email, interactive
+  media          Json? // { id, mimeType, url, filename }
+  externalId     String?
+  status         MessageStatus    @default(QUEUED)
+  error          String?
+  metadata       Json             @default("{}")
+  createdAt      DateTime         @default(now())
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, externalId])
+  @@index([conversationId, createdAt])
+}
+
+/// Registro de webhooks recebidos — garante idempotência e auditoria de processamento.
+model WebhookEvent {
+  id             String    @id @default(cuid())
+  provider       String
+  eventKey       String
+  organizationId String?
+  status         String    @default("RECEIVED") // RECEIVED, PROCESSED, IGNORED, FAILED
+  payload        Json
+  error          String?
+  attempts       Int       @default(0)
+  receivedAt     DateTime  @default(now())
+  processedAt    DateTime?
+
+  @@unique([provider, eventKey])
+}
+
+// ───────────────────────────── IA / Chatbot / Conhecimento ─────────────────────────────
+
+enum AiMode {
+  OFF
+  COPILOT
+  AUTO
+}
+
+model Chatbot {
+  id               String       @id @default(cuid())
+  organizationId   String
+  name             String       @default("Assistente")
+  enabled          Boolean      @default(false)
+  mode             AiMode       @default(COPILOT)
+  greeting         String       @default("Olá! Como posso ajudar?")
+  tone             String       @default("cordial e objetivo")
+  instructions     String       @default("")
+  /// { enabled, timezone, days: { mon: ["09:00","18:00"], ... }, outOfHoursMessage }
+  businessHours    Json         @default("{}")
+  /// { keywords: string[], onNegativeSentiment, maxAiTurns, message }
+  handoffRules     Json         @default("{}")
+  /// Campos a coletar (name, phone, email, interest, budget, desiredDate, checkIn, checkOut, guests, roomType...)
+  collectFields    String[]
+  faq              Json         @default("[]")
+  channels         Channel[]
+  publicKey        String       @unique
+  allowedOrigins   String[]
+  widgetColor      String       @default("#ea580c")
+  widgetPosition   String       @default("right")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeBase {
+  id             String              @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  createdAt      DateTime            @default(now())
+  documents      KnowledgeDocument[]
+}
+
+model KnowledgeDocument {
+  id              String           @id @default(cuid())
+  organizationId  String
+  knowledgeBaseId String
+  title           String
+  category        String?
+  content         String
+  sourceType      String           @default("text") // text, faq, file, url
+  status          String           @default("READY") // READY, INDEXING, ERROR
+  embedded        Boolean          @default(false)
+  error           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  knowledgeBase   KnowledgeBase    @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+  chunks          KnowledgeChunk[]
+}
+
+model KnowledgeChunk {
+  id             String            @id @default(cuid())
+  organizationId String
+  documentId     String
+  index          Int
+  content        String
+  /// Embedding vetorial. Armazenado como array; migrável para pgvector.
+  embedding      Float[]
+  createdAt      DateTime          @default(now())
+  document       KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+/// Cada chamada de IA (para métricas, custo e auditoria).
+model AiRun {
+  id             String   @id @default(cuid())
+  organizationId String
+  kind           String // auto_reply, suggest, summarize, classify, extract, followup, test
+  provider       String
+  model          String
+  conversationId String?
+  status         String   @default("SUCCESS")
+  tokensIn       Int      @default(0)
+  tokensOut      Int      @default(0)
+  latencyMs      Int      @default(0)
+  error          String?
+  accepted       Boolean?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
+// ───────────────────────────── Agenda / Tarefas ─────────────────────────────
+
+enum AppointmentStatus {
+  SCHEDULED
+  DONE
+  CANCELED
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  organizationId String
+  title          String
+  type           String            @default("MEETING") // MEETING, CALL, VISIT, SERVICE, FOLLOW_UP, TASK, RETURN
+  description    String?
+  location       String?
+  startsAt       DateTime
+  endsAt         DateTime
+  allDay         Boolean           @default(false)
+  status         AppointmentStatus @default(SCHEDULED)
+  contactId      String?
+  opportunityId  String?
+  ownerId        String?
+  createdById    String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  contact        Contact?          @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, startsAt])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  description    String?
+  type           String       @default("TASK") // TASK, FOLLOW_UP
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  dueAt          DateTime?
+  completedAt    DateTime?
+  assigneeId     String?
+  contactId      String?
+  opportunityId  String?
+  source         String       @default("MANUAL") // MANUAL, AUTOMATION, AI, SYSTEM
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  contact        Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, dueAt])
+}
+
+// ───────────────────────────── Automações ─────────────────────────────
+
+model Automation {
+  id             String          @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  trigger        String
+  conditions     Json            @default("[]")
+  actions        Json            @default("[]")
+  enabled        Boolean         @default(true)
+  runCount       Int             @default(0)
+  lastRunAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  runs           AutomationRun[]
+
+  @@index([organizationId, trigger])
+}
+
+model AutomationRun {
+  id             String     @id @default(cuid())
+  organizationId String
+  automationId   String
+  eventKey       String
+  status         String // SUCCESS, FAILED, SKIPPED
+  input          Json       @default("{}")
+  result         Json       @default("[]")
+  error          String?
+  createdAt      DateTime   @default(now())
+  automation     Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@unique([automationId, eventKey])
+  @@index([organizationId, createdAt])
+}
+
+// ───────────────────────────── Auditoria ─────────────────────────────
+
+model AuditLog {
+  id             String        @id @default(cuid())
+  organizationId String?
+  actorUserId    String?
+  actorType      String        @default("USER")
+  action         String
+  entityType     String?
+  entityId       String?
+  severity       String        @default("info") // info, warning, error
+  metadata       Json          @default("{}")
+  ip             String?
+  createdAt      DateTime      @default(now())
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([action])
+}
