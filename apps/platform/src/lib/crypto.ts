@@ -9,6 +9,14 @@ export function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
+/**
+ * Hash de tokens (sessão, convite, redefinição de senha, visitante do widget) com HMAC usando AUTH_SECRET.
+ * Somente o hash é armazenado; sem o segredo do servidor, um vazamento do banco não permite usar os tokens.
+ */
+export function hashToken(token: string): string {
+  return createHmac('sha256', env.authSecret()).update(token).digest('hex');
+}
+
 export function hmacSha256Hex(secret: string, payload: string | Buffer): string {
   return createHmac('sha256', secret).update(payload).digest('hex');
 }

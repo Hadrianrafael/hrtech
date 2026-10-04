@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { assertCan, ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
 import { AppError, NotFoundError } from '@/lib/errors';
 import { checkbox, optionalId, optionalString } from '@/lib/validation';
-import { assertMember } from './contacts';
+import { assertContactAccessible, assertMember } from './contacts';
 import { emitEvent } from './events';
 import { addTimeline } from './timeline';
 
@@ -55,7 +55,7 @@ export async function createAppointment(ctx: ServiceCtx, input: AppointmentInput
   assertCan(ctx, 'calendar.manage');
   const data = appointmentSchema.parse(input);
   if (data.ownerId) await assertMember(ctx, data.ownerId);
-  if (data.contactId && !(await ctx.db.contact.findFirst({ where: { id: data.contactId } }))) throw new NotFoundError('Contato não encontrado.');
+  if (data.contactId) await assertContactAccessible(ctx, data.contactId);
   const appt = await ctx.db.appointment.create({
     data: {
       organizationId: ctx.orgId,
@@ -96,6 +96,7 @@ export async function updateAppointment(ctx: ServiceCtx, id: string, input: Appo
   await getScoped(ctx, id);
   const data = appointmentSchema.parse(input);
   if (data.ownerId) await assertMember(ctx, data.ownerId);
+  if (data.contactId) await assertContactAccessible(ctx, data.contactId);
   return ctx.db.appointment.update({
     where: { id },
     data: {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { systemCtx } from '@/lib/auth/ctx';
-import { randomToken, sha256 } from '@/lib/crypto';
+import { randomToken, hashToken } from '@/lib/crypto';
 import { systemDb } from '@/lib/db';
 import { AppError, NotFoundError } from '@/lib/errors';
 import { normalizePhone } from '@/lib/utils';
@@ -91,7 +91,7 @@ export async function startVisitorSession(publicKey: string, origin: string | nu
   const token = randomToken(32);
   const webchat = await ctx.db.integration.findFirst({ where: { type: 'WEBCHAT' } });
   const conversation = await ctx.db.conversation.create({
-    data: { organizationId: ctx.orgId, contactId: contact.id, channel: 'WEBCHAT', integrationId: webchat?.id ?? null, visitorTokenHash: sha256(token), assigneeId: contact.ownerId },
+    data: { organizationId: ctx.orgId, contactId: contact.id, channel: 'WEBCHAT', integrationId: webchat?.id ?? null, visitorTokenHash: hashToken(token), assigneeId: contact.ownerId },
   });
   if (chatbot.greeting) {
     await ctx.db.message.create({
@@ -103,7 +103,7 @@ export async function startVisitorSession(publicKey: string, origin: string | nu
 
 async function visitorConversation(publicKey: string, origin: string | null, token: string) {
   const chatbot = await getPublicChatbot(publicKey, origin);
-  const conversation = await systemDb.conversation.findUnique({ where: { visitorTokenHash: sha256(token) } });
+  const conversation = await systemDb.conversation.findUnique({ where: { visitorTokenHash: hashToken(token) } });
   if (!conversation || conversation.organizationId !== chatbot.organizationId) throw new NotFoundError('Sessão de chat não encontrada.');
   return { chatbot, conversation };
 }

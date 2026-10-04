@@ -4,7 +4,7 @@ import { audit } from '@/lib/audit';
 import { assertCan, ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
 import { AppError, NotFoundError } from '@/lib/errors';
 import { optionalDate, optionalId, optionalMoney, optionalString } from '@/lib/validation';
-import { assertMember } from './contacts';
+import { assertContactAccessible, assertMember } from './contacts';
 import { emitEvent } from './events';
 import { addTimeline } from './timeline';
 
@@ -125,8 +125,7 @@ export const opportunitySchema = z.object({
 export async function createOpportunity(ctx: ServiceCtx, input: z.input<typeof opportunitySchema>) {
   assertCan(ctx, 'opportunities.write');
   const data = opportunitySchema.parse(input);
-  const contact = await ctx.db.contact.findFirst({ where: { id: data.contactId } });
-  if (!contact) throw new NotFoundError('Contato não encontrado.');
+  const contact = await assertContactAccessible(ctx, data.contactId);
   const pipeline = data.pipelineId
     ? await ctx.db.pipeline.findFirst({ where: { id: data.pipelineId }, include: { stages: { orderBy: { position: 'asc' } } } })
     : await ctx.db.pipeline.findFirst({ where: { isDefault: true }, include: { stages: { orderBy: { position: 'asc' } } } });

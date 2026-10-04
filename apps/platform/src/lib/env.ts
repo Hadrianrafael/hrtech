@@ -20,7 +20,11 @@ export const env = {
   isProd,
   isTest: process.env.NODE_ENV === 'test' || !!process.env.VITEST,
   appUrl: () => (read('APP_URL') ?? 'http://localhost:3000').replace(/\/$/, ''),
-  authSecret: () => required('AUTH_SECRET', 'dev-only-insecure-secret-please-set-AUTH_SECRET'),
+  authSecret: () => {
+    const v = required('AUTH_SECRET', 'dev-only-insecure-secret-please-set-AUTH_SECRET');
+    if (isProd && v.length < 32) throw new Error('AUTH_SECRET deve ter pelo menos 32 caracteres (openssl rand -base64 48).');
+    return v;
+  },
   encryptionKey: () => read('ENCRYPTION_KEY'),
   cronSecret: () => read('CRON_SECRET'),
   // IA

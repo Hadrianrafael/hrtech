@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { assertCan, ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
 import { NotFoundError } from '@/lib/errors';
 import { optionalDate, optionalId, optionalString } from '@/lib/validation';
-import { assertMember } from './contacts';
+import { assertContactAccessible, assertMember } from './contacts';
 import { addTimeline } from './timeline';
 
 export const PRIORITY_LABELS: Record<TaskPriority, string> = { LOW: 'Baixa', MEDIUM: 'Média', HIGH: 'Alta', URGENT: 'Urgente' };
@@ -51,7 +51,7 @@ export async function createTask(ctx: ServiceCtx, input: TaskInput, opts: { sour
   assertCan(ctx, 'tasks.manage');
   const data = taskSchema.parse(input);
   if (data.assigneeId) await assertMember(ctx, data.assigneeId);
-  if (data.contactId && !(await ctx.db.contact.findFirst({ where: { id: data.contactId } }))) throw new NotFoundError('Contato não encontrado.');
+  if (data.contactId) await assertContactAccessible(ctx, data.contactId);
   const task = await ctx.db.task.create({
     data: {
       organizationId: ctx.orgId,
@@ -72,7 +72,7 @@ export async function createTask(ctx: ServiceCtx, input: TaskInput, opts: { sour
     await addTimeline(ctx, {
       contactId: task.contactId,
       type: task.type === 'FOLLOW_UP' ? 'followup_created' : 'task_created',
-      title: `${task.type === 'FOLLOW_UP' ? 'Follow-up' : 'Tarefa'} criada: ${task.title}`,
+      title: `${task.type === 'FOLLOW_UP' ? 'Follow-up criado' : 'Tarefa criada'}: ${task.title}`,
       data: { taskId: task.id, dueAt: task.dueAt },
     });
   }
@@ -90,6 +90,7 @@ export async function updateTask(ctx: ServiceCtx, id: string, input: Partial<Tas
   const current = await getScopedTask(ctx, id);
   const data = taskSchema.partial().parse(input);
   if (data.assigneeId) await assertMember(ctx, data.assigneeId);
+  if (data.contactId) await assertContactAccessible(ctx, data.contactId);
   const task = await ctx.db.task.update({
     where: { id },
     data: {

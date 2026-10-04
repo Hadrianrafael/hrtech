@@ -70,8 +70,8 @@ export function IntegrationsManager({
               <Badge tone={STATUS[i.status]?.tone}>{STATUS[i.status]?.label ?? i.status}</Badge>
             </div>
             <p className="mt-1 text-xs text-fg-muted">
-              {i.lastEventAt ? `Último evento recebido $<Time date={i.lastEventAt} />` : 'Nenhum evento recebido ainda'}
-              {i.email?.lastSyncAt ? ` · última sincronização $<Time date={i.email.lastSyncAt} />` : ''}
+              {i.lastEventAt ? <>Último evento recebido <Time date={i.lastEventAt} /></> : 'Nenhum evento recebido ainda'}
+              {i.email?.lastSyncAt ? <> · última sincronização <Time date={i.email.lastSyncAt} /></> : ''}
             </p>
             {(i.lastError || i.email?.syncError) && <p className="mt-1 text-xs text-danger">{i.lastError ?? i.email?.syncError}</p>}
             {type !== 'WEBCHAT' && (

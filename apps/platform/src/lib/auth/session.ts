@@ -1,6 +1,6 @@
 import { cookies, headers } from 'next/headers';
 import { cache } from 'react';
-import { randomToken, sha256 } from '../crypto';
+import { randomToken, hashToken } from '../crypto';
 import { systemDb } from '../db';
 import { env } from '../env';
 
@@ -19,7 +19,7 @@ export async function createSessionRecord(userId: string, activeOrgId: string | 
   await systemDb.session.create({
     data: {
       userId,
-      tokenHash: sha256(token),
+      tokenHash: hashToken(token),
       activeOrgId,
       expiresAt: new Date(Date.now() + SESSION_TTL_MS),
       ip: meta.ip,
@@ -47,7 +47,7 @@ export async function clearSessionCookie() {
 
 export async function findSessionByToken(token: string) {
   const session = await systemDb.session.findUnique({
-    where: { tokenHash: sha256(token) },
+    where: { tokenHash: hashToken(token) },
     include: { user: true },
   });
   if (!session) return null;
@@ -73,7 +73,7 @@ export const getCurrentSession = cache(async () => {
 });
 
 export async function revokeSession(token: string) {
-  await systemDb.session.deleteMany({ where: { tokenHash: sha256(token) } });
+  await systemDb.session.deleteMany({ where: { tokenHash: hashToken(token) } });
 }
 
 export async function revokeAllUserSessions(userId: string) {

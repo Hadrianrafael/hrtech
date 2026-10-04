@@ -11,6 +11,8 @@ import { useAction } from '@/components/ui/use-action';
 import { Time } from '@/components/shared/time';
 import type { ActionDef } from '@/server/automations/actions';
 
+const RUN_STATUS: Record<string, string> = { SUCCESS: 'Sucesso', FAILED: 'Falhou', PARTIAL: 'Parcial', SKIPPED: 'Condições não atendidas', RUNNING: 'Executando' };
+
 interface Cond { field: string; op: string; value?: unknown }
 interface Act { type: string; params: Record<string, unknown> }
 export interface AutomationRow {
@@ -65,7 +67,7 @@ export function AutomationManager({ automations, runs, catalog }: { automations:
                     {a.conditions.length > 0 && ` · ${a.conditions.length} condição(ões)`} · <strong className="font-medium text-fg">Então:</strong>{' '}
                     {a.actions.map((x) => catalog.actions[x.type]?.label ?? x.type).join(', ')}
                   </p>
-                  <p className="text-[11px] text-fg-muted">{a.runCount} execução(ões){a.lastRunAt ? ` · última $<Time date={a.lastRunAt} />` : ''}</p>
+                  <p className="text-[11px] text-fg-muted">{a.runCount} execução(ões){a.lastRunAt ? <> · última <Time date={a.lastRunAt} /></> : ''}</p>
                 </div>
                 <label className="flex items-center gap-2 text-xs">
                   <input type="checkbox" role="switch" checked={a.enabled} onChange={(e) => toggle.run(a.id, e.target.checked)} className="h-4 w-4 accent-[rgb(var(--brand))]" />
@@ -88,7 +90,7 @@ export function AutomationManager({ automations, runs, catalog }: { automations:
           {runs.map((r) => (
             <li key={r.id} className="py-2.5">
               <div className="flex items-center gap-2">
-                <Badge tone={r.status === 'SUCCESS' ? 'green' : r.status === 'FAILED' ? 'red' : 'gray'}>{r.status === 'SUCCESS' ? 'Sucesso' : r.status === 'FAILED' ? 'Falhou' : r.status === 'SKIPPED' ? 'Condições não atendidas' : r.status}</Badge>
+                <Badge tone={r.status === 'SUCCESS' ? 'green' : r.status === 'FAILED' ? 'red' : r.status === 'PARTIAL' ? 'yellow' : 'gray'}>{RUN_STATUS[r.status] ?? r.status}</Badge>
                 <span className="flex-1 truncate font-medium">{r.automation}</span>
                 <span className="text-xs text-fg-muted"><Time date={r.createdAt} mode="datetime" /></span>
               </div>

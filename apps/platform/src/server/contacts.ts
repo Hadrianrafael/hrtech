@@ -212,6 +212,15 @@ export async function createContact(
   return contact;
 }
 
+/** Garante que o contato existe na empresa e está no escopo de visibilidade do usuário. */
+export async function assertContactAccessible(ctx: ServiceCtx, contactId: string) {
+  const c = await ctx.db.contact.findFirst({
+    where: { AND: [{ id: contactId, anonymizedAt: null }, ownerScope(ctx, 'ownerId') as Prisma.ContactWhereInput] },
+  });
+  if (!c) throw new NotFoundError('Contato não encontrado.');
+  return c;
+}
+
 export async function assertMember(ctx: ServiceCtx, userId: string) {
   const m = await ctx.db.membership.findFirst({ where: { userId, status: 'ACTIVE' } });
   if (!m) throw new NotFoundError('Responsável não pertence a esta empresa.');

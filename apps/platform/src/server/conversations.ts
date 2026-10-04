@@ -12,7 +12,7 @@ import { incrementUsage, USAGE_METRICS } from './billing/limits';
 import { sendEmailMessage, type EmailAccountConfig } from './channels/email';
 import { sendInstagramText, type IgConfig, type IgSecrets } from './channels/instagram';
 import { isWithinServiceWindow, sendWhatsAppTemplate, sendWhatsAppText, type WaSecrets } from './channels/whatsapp';
-import { applyExtractedFields, findOrCreateContactByIdentity } from './contacts';
+import { applyExtractedFields, assertContactAccessible, findOrCreateContactByIdentity } from './contacts';
 import { emitEvent } from './events';
 import { addTimeline } from './timeline';
 
@@ -386,8 +386,7 @@ export async function sendMessage(ctx: ServiceCtx, conversationId: string, input
 /** Inicia conversa ativa (ex.: e-mail para um lead, WhatsApp via template). */
 export async function startConversation(ctx: ServiceCtx, contactId: string, channel: Channel, subject?: string | null) {
   assertCan(ctx, 'inbox.use');
-  const contact = await ctx.db.contact.findFirst({ where: { id: contactId } });
-  if (!contact) throw new NotFoundError('Contato não encontrado.');
+  const contact = await assertContactAccessible(ctx, contactId);
   const existing = await ctx.db.conversation.findFirst({ where: { contactId, channel, status: { in: ['OPEN', 'PENDING'] } } });
   if (existing) return existing;
   if (channel === 'WHATSAPP' && contact.whatsapp) {

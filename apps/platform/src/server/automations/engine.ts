@@ -236,11 +236,13 @@ export async function runAutomations(ctx: ServiceCtx, trigger: TriggerKey, paylo
         break;
       }
     }
-    const status = error ? 'FAILED' : 'SUCCESS';
-    await ctx.db.automationRun.update({ where: { id: run.id }, data: { status, result: results as unknown as Prisma.InputJsonValue, error } });
+    const softFailures = results.filter((r) => !r.ok);
+    const status = error ? 'FAILED' : softFailures.length ? 'PARTIAL' : 'SUCCESS';
+    const runError = error ?? (softFailures.length ? softFailures.map((r) => `${r.type}: ${r.detail ?? 'não executada'}`).join('; ') : null);
+    await ctx.db.automationRun.update({ where: { id: run.id }, data: { status, result: results as unknown as Prisma.InputJsonValue, error: runError } });
     await ctx.db.automation.update({ where: { id: automation.id }, data: { runCount: { increment: 1 }, lastRunAt: new Date() } });
-    if (error) {
-      await audit({ organizationId: ctx.orgId, action: 'automation.failed', actorType: 'AUTOMATION', entityType: 'Automation', entityId: automation.id, severity: 'error', metadata: { error, trigger } });
+    if (error || softFailures.length) {
+      await audit({ organizationId: ctx.orgId, action: 'automation.failed', actorType: 'AUTOMATION', entityType: 'Automation', entityId: automation.id, severity: error ? 'error' : 'warning', metadata: { error: runError, trigger } });
     }
     runs.push({ automationId: automation.id, status });
   }

@@ -2,7 +2,7 @@ import { audit } from '@/lib/audit';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import type { ServiceCtx } from '@/lib/auth/ctx';
 import { assertCan } from '@/lib/auth/ctx';
-import { randomToken, sha256 } from '@/lib/crypto';
+import { randomToken, hashToken } from '@/lib/crypto';
 import { systemDb, withSystem } from '@/lib/db';
 import { env } from '@/lib/env';
 import { AppError, ForbiddenError, NotFoundError } from '@/lib/errors';
@@ -48,7 +48,7 @@ export async function requestPasswordReset(emailRaw: string): Promise<{ link?: s
   const user = await systemDb.user.findUnique({ where: { email } });
   if (!user || user.disabled) return {}; // não revela se o e-mail existe
   const token = randomToken(32);
-  await systemDb.passwordReset.create({ data: { userId: user.id, tokenHash: sha256(token), expiresAt: new Date(Date.now() + RESET_TTL_MS) } });
+  await systemDb.passwordReset.create({ data: { userId: user.id, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + RESET_TTL_MS) } });
   const link = `${env.appUrl()}/reset-password?token=${token}`;
   const { delivered } = await sendTransactionalMail({
     to: user.email,
@@ -61,7 +61,7 @@ export async function requestPasswordReset(emailRaw: string): Promise<{ link?: s
 }
 
 export async function resetPassword(token: string, newPassword: string) {
-  const record = await systemDb.passwordReset.findUnique({ where: { tokenHash: sha256(token) } });
+  const record = await systemDb.passwordReset.findUnique({ where: { tokenHash: hashToken(token) } });
   if (!record || record.usedAt || record.expiresAt < new Date()) throw new AppError('Link inválido ou expirado. Solicite uma nova redefinição.');
   const passwordHash = await hashPassword(newPassword);
   await withSystem(async (tx) => {
@@ -101,7 +101,7 @@ export async function createInvitation(ctx: ServiceCtx, input: { email: string; 
       email,
       name: input.name ?? null,
       roleId: role.id,
-      tokenHash: sha256(token),
+      tokenHash: hashToken(token),
       invitedById: ctx.userId,
       expiresAt: new Date(Date.now() + INVITE_TTL_MS),
     },
@@ -118,7 +118,7 @@ export async function createInvitation(ctx: ServiceCtx, input: { email: string; 
 }
 
 export async function getInvitationByToken(token: string) {
-  const inv = await systemDb.invitation.findUnique({ where: { tokenHash: sha256(token) }, include: { organization: true, role: true } });
+  const inv = await systemDb.invitation.findUnique({ where: { tokenHash: hashToken(token) }, include: { organization: true, role: true } });
   if (!inv || inv.acceptedAt || inv.revokedAt || inv.expiresAt < new Date()) return null;
   const existingUser = await systemDb.user.findUnique({ where: { email: inv.email }, select: { id: true } });
   return { ...inv, userExists: !!existingUser };

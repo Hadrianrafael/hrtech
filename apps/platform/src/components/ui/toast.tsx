@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 type ToastKind = 'success' | 'error' | 'info';
@@ -41,11 +41,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** API estável (memoizada) — segura para uso em dependências de hooks. */
 export function useToast() {
   const push = useContext(Ctx);
-  return {
-    success: (m: string) => push('success', m),
-    error: (m: string) => push('error', m),
-    info: (m: string) => push('info', m),
-  };
+  return useMemo(
+    () => ({
+      success: (m: string) => push('success', m),
+      error: (m: string) => push('error', m),
+      info: (m: string) => push('info', m),
+    }),
+    [push],
+  );
 }
