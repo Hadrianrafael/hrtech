@@ -29,7 +29,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      # Usuário sem SUPERUSER/BYPASSRLS para que os testes validem o Row-Level Security de verdade.
+      # Usuário sem SUPERUSER/BYPASSRLS (com CREATEROLE para a migration criar o papel restrito hrtech_rls).
       DATABASE_URL: postgresql://hrtech:hrtech@localhost:5432/hrtech_test
       TEST_DATABASE_URL: postgresql://hrtech:hrtech@localhost:5432/hrtech_test
       AUTH_SECRET: ci-only-secret-not-used-in-production-0123456789
@@ -40,7 +40,7 @@ jobs:
       - name: Criar papel e banco de testes (não-superuser)
         run: |
           psql "postgresql://postgres:postgres@localhost:5432/postgres" \
-            -c "CREATE ROLE hrtech LOGIN PASSWORD 'hrtech' CREATEDB NOSUPERUSER NOBYPASSRLS;" \
+            -c "CREATE ROLE hrtech LOGIN PASSWORD 'hrtech' CREATEDB CREATEROLE NOSUPERUSER NOBYPASSRLS;" \
             -c "CREATE DATABASE hrtech_test OWNER hrtech;"
 
       - uses: pnpm/action-setup@v4

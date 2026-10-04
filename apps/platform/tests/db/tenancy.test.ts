@@ -21,8 +21,14 @@ describe.skipIf(!ok)('isolamento multi-tenant', () => {
     await saveKnowledgeDocument(ctxFor(orgB, userB), null, { title: 'Segredo B', content: 'A tarifa secreta da empresa B é 999 reais por diária.' });
   });
 
-  it('o usuário do banco de testes respeita RLS (não é superuser)', async () => {
+  it('o RLS está efetivo para a aplicação', async () => {
     expect((await checkDatabaseRole()).ok).toBe(true);
+  });
+
+  it('transações da aplicação usam o papel restrito quando ele existe', async () => {
+    const status = await checkDatabaseRole();
+    const [row] = await withTenant(orgA, (tx) => tx.$queryRaw<{ u: string }[]>`SELECT current_user AS u`);
+    expect(row!.u).toBe(status.mode === 'app_role' ? 'hrtech_rls' : status.role);
   });
 
   it('listagens retornam apenas dados da própria empresa', async () => {
@@ -42,9 +48,11 @@ describe.skipIf(!ok)('isolamento multi-tenant', () => {
   it('RLS no banco filtra até consultas SQL brutas', async () => {
     const rows = await withTenant(orgA, (tx) => tx.$queryRaw<{ name: string }[]>`SELECT name FROM "Contact"`);
     expect(rows.map((r) => r.name)).toEqual(['Contato da A']);
-    // Sem contexto de tenant o banco não retorna nada (fail-closed).
-    const none = await __unsafeBasePrismaForTests.$queryRaw<{ c: bigint }[]>`SELECT count(*) AS c FROM "Contact"`;
-    expect(Number(none[0]!.c)).toBe(0);
+    // Sem contexto de tenant o banco não retorna nada (fail-closed) — vale para usuários de conexão sem BYPASSRLS.
+    if (!(await checkDatabaseRole()).loginBypassesRls) {
+      const none = await __unsafeBasePrismaForTests.$queryRaw<{ c: bigint }[]>`SELECT count(*) AS c FROM "Contact"`;
+      expect(Number(none[0]!.c)).toBe(0);
+    }
   });
 
   it('RLS impede inserir dados em outra empresa mesmo via SQL', async () => {

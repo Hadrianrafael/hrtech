@@ -5,7 +5,7 @@ import { errorResponse } from '@/lib/route';
 import { runTick } from '@/server/cron';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 /** Rotina periódica: follow-ups, tarefas atrasadas, e-mail (IMAP), retenção LGPD e reprocessamento de webhooks. */
 async function handler(req: NextRequest) {

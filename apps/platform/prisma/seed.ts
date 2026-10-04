@@ -1,13 +1,17 @@
 /**
- * Seed de demonstração. Todos os dados são FICTÍCIOS (domínios .example, telefones fictícios).
- * Idempotente: se as organizações de demo já existirem, apenas garante planos/papéis/usuário admin.
+ * Seed idempotente (pode rodar a cada deploy):
+ *  - planos iniciais (sem sobrescrever edições feitas no painel) e papéis de sistema;
+ *  - primeiro Super Admin HR Tech (somente se ainda não existir nenhum);
+ *  - organização HR Tech;
+ *  - dados de demonstração FICTÍCIOS ("Pousada Exemplo", prospects) quando SEED_DEMO=true.
  *
  *   pnpm db:seed
  *
- * Senha padrão dos usuários de demo: SEED_PASSWORD (padrão "Demo@12345") — altere após o primeiro acesso.
+ * Banco local (localhost): admin "admin@hrtech.example", senha "Demo@12345" e demo ativada por padrão.
+ * Banco remoto (produção): exige SEED_ADMIN_EMAIL e SEED_PASSWORD no primeiro bootstrap; demo desativada por padrão.
  */
 import { makeServiceCtx } from '../src/lib/auth/ctx';
-import { hashPassword } from '../src/lib/auth/password';
+import { hashPassword, passwordSchema } from '../src/lib/auth/password';
 import { systemDb } from '../src/lib/db';
 import { saveKnowledgeDocument } from '../src/server/ai/rag';
 import { createAppointment } from '../src/server/calendar';
@@ -16,7 +20,30 @@ import { moveOpportunity } from '../src/server/pipeline';
 import { createTask } from '../src/server/tasks';
 import { ensureSystemRoles, getSystemRole, provisionOrganization } from '../src/server/orgs';
 
-const PASSWORD = process.env.SEED_PASSWORD || 'Demo@12345';
+function isLocalDatabase(url = process.env.DATABASE_URL ?? '') {
+  try {
+    return ['localhost', '127.0.0.1', '[::1]', '::1'].includes(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+const LOCAL = isLocalDatabase();
+const DEMO = process.env.SEED_DEMO ? process.env.SEED_DEMO === 'true' : LOCAL;
+
+let cachedPassword: string | null = null;
+/** Senha dos usuários criados pelo seed. Em banco remoto nunca usa a senha de demonstração conhecida. */
+function seedPassword(): string {
+  if (cachedPassword) return cachedPassword;
+  const p = process.env.SEED_PASSWORD;
+  if (p) {
+    const r = passwordSchema.safeParse(p);
+    if (!r.success) throw new Error(`SEED_PASSWORD inválida: ${r.error.issues[0]!.message}`);
+    return (cachedPassword = p);
+  }
+  if (LOCAL) return (cachedPassword = 'Demo@12345');
+  throw new Error('Banco remoto: defina SEED_PASSWORD (mín. 8 caracteres, com letras e números) para criar o primeiro administrador.');
+}
 
 const PLANS = [
   {
@@ -49,7 +76,7 @@ const PLANS = [
 ];
 
 async function upsertUser(email: string, name: string, isPlatformAdmin = false) {
-  const passwordHash = await hashPassword(PASSWORD);
+  const passwordHash = await hashPassword(seedPassword());
   return systemDb.user.upsert({
     where: { email },
     create: { email, name, passwordHash, isPlatformAdmin },
@@ -271,51 +298,67 @@ async function seedHrTech(orgId: string, adminId: string) {
       collectFields: ['name', 'phone', 'email', 'interest', 'budget'],
     },
   });
+  await saveKnowledgeDocument(ctx, null, {
+    title: 'Sobre a HR Tech',
+    category: 'Empresa',
+    content: 'A HR Tech Sistemas desenvolve sites, sistemas web, SaaS e automações com Inteligência Artificial. A plataforma omnichannel centraliza WhatsApp, Instagram, e-mail e chat do site com CRM e IA.',
+  });
+  if (!DEMO) return;
   const prospects = [
     { name: 'Hotel Mar Azul (fictício)', companyName: 'Hotel Mar Azul', city: 'Florianópolis', state: 'SC', source: 'prospeccao', interest: 'Chatbot + WhatsApp', potentialValue: 397 * 12 },
     { name: 'Pousada Serra Verde (fictícia)', companyName: 'Pousada Serra Verde', city: 'Gramado', state: 'RS', source: 'indicacao', interest: 'CRM e funil de reservas', potentialValue: 197 * 12 },
     { name: 'Agência Rota Sol (fictícia)', companyName: 'Rota Sol Turismo', city: 'Natal', state: 'RN', source: 'instagram', interest: 'Atendimento omnichannel', potentialValue: 797 * 12 },
   ];
   for (const p of prospects) await createContact(ctx, { ...p, email: `contato@${p.companyName.toLowerCase().replace(/\s+/g, '')}.example` });
-  await saveKnowledgeDocument(ctx, null, {
-    title: 'Sobre a HR Tech',
-    category: 'Empresa',
-    content: 'A HR Tech Sistemas desenvolve sites, sistemas web, SaaS e automações com Inteligência Artificial. A plataforma omnichannel centraliza WhatsApp, Instagram, e-mail e chat do site com CRM e IA.',
-  });
 }
 
 async function main() {
+  console.log(`→ Seed (${LOCAL ? 'banco local' : 'banco remoto'}, demonstração ${DEMO ? 'ativada' : 'desativada'})`);
   console.log('→ Planos e papéis');
   for (const p of PLANS) {
-    await systemDb.plan.upsert({ where: { key: p.key }, create: p, update: { name: p.name, description: p.description, features: p.features } });
+    // Não sobrescreve preços/limites editados no painel /admin/plans.
+    await systemDb.plan.upsert({ where: { key: p.key }, create: p, update: {} });
   }
   await ensureSystemRoles();
 
-  console.log('→ Usuários');
-  const superAdmin = await upsertUser('admin@hrtech.example', 'Administrador HR Tech', true);
+  let superAdmin = await systemDb.user.findFirst({ where: { isPlatformAdmin: true }, orderBy: { createdAt: 'asc' } });
+  let createdAdmin: string | null = null;
+  if (!superAdmin) {
+    const email = (process.env.SEED_ADMIN_EMAIL ?? (LOCAL ? 'admin@hrtech.example' : '')).trim().toLowerCase();
+    if (!email.includes('@')) throw new Error('Banco remoto: defina SEED_ADMIN_EMAIL com o e-mail do primeiro Super Admin HR Tech.');
+    console.log('→ Super Admin HR Tech');
+    superAdmin = await upsertUser(email, process.env.SEED_ADMIN_NAME?.trim() || 'Administrador HR Tech', true);
+    createdAdmin = email;
+  }
 
   let hrtech = await systemDb.organization.findFirst({ where: { isPlatformOwner: true } });
   if (!hrtech) {
+    console.log('→ Organização HR Tech');
     hrtech = await provisionOrganization({ name: 'HR Tech Sistemas', segment: 'servicos', planKey: 'business', isPlatformOwner: true, trialDays: 0 });
     await addMember(superAdmin.id, hrtech.id, 'org_admin');
     await seedHrTech(hrtech.id, superAdmin.id);
   }
 
-  let pousada = await systemDb.organization.findFirst({ where: { slug: 'pousada-exemplo' } });
-  if (!pousada) {
+  let createdDemo = false;
+  if (DEMO && !(await systemDb.organization.findFirst({ where: { slug: 'pousada-exemplo' } }))) {
     console.log('→ Pousada Exemplo (dados fictícios)');
-    pousada = await provisionOrganization({ name: 'Pousada Exemplo', segment: 'pousada', planKey: 'professional' });
+    const pousada = await provisionOrganization({ name: 'Pousada Exemplo', segment: 'pousada', planKey: 'professional' });
     const admin = await upsertUser('admin@pousadaexemplo.example', 'Gerente da Pousada (fictício)');
     const agent = await upsertUser('atendente@pousadaexemplo.example', 'Atendente da Pousada (fictício)');
     await addMember(admin.id, pousada.id, 'org_admin');
     await addMember(agent.id, pousada.id, 'agent');
     await seedPousada(pousada.id, admin.id, agent.id);
+    createdDemo = true;
   }
 
-  console.log('\n✔ Seed concluído. Acessos de demonstração (senha: %s):', process.env.SEED_PASSWORD ? '[SEED_PASSWORD]' : PASSWORD);
-  console.log('  Super admin HR Tech ......... admin@hrtech.example');
-  console.log('  Admin Pousada Exemplo ....... admin@pousadaexemplo.example');
-  console.log('  Atendente Pousada Exemplo ... atendente@pousadaexemplo.example');
+  const shownPassword = process.env.SEED_PASSWORD ? '[valor de SEED_PASSWORD]' : 'Demo@12345';
+  console.log('\n✔ Seed concluído.');
+  if (createdAdmin) console.log(`  Super Admin HR Tech: ${createdAdmin} (senha: ${shownPassword})`);
+  if (createdDemo) {
+    console.log(`  Demonstração (senha: ${shownPassword}):`);
+    console.log('    Admin Pousada Exemplo ....... admin@pousadaexemplo.example');
+    console.log('    Atendente Pousada Exemplo ... atendente@pousadaexemplo.example');
+  }
 }
 
 main()

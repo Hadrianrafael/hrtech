@@ -28,7 +28,7 @@ export default async function AdminHome() {
   return (
     <div className="space-y-5">
       <PageHeader title="Plataforma HR Tech" description="Visão geral de empresas, assinaturas, consumo e saúde das integrações." />
-      {!dbRole.ok && <Alert tone="red" title="Atenção: Row-Level Security não está sendo aplicado">{dbRole.reason} Use um usuário de banco sem SUPERUSER/BYPASSRLS em produção.</Alert>}
+      {!dbRole.ok && <Alert tone="red" title="Atenção: Row-Level Security não está sendo aplicado">{dbRole.reason}</Alert>}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Empresas" value={count('ACTIVE') + count('SUSPENDED')} hint={`${count('ACTIVE')} ativas · ${count('SUSPENDED')} bloqueadas`} icon={<Building2 className="h-4 w-4" />} />
         <StatCard label="Usuários" value={users} icon={<Users className="h-4 w-4" />} tone="blue" />
@@ -55,7 +55,7 @@ export default async function AdminHome() {
               {integrations.map((i) => <Badge key={i.type + i.status} tone={i.status === 'CONNECTED' ? 'green' : i.status === 'ERROR' ? 'red' : 'gray'}>{i.type} · {i.status}: {i._count._all}</Badge>)}
             </div>
             <p className="flex items-center gap-2 text-xs"><Webhook className="h-3.5 w-3.5" /> Webhooks com falha aguardando reprocessamento: <strong>{webhookFailed}</strong></p>
-            <p className="flex items-center gap-2 text-xs"><DatabaseZap className="h-3.5 w-3.5" /> Usuário do banco: <strong>{dbRole.role}</strong> {dbRole.ok ? <Badge tone="green">RLS ativo</Badge> : <Badge tone="red">RLS ignorado</Badge>}</p>
+            <p className="flex flex-wrap items-center gap-2 text-xs"><DatabaseZap className="h-3.5 w-3.5" /> Usuário do banco: <strong>{dbRole.role}</strong> {dbRole.ok ? <Badge tone="green">RLS ativo</Badge> : <Badge tone="red">RLS ignorado</Badge>}{dbRole.mode === 'app_role' && <Badge>via papel hrtech_rls</Badge>}</p>
             <div className="grid grid-cols-2 gap-1 text-xs text-fg-muted">
               <span>META_APP_SECRET: {platform.metaAppSecret ? '✓' : 'pendente'}</span>
               <span>WHATSAPP_VERIFY_TOKEN: {platform.whatsappVerifyToken ? '✓' : 'pendente'}</span>

@@ -34,8 +34,10 @@ cliente, protegido em duas camadas independentes:
    `organizationId = orgId` em toda leitura/atualização/exclusão, força o `organizationId` na criação e bloqueia
    tentativas de gravar/mover registros para outra organização.
 2. **Banco** — migration `20261004012600_rls` habilita `ROW LEVEL SECURITY` + `FORCE` em todas as tabelas de tenant.
-   Cada operação roda numa transação que define `app.org_id`; sem esse contexto o banco não retorna linhas
-   (*fail-closed*). Operações de sistema (login, roteamento de webhooks, cron, painel HR Tech) usam `systemDb`, que
+   Cada operação roda numa transação que define `app.org_id` e assume o papel restrito `hrtech_rls`
+   (sem BYPASSRLS e não-dono das tabelas), então as políticas valem mesmo que o usuário de conexão seja dono,
+   SUPERUSER ou BYPASSRLS — comum em bancos gerenciados. Sem esse contexto o banco não retorna linhas
+   (*fail-closed*). Testes rodam a suíte inteira também com um usuário superuser para comprovar. Operações de sistema (login, roteamento de webhooks, cron, painel HR Tech) usam `systemDb`, que
    define `app.bypass_rls = on` explicitamente.
 
 A organização ativa vem **sempre da sessão no servidor** (ou, em webhooks, do identificador do canal cadastrado),

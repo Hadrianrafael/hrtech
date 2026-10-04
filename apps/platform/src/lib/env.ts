@@ -19,7 +19,13 @@ function required(name: string, devFallback?: string): string {
 export const env = {
   isProd,
   isTest: process.env.NODE_ENV === 'test' || !!process.env.VITEST,
-  appUrl: () => (read('APP_URL') ?? 'http://localhost:3000').replace(/\/$/, ''),
+  /** URL pública. Na Vercel, sem APP_URL, usa o domínio de produção do projeto. */
+  appUrl: () => {
+    const explicit = read('APP_URL');
+    if (explicit) return explicit.replace(/\/$/, '');
+    const vercel = read('VERCEL_PROJECT_PRODUCTION_URL') ?? read('VERCEL_URL');
+    return vercel ? `https://${vercel}` : 'http://localhost:3000';
+  },
   authSecret: () => {
     const v = required('AUTH_SECRET', 'dev-only-insecure-secret-please-set-AUTH_SECRET');
     if (isProd && v.length < 32) throw new Error('AUTH_SECRET deve ter pelo menos 32 caracteres (openssl rand -base64 48).');

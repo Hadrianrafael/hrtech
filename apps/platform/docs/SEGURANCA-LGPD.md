@@ -17,7 +17,7 @@
 | Auditoria | `AuditLog` para login, falhas de login, convites, papéis, movimentações, ações administrativas, modo suporte, automações, erros de integração, exportação/anonimização |
 | Cabeçalhos | `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` (exceto rotas públicas do widget) |
 | XSS | React escapa conteúdo; o widget usa `textContent` e Shadow DOM; CSV exportado neutraliza fórmulas |
-| Banco | Alerta no painel se o usuário do banco for SUPERUSER/BYPASSRLS |
+| Banco | Toda transação assume o papel restrito `hrtech_rls`; o painel alerta se o RLS não estiver efetivo |
 
 ## Recursos de apoio à LGPD
 
@@ -38,7 +38,7 @@
 
 ## Recomendações para produção
 
-1. Usuário de banco dedicado sem SUPERUSER/BYPASSRLS; TLS na conexão (`?sslmode=require`).
+1. Confirmar "RLS ativo" no painel `/admin`; TLS na conexão (`?sslmode=require`).
 2. `AUTH_SECRET`, `ENCRYPTION_KEY`, `CRON_SECRET` fortes e guardados em cofre (Azure Key Vault / Vercel env).
 3. HTTPS obrigatório; domínio próprio; backups automáticos do PostgreSQL com teste de restauração.
 4. Rate limit distribuído (Redis) quando houver mais de uma instância.

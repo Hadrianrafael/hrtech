@@ -62,11 +62,12 @@ cp .env.example .env        # preencha DATABASE_URL, AUTH_SECRET, ENCRYPTION_KEY
 
 ### Banco de dados
 
-O usuário do banco usado pela aplicação **não pode ser SUPERUSER nem ter BYPASSRLS** — caso contrário o
-Row-Level Security é ignorado (o painel `/admin` alerta quando isso acontece). Exemplo local:
+As migrations criam o papel restrito `hrtech_rls` (por isso o usuário precisa de **CREATEROLE**); a aplicação
+assume esse papel em toda transação, então o Row-Level Security vale mesmo em bancos gerenciados cujo usuário
+padrão tenha BYPASSRLS. O painel `/admin` mostra o estado do RLS. Exemplo local:
 
 ```sql
-CREATE ROLE hrtech LOGIN PASSWORD 'troque-esta-senha' CREATEDB NOSUPERUSER NOBYPASSRLS;
+CREATE ROLE hrtech LOGIN PASSWORD 'troque-esta-senha' CREATEDB CREATEROLE NOSUPERUSER NOBYPASSRLS;
 CREATE DATABASE hrtech OWNER hrtech;
 CREATE DATABASE hrtech_test OWNER hrtech;   -- opcional, para os testes de integração
 ```
@@ -79,7 +80,8 @@ pnpm db:seed           # planos, papéis, organização HR Tech e "Pousada Exemp
 pnpm db:migrate:dev    # durante o desenvolvimento, para criar novas migrations
 ```
 
-Acessos de demonstração (senha padrão `Demo@12345`, configurável por `SEED_PASSWORD` — **troque após o primeiro acesso**):
+Acessos de demonstração em banco **local** (senha `Demo@12345`, configurável por `SEED_PASSWORD`). Em banco remoto o
+seed exige `SEED_ADMIN_EMAIL`/`SEED_PASSWORD` e não cria dados fictícios (a menos que `SEED_DEMO=true`):
 
 | Perfil | E-mail |
 | --- | --- |
@@ -147,8 +149,9 @@ Todas documentadas em [`.env.example`](.env.example). Resumo:
 
 | Variável | Obrigatória | Uso |
 | --- | --- | --- |
-| `DATABASE_URL` | sim | PostgreSQL (usuário sem SUPERUSER/BYPASSRLS) |
-| `APP_URL` | sim | URL pública (links, webhooks, widget) |
+| `DATABASE_URL` | sim | PostgreSQL (`DIRECT_URL`/`DATABASE_URL_UNPOOLED` para migrations quando houver pooler) |
+| `APP_URL` | sim (fora da Vercel) | URL pública (links, webhooks, widget); na Vercel usa o domínio do projeto |
+| `SEED_ADMIN_EMAIL`, `SEED_PASSWORD` | 1º deploy remoto | Cria o primeiro Super Admin HR Tech |
 | `AUTH_SECRET` | sim (produção) | HMAC dos tokens de sessão/convite/senha (≥ 32 caracteres) |
 | `ENCRYPTION_KEY` | sim (produção) | AES-256-GCM das credenciais das integrações |
 | `CRON_SECRET` | recomendado | Protege `/api/cron/tick` |
@@ -162,5 +165,6 @@ Todas documentadas em [`.env.example`](.env.example). Resumo:
 Resumo (detalhes em [`docs/DEPLOY.md`](docs/DEPLOY.md)):
 
 - **Docker / Azure Container Apps**: `Dockerfile` multi-stage com saída `standalone` e target `migrate`.
-- **Vercel**: projeto com raiz em `apps/platform`; `vercel.json` aplica migrations no build e agenda o cron.
+- **Vercel**: projeto com raiz em `apps/platform`; `vercel.json` + `scripts/vercel-build.sh` aplicam migrations e o
+  seed no build de produção e agendam o cron — passo a passo em `docs/DEPLOY.md`.
 - Em qualquer ambiente: rode `prisma migrate deploy` antes de subir a nova versão.
