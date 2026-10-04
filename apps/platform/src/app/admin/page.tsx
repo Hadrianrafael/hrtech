@@ -6,8 +6,11 @@ import { checkDatabaseRole, systemDb } from '@/lib/db';
 import { formatMoney } from '@/lib/utils';
 import { currentPeriod } from '@/lib/utils';
 import { platformIntegrationStatus } from '@/server/integrations';
+import { requirePlatformAdminPage } from '@/lib/auth/context';
 
 export default async function AdminHome() {
+  // Cada página do painel verifica o acesso: o layout sozinho não protege requisições RSC parciais.
+  await requirePlatformAdminPage();
   const period = currentPeriod();
   const [orgs, users, subs, aiUsage, convUsage, errors, webhookFailed, integrations, dbRole] = await Promise.all([
     systemDb.organization.groupBy({ by: ['status'], _count: { _all: true } }),

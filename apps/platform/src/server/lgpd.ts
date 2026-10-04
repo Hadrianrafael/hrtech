@@ -1,5 +1,7 @@
 import { audit } from '@/lib/audit';
-import { assertCan, type ServiceCtx } from '@/lib/auth/ctx';
+import type { Prisma } from '@prisma/client';
+import { assertCan, ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
+import { assertContactAccessible } from './contacts';
 import { systemDb } from '@/lib/db';
 import { NotFoundError } from '@/lib/errors';
 import { systemCtx } from '@/lib/auth/ctx';
@@ -12,7 +14,7 @@ import { systemCtx } from '@/lib/auth/ctx';
 export async function exportContactData(ctx: ServiceCtx, contactId: string) {
   assertCan(ctx, 'contacts.export');
   const contact = await ctx.db.contact.findFirst({
-    where: { id: contactId },
+    where: { AND: [{ id: contactId }, ownerScope(ctx, 'ownerId') as Prisma.ContactWhereInput] },
     include: {
       identities: true,
       tags: { include: { tag: { select: { name: true } } } },
@@ -79,6 +81,7 @@ export async function deleteContactPermanently(ctx: ServiceCtx, contactId: strin
 
 export async function recordConsent(ctx: ServiceCtx, contactId: string, source: string, marketingOptIn: boolean) {
   assertCan(ctx, 'contacts.write');
+  await assertContactAccessible(ctx, contactId);
   await ctx.db.contact.update({ where: { id: contactId }, data: { consentAt: new Date(), consentSource: source, marketingOptIn } });
   await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: 'lgpd.consent_recorded', entityType: 'Contact', entityId: contactId, metadata: { source, marketingOptIn } });
 }

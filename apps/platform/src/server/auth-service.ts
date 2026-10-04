@@ -17,27 +17,44 @@ const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type AuthResult = { ok: true; userId: string } | { ok: false; error: string };
 
-/** Valida credenciais com bloqueio progressivo após tentativas falhas. */
+/**
+ * Registra uma falha de login de forma atômica (sem corrida entre requisições concorrentes) e bloqueia a conta
+ * por LOCK_MINUTES ao atingir MAX_FAILED. Nunca remove um bloqueio existente.
+ */
+async function registerLoginFailure(userId: string) {
+  const rows = await systemDb.$queryRaw<{ failedLogins: number; lockedUntil: Date | null }[]>`
+    UPDATE "User" SET
+      "failedLogins" = CASE WHEN "failedLogins" + 1 >= ${MAX_FAILED}::int THEN 0 ELSE "failedLogins" + 1 END,
+      "lockedUntil" = CASE WHEN "failedLogins" + 1 >= ${MAX_FAILED}::int THEN now() + make_interval(mins => ${LOCK_MINUTES}::int) ELSE "lockedUntil" END
+    WHERE id = ${userId}
+    RETURNING "failedLogins", "lockedUntil"`;
+  return rows[0];
+}
+
+/**
+ * Valida credenciais com bloqueio após tentativas falhas. Para não revelar se um e-mail existe, a resposta é a
+ * mesma para e-mail inexistente e senha errada; "desativado"/"bloqueado" só são informados após a senha correta.
+ */
 export async function authenticate(emailRaw: string, password: string, ip: string | null): Promise<AuthResult> {
   const email = normalizeEmail(emailRaw);
   const generic = 'E-mail ou senha inválidos.';
-  if (!email) return { ok: false, error: generic };
+  if (!email) {
+    await verifyPassword(password, null); // tempo constante
+    return { ok: false, error: generic };
+  }
   const user = await systemDb.user.findUnique({ where: { email } });
-  if (user?.lockedUntil && user.lockedUntil > new Date()) {
-    return { ok: false, error: `Conta temporariamente bloqueada por excesso de tentativas. Tente novamente em alguns minutos.` };
-  }
   const valid = await verifyPassword(password, user?.passwordHash);
-  if (!user || !valid || user.disabled) {
-    if (user && !user.disabled) {
-      const failed = user.failedLogins + 1;
-      await systemDb.user.update({
-        where: { id: user.id },
-        data: { failedLogins: failed >= MAX_FAILED ? 0 : failed, lockedUntil: failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MINUTES * 60000) : null },
-      });
-      await audit({ actorUserId: user.id, action: 'auth.login_failed', severity: 'warning', ip, metadata: { failed } });
+  if (!user || !valid) {
+    if (user) {
+      const r = await registerLoginFailure(user.id);
+      await audit({ actorUserId: user.id, action: 'auth.login_failed', severity: 'warning', ip, metadata: { locked: !!r?.lockedUntil && r.lockedUntil > new Date() } });
     }
-    return { ok: false, error: user?.disabled ? 'Usuário desativado. Contate o administrador.' : generic };
+    return { ok: false, error: generic };
   }
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    return { ok: false, error: 'Conta temporariamente bloqueada por excesso de tentativas. Tente novamente em alguns minutos.' };
+  }
+  if (user.disabled) return { ok: false, error: 'Usuário desativado. Contate o administrador.' };
   await systemDb.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, lastLoginAt: new Date() } });
   return { ok: true, userId: user.id };
 }
@@ -72,11 +89,27 @@ export async function resetPassword(token: string, newPassword: string) {
   await audit({ actorUserId: record.userId, action: 'auth.password_reset' });
 }
 
-export async function changePassword(userId: string, current: string, next: string) {
+/** Troca a senha e encerra todas as outras sessões do usuário (mantém apenas a sessão atual, se informada). */
+export async function changePassword(userId: string, current: string, next: string, keepSessionId?: string) {
   const user = await systemDb.user.findUnique({ where: { id: userId } });
   if (!user || !(await verifyPassword(current, user.passwordHash))) throw new AppError('Senha atual incorreta.');
   await systemDb.user.update({ where: { id: userId }, data: { passwordHash: await hashPassword(next) } });
+  await systemDb.session.deleteMany({ where: { userId, ...(keepSessionId ? { NOT: { id: keepSessionId } } : {}) } });
   await audit({ actorUserId: userId, action: 'auth.password_changed' });
+}
+
+// ─────────────── Delegação segura de permissões ───────────────
+
+/** Ninguém pode conceder (a si ou a outros) permissões que não possui. */
+export function assertGrantable(ctx: ServiceCtx, permissions: string[]) {
+  const missing = permissions.filter((p) => !ctx.permissions.has(p as never));
+  if (missing.length) throw new ForbiddenError('Você não pode conceder permissões que não possui.');
+}
+
+/** Impede que a organização fique sem nenhum administrador ativo. */
+async function assertNotLastAdmin(ctx: ServiceCtx, membershipId: string) {
+  const others = await ctx.db.membership.count({ where: { status: 'ACTIVE', role: { key: 'org_admin' }, NOT: { id: membershipId } } });
+  if (others === 0) throw new AppError('A empresa precisa de pelo menos um administrador ativo.');
 }
 
 // ─────────────── Convites ───────────────
@@ -87,6 +120,7 @@ export async function createInvitation(ctx: ServiceCtx, input: { email: string; 
   if (!email) throw new AppError('E-mail inválido.');
   const role = await ctx.db.role.findFirst({ where: { id: input.roleId } });
   if (!role) throw new NotFoundError('Papel não encontrado.');
+  assertGrantable(ctx, role.permissions);
   const existingUser = await systemDb.user.findUnique({ where: { email } });
   if (existingUser) {
     const member = await ctx.db.membership.findFirst({ where: { userId: existingUser.id } });
@@ -114,7 +148,8 @@ export async function createInvitation(ctx: ServiceCtx, input: { email: string; 
     text: `Você foi convidado(a) para a equipe ${org.name} na plataforma HR Tech como ${role.name}.\n\nAceite o convite: ${link}\n\nO link expira em 7 dias.`,
   });
   await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: 'team.invitation_created', entityType: 'Invitation', entityId: invitation.id, metadata: { role: role.key } });
-  return { invitation, link, delivered };
+  // O link só é devolvido a quem convidou quando o e-mail não pôde ser enviado (SMTP ausente).
+  return { invitation, link: delivered ? null : link, delivered };
 }
 
 export async function getInvitationByToken(token: string) {
@@ -124,19 +159,7 @@ export async function getInvitationByToken(token: string) {
   return { ...inv, userExists: !!existingUser };
 }
 
-/** Aceita convite: cria o usuário (ou vincula um existente após validar a senha) e a associação. */
-export async function acceptInvitation(token: string, input: { name?: string; password: string }) {
-  const inv = await getInvitationByToken(token);
-  if (!inv) throw new AppError('Convite inválido ou expirado.');
-  let user = await systemDb.user.findUnique({ where: { email: inv.email } });
-  if (user) {
-    if (!(await verifyPassword(input.password, user.passwordHash))) throw new ForbiddenError('Senha incorreta para a conta existente.');
-  } else {
-    user = await systemDb.user.create({
-      data: { email: inv.email, name: input.name?.trim() || inv.name || inv.email.split('@')[0]!, passwordHash: await hashPassword(input.password) },
-    });
-  }
-  const userId = user.id;
+async function linkMembership(inv: { id: string; organizationId: string; roleId: string }, userId: string) {
   await withSystem(async (tx) => {
     await tx.membership.upsert({
       where: { userId_organizationId: { userId, organizationId: inv.organizationId } },
@@ -146,7 +169,33 @@ export async function acceptInvitation(token: string, input: { name?: string; pa
     await tx.invitation.update({ where: { id: inv.id }, data: { acceptedAt: new Date() } });
   });
   await audit({ organizationId: inv.organizationId, actorUserId: userId, action: 'team.invitation_accepted', entityType: 'Invitation', entityId: inv.id });
-  return { userId, organizationId: inv.organizationId };
+}
+
+/**
+ * Aceita convite criando uma conta NOVA. Para e-mails que já possuem conta, a pessoa precisa entrar normalmente
+ * (com bloqueio por tentativas) e aceitar com a sessão — ver acceptInvitationAsUser. Assim o convite não vira um
+ * canal para testar senhas de contas existentes.
+ */
+export async function acceptInvitation(token: string, input: { name?: string; password: string }) {
+  const inv = await getInvitationByToken(token);
+  if (!inv) throw new AppError('Convite inválido ou expirado.');
+  if (inv.userExists) throw new AppError('Este e-mail já possui conta: entre com seu login para aceitar o convite.');
+  const user = await systemDb.user.create({
+    data: { email: inv.email, name: input.name?.trim() || inv.name || inv.email.split('@')[0]!, passwordHash: await hashPassword(input.password) },
+  });
+  await linkMembership(inv, user.id);
+  return { userId: user.id, organizationId: inv.organizationId };
+}
+
+/** Aceita convite com a sessão de um usuário já autenticado, cujo e-mail deve ser o do convite. */
+export async function acceptInvitationAsUser(token: string, userId: string) {
+  const inv = await getInvitationByToken(token);
+  if (!inv) throw new AppError('Convite inválido ou expirado.');
+  const user = await systemDb.user.findUnique({ where: { id: userId } });
+  if (!user || user.disabled) throw new ForbiddenError();
+  if (user.email !== inv.email) throw new ForbiddenError(`Este convite é para ${inv.email}. Entre com essa conta para aceitá-lo.`);
+  await linkMembership(inv, user.id);
+  return { userId: user.id, organizationId: inv.organizationId };
 }
 
 export async function revokeInvitation(ctx: ServiceCtx, id: string) {
@@ -161,16 +210,21 @@ export async function changeMemberRole(ctx: ServiceCtx, membershipId: string, ro
   if (!role) throw new NotFoundError('Papel não encontrado.');
   const m = await ctx.db.membership.findFirst({ where: { id: membershipId }, include: { role: true } });
   if (!m) throw new NotFoundError('Membro não encontrado.');
-  if (m.userId === ctx.userId && role.key !== 'org_admin') throw new AppError('Você não pode remover seu próprio acesso de administrador.');
+  if (m.userId === ctx.userId) throw new AppError('Você não pode alterar o próprio papel. Peça a outro administrador.');
+  assertGrantable(ctx, m.role.permissions); // não altera quem tem mais permissões que você
+  assertGrantable(ctx, role.permissions); // nem concede o que você não tem
+  if (m.role.key === 'org_admin' && role.key !== 'org_admin') await assertNotLastAdmin(ctx, m.id);
   await ctx.db.membership.update({ where: { id: membershipId }, data: { roleId } });
   await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: 'team.role_changed', entityType: 'Membership', entityId: membershipId, severity: 'warning', metadata: { from: m.role.key, to: role.key, userId: m.userId } });
 }
 
 export async function setMemberStatus(ctx: ServiceCtx, membershipId: string, status: 'ACTIVE' | 'DISABLED') {
   assertCan(ctx, 'team.manage');
-  const m = await ctx.db.membership.findFirst({ where: { id: membershipId } });
+  const m = await ctx.db.membership.findFirst({ where: { id: membershipId }, include: { role: true } });
   if (!m) throw new NotFoundError('Membro não encontrado.');
   if (m.userId === ctx.userId) throw new AppError('Você não pode desativar o próprio acesso.');
+  assertGrantable(ctx, m.role.permissions);
+  if (status === 'DISABLED' && m.role.key === 'org_admin') await assertNotLastAdmin(ctx, m.id);
   if (status === 'ACTIVE') await assertWithinLimit(ctx, 'users');
   await ctx.db.membership.update({ where: { id: membershipId }, data: { status } });
   if (status === 'DISABLED') await systemDb.session.updateMany({ where: { userId: m.userId, activeOrgId: ctx.orgId }, data: { activeOrgId: null } });

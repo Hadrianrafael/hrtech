@@ -4,10 +4,13 @@ import { Badge, Card, PageHeader } from '@/components/ui/misc';
 import { fmtDate } from '@/components/shared/format';
 import { systemDb } from '@/lib/db';
 import { currentPeriod } from '@/lib/utils';
+import { requirePlatformAdminPage } from '@/lib/auth/context';
 
 export const metadata = { title: 'Empresas' };
 
 export default async function OrganizationsPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
+  // Cada página do painel verifica o acesso: o layout sozinho não protege requisições RSC parciais.
+  await requirePlatformAdminPage();
   const sp = await searchParams;
   const [orgs, plans, usage] = await Promise.all([
     systemDb.organization.findMany({

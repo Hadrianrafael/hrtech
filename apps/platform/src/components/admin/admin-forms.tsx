@@ -16,22 +16,22 @@ import { useAction } from '@/components/ui/use-action';
 
 const SEGMENTS = { hotel: 'Hotel', pousada: 'Pousada', hospedagem: 'Hospedagem', turismo: 'Turismo', servicos: 'Serviços', comercio: 'Comércio', outro: 'Outro' };
 
-function LinkResult({ link, delivered }: { link: string; delivered: boolean }) {
+function LinkResult({ link, delivered }: { link: string | null; delivered: boolean }) {
   const toast = useToast();
   return (
     <div className="space-y-2">
-      <Alert tone="green" title={delivered ? 'Convite enviado por e-mail' : 'Convite gerado'}>{delivered ? 'O administrador receberá o link.' : 'SMTP não configurado: envie este link ao administrador (válido por 7 dias).'}</Alert>
-      <div className="flex gap-2">
+      <Alert tone="green" title={delivered ? 'Convite enviado por e-mail' : 'Convite gerado'}>{delivered ? 'A pessoa convidada receberá o link por e-mail.' : 'SMTP não configurado: envie este link à pessoa convidada (válido por 7 dias).'}</Alert>
+      {link && <div className="flex gap-2">
         <Input readOnly value={link} aria-label="Link" />
         <Button variant="outline" onClick={() => navigator.clipboard.writeText(link).then(() => toast.success('Copiado.'))} aria-label="Copiar"><Copy className="h-4 w-4" /></Button>
-      </div>
+      </div>}
     </div>
   );
 }
 
 export function CreateOrganizationButton({ plans }: { plans: { key: string; name: string }[] }) {
   const [open, setOpen] = useState(false);
-  const [result, setResult] = useState<{ id: string; link: string; delivered: boolean } | null>(null);
+  const [result, setResult] = useState<{ id: string; link: string | null; delivered: boolean } | null>(null);
   const create = useAction(createOrganizationAction, { onSuccess: setResult, success: 'Empresa criada.' });
   return (
     <>
@@ -77,7 +77,7 @@ export function OrgAdminControls({
 }) {
   const router = useRouter();
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [invite, setInvite] = useState<{ link: string; delivered: boolean } | null>(null);
+  const [invite, setInvite] = useState<{ link: string | null; delivered: boolean } | null>(null);
   const setStatus = useAction((s: 'ACTIVE' | 'SUSPENDED', reason?: string) => setOrganizationStatusAction(orgId, s, reason));
   const plan = useAction((id: string) => changeOrganizationPlanAction(orgId, id));
   const sub = useAction((s: string) => setSubscriptionStatusAction(orgId, s as never));

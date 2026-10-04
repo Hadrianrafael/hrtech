@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ key
   const origin = req.headers.get('origin');
   const headers = corsHeaders(origin);
   try {
-    if (!rateLimit(`pub:lead:${key}:${clientIp(req)}`, 10, 10 * 60_000).ok) return NextResponse.json({ error: 'Muitos envios. Tente novamente mais tarde.' }, { status: 429, headers });
+    if (!rateLimit(`pub:lead:${key}:${clientIp(req)}`, 10, 10 * 60_000).ok || !rateLimit(`pub-global:lead:${key}`, 300, 60 * 60_000).ok) return NextResponse.json({ error: 'Muitos envios. Tente novamente mais tarde.' }, { status: 429, headers });
     const type = req.headers.get('content-type') ?? '';
     const raw: Record<string, unknown> = type.includes('application/json')
       ? ((await req.json().catch(() => ({}))) as Record<string, unknown>)

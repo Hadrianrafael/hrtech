@@ -4,6 +4,7 @@ import { TaskList } from '@/components/work/task-list';
 import { PageHeader } from '@/components/ui/misc';
 import { requirePageContext } from '@/lib/auth/context';
 import { cn } from '@/lib/utils';
+import { contactOptions } from '@/server/contacts';
 import { listTasks } from '@/server/tasks';
 import { getMembers } from '@/server/team';
 
@@ -22,12 +23,8 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const view = VIEWS.some((v) => v.key === sp.view) ? sp.view! : 'open';
   const ctx = await requirePageContext('tasks.manage');
-  const [tasks, members, contacts, overdue] = await Promise.all([
-    listTasks(ctx, { view }),
-    getMembers(ctx),
-    ctx.db.contact.findMany({ where: { anonymizedAt: null }, select: { id: true, name: true }, orderBy: { name: 'asc' }, take: 500 }),
-    listTasks(ctx, { view: 'overdue' }),
-  ]);
+  const [tasks, members, overdue] = await Promise.all([listTasks(ctx, { view }), getMembers(ctx), listTasks(ctx, { view: 'overdue' })]);
+  const contacts = await contactOptions(ctx, tasks.map((t) => t.contactId));
   return (
     <div>
       <PageHeader title="Tarefas e follow-ups" description={`${overdue.length} tarefa(s) atrasada(s)`} />

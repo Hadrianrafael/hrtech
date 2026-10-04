@@ -4,6 +4,7 @@ import { CalendarView } from '@/components/calendar/calendar-view';
 import { PageHeader } from '@/components/ui/misc';
 import { requirePageContext } from '@/lib/auth/context';
 import { listAppointments } from '@/server/calendar';
+import { contactOptions } from '@/server/contacts';
 import { getMembers } from '@/server/team';
 
 export const metadata: Metadata = { title: 'Agenda' };
@@ -17,11 +18,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   // Margem de 1 dia em cada ponta para compensar diferenças de fuso entre servidor e navegador.
   const from = addDays(view === 'month' ? startOfWeek(startOfMonth(d)) : view === 'week' ? startOfWeek(d) : d, -1);
   const to = addDays(view === 'month' ? endOfWeek(endOfMonth(d)) : view === 'week' ? endOfWeek(d) : d, 2);
-  const [events, members, contacts] = await Promise.all([
-    listAppointments(ctx, from, to),
-    getMembers(ctx),
-    ctx.db.contact.findMany({ where: { anonymizedAt: null }, select: { id: true, name: true }, orderBy: { name: 'asc' }, take: 500 }),
-  ]);
+  const [events, members] = await Promise.all([listAppointments(ctx, from, to), getMembers(ctx)]);
+  const contacts = await contactOptions(ctx, events.map((e) => e.contactId));
   return (
     <div>
       <PageHeader title="Agenda" description="Reuniões, retornos comerciais, visitas, atendimentos e follow-ups." />

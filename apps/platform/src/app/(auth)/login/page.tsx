@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'Entrar' };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
   const sp = await searchParams;
-  if (await getUser()) redirect('/dashboard');
+  if (await getUser()) redirect(sp.next && sp.next.startsWith('/') && !sp.next.startsWith('//') ? sp.next : '/dashboard');
   return (
     <>
       <h1 className="text-2xl font-semibold tracking-tight">Entrar</h1>

@@ -11,6 +11,11 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
+# Gera o Prisma Client ANTES de qualquer código que o importe (o seed). Com pnpm 10, scripts de instalação de
+# dependências podem ser bloqueados, então não dependemos do postinstall do @prisma/client.
+echo "→ Gerando Prisma Client"
+pnpm prisma generate
+
 if [ "$VERCEL_ENV" = "production" ] || [ "$MIGRATE_ON_BUILD" = "true" ]; then
   MIGRATE_URL="${DIRECT_URL:-${DATABASE_URL_UNPOOLED:-$DATABASE_URL}}"
   echo "→ Aplicando migrations"

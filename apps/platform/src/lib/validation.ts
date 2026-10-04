@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseMoney } from './utils';
 
 /** Helpers de validação para formulários (strings vazias viram undefined/null). */
 export const optionalString = (max = 500) =>
@@ -31,8 +32,8 @@ export const optionalMoney = z
   .nullable()
   .transform((v, ctx) => {
     if (v === undefined || v === null || v === '') return null;
-    const n = typeof v === 'number' ? v : Number(String(v).replace(/\./g, '').replace(',', '.'));
-    if (!Number.isFinite(n) || n < 0) {
+    const n = parseMoney(v);
+    if (n === null || n < 0) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Valor inválido.' });
       return z.NEVER;
     }

@@ -42,6 +42,8 @@ export const env = {
   // Meta (WhatsApp / Instagram)
   metaAppId: () => read('META_APP_ID'),
   metaAppSecret: () => read('META_APP_SECRET'),
+  /** App Secret do produto "Instagram API com login do Instagram" (assina os webhooks desse produto). */
+  instagramAppSecret: () => read('INSTAGRAM_APP_SECRET'),
   metaGraphVersion: () => read('META_GRAPH_VERSION') ?? 'v21.0',
   whatsappVerifyToken: () => read('WHATSAPP_VERIFY_TOKEN'),
   instagramVerifyToken: () => read('INSTAGRAM_VERIFY_TOKEN') ?? read('WHATSAPP_VERIFY_TOKEN'),

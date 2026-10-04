@@ -6,7 +6,7 @@ import { withOrg, withOrgSchema } from '@/lib/action-ctx';
 import { audit } from '@/lib/audit';
 import { ALL_PERMISSIONS, isPermission } from '@/lib/auth/permissions';
 import { AppError } from '@/lib/errors';
-import { changeMemberRole, createInvitation, revokeInvitation, setMemberStatus } from '@/server/auth-service';
+import { assertGrantable, changeMemberRole, createInvitation, revokeInvitation, setMemberStatus } from '@/server/auth-service';
 import { getOrgPlan } from '@/server/billing/limits';
 import { getBillingProvider } from '@/server/billing/provider';
 import { requestCancellation } from '@/server/billing/subscriptions';
@@ -49,9 +49,13 @@ export async function saveRoleAction(id: string | null, form: FormData) {
     if (!name) throw new AppError('Nome do papel é obrigatório.');
     const perms = ([] as unknown[]).concat(raw.permissions ?? []).map(String).filter(isPermission);
     if (!perms.length) throw new AppError('Selecione ao menos uma permissão.');
+    assertGrantable(ctx, perms); // ninguém concede permissões que não possui
     if (id) {
       const role = await ctx.db.role.findFirst({ where: { id, organizationId: ctx.orgId } });
       if (!role) throw new AppError('Papéis de sistema não podem ser editados. Crie um papel personalizado.');
+      assertGrantable(ctx, role.permissions);
+      const own = await ctx.db.membership.findFirst({ where: { userId: ctx.userId, roleId: id } });
+      if (own && !ctx.isSupportMode) throw new AppError('Você não pode editar o papel que você mesmo possui.');
       await ctx.db.role.update({ where: { id }, data: { name, description: String(raw.description ?? '') || null, permissions: perms } });
     } else {
       await ctx.db.role.create({ data: { organizationId: ctx.orgId, key: `custom_${slugify(name)}_${Date.now().toString(36)}`, name, description: String(raw.description ?? '') || null, permissions: perms } });
@@ -66,6 +70,7 @@ export async function deleteRoleAction(id: string) {
     if (inUse) throw new AppError('Há membros com este papel. Altere-os antes de excluir.');
     const role = await ctx.db.role.findFirst({ where: { id, organizationId: ctx.orgId } });
     if (!role) throw new AppError('Papel não encontrado ou de sistema.');
+    assertGrantable(ctx, role.permissions);
     await ctx.db.role.delete({ where: { id } });
     await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: 'roles.deleted', severity: 'warning', entityId: id });
   }, 'Papel excluído.');

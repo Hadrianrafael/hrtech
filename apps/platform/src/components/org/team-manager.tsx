@@ -24,7 +24,7 @@ export interface TeamData {
 export function TeamManager({ data }: { data: TeamData }) {
   const toast = useToast();
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteResult, setInviteResult] = useState<{ link: string; delivered: boolean } | null>(null);
+  const [inviteResult, setInviteResult] = useState<{ link: string | null; delivered: boolean } | null>(null);
   const [roleEdit, setRoleEdit] = useState<TeamData['roles'][number] | 'new' | null>(null);
   const invite = useAction(inviteMemberAction, { onSuccess: (r) => setInviteResult(r), success: (r) => (r.delivered ? 'Convite enviado por e-mail.' : 'Convite criado.') });
   const changeRole = useAction((id: string, roleId: string) => changeMemberRoleAction(id, roleId));
@@ -126,10 +126,12 @@ export function TeamManager({ data }: { data: TeamData }) {
             <Alert tone="green" title={inviteResult.delivered ? 'Convite enviado por e-mail' : 'Convite criado'}>
               {inviteResult.delivered ? 'A pessoa receberá o link por e-mail.' : 'SMTP não configurado: compartilhe o link abaixo com a pessoa convidada (válido por 7 dias).'}
             </Alert>
-            <div className="flex gap-2">
-              <Input readOnly value={inviteResult.link} aria-label="Link do convite" />
-              <Button variant="outline" onClick={() => navigator.clipboard.writeText(inviteResult.link).then(() => toast.success('Link copiado.'))} aria-label="Copiar"><Copy className="h-4 w-4" /></Button>
-            </div>
+            {inviteResult.link && (
+              <div className="flex gap-2">
+                <Input readOnly value={inviteResult.link} aria-label="Link do convite" />
+                <Button variant="outline" onClick={() => navigator.clipboard.writeText(inviteResult.link!).then(() => toast.success('Link copiado.'))} aria-label="Copiar"><Copy className="h-4 w-4" /></Button>
+              </div>
+            )}
             <Button variant="ghost" onClick={() => setInviteResult(null)}>Convidar outra pessoa</Button>
           </div>
         ) : (

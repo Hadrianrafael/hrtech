@@ -517,6 +517,8 @@ model Conversation {
   lastOutboundAt     DateTime?
   summary            String?
   intent             String?
+  /// Início do atendimento atual pela IA: zera contagem de respostas automáticas e permite novas intenções/automações.
+  aiSessionStartedAt DateTime           @default(now())
   /// Token do visitante do widget (hash) para webchat.
   visitorTokenHash   String?            @unique
   createdAt          DateTime           @default(now())

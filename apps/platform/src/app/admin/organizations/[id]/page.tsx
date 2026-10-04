@@ -6,10 +6,13 @@ import { Badge, Card, CardHeader, PageHeader } from '@/components/ui/misc';
 import { fmtDate, fmtDateTime, timeAgo } from '@/components/shared/format';
 import { systemDb } from '@/lib/db';
 import { LIMIT_KEYS, parseLimits } from '@/server/billing/limits';
+import { requirePlatformAdminPage } from '@/lib/auth/context';
 
 export const metadata = { title: 'Empresa' };
 
 export default async function OrganizationDetail({ params }: { params: Promise<{ id: string }> }) {
+  // Cada página do painel verifica o acesso: o layout sozinho não protege requisições RSC parciais.
+  await requirePlatformAdminPage();
   const { id } = await params;
   const org = await systemDb.organization.findUnique({
     where: { id },

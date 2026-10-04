@@ -2,10 +2,13 @@ import { UserToggle } from '@/components/admin/admin-forms';
 import { Badge, Card, PageHeader } from '@/components/ui/misc';
 import { timeAgo } from '@/components/shared/format';
 import { systemDb } from '@/lib/db';
+import { requirePlatformAdminPage } from '@/lib/auth/context';
 
 export const metadata = { title: 'Usuários' };
 
 export default async function UsersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  // Cada página do painel verifica o acesso: o layout sozinho não protege requisições RSC parciais.
+  await requirePlatformAdminPage();
   const sp = await searchParams;
   const users = await systemDb.user.findMany({
     where: sp.q ? { OR: [{ name: { contains: sp.q, mode: 'insensitive' } }, { email: { contains: sp.q, mode: 'insensitive' } }] } : {},

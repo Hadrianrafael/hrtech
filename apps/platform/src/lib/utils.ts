@@ -42,6 +42,35 @@ export function initials(name: string): string {
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1]![0] : '')).toUpperCase() || '?';
 }
 
+/**
+ * Converte valores monetários digitados ou extraídos (pt-BR e formatos comuns) em número.
+ * "1.500,50" → 1500.5 · "1500,5" → 1500.5 · "1500.50" → 1500.5 · "2,500.00" → 2500 · "1.500" → 1500 · "R$ 300" → 300
+ */
+export function parseMoney(input: string | number | null | undefined): number | null {
+  if (input === null || input === undefined) return null;
+  if (typeof input === 'number') return Number.isFinite(input) ? input : null;
+  let v = input.replace(/R\$|\s/gi, '').trim();
+  if (!v) return null;
+  if (!/^-?[\d.,]+$/.test(v)) return null;
+  const lastComma = v.lastIndexOf(',');
+  const lastDot = v.lastIndexOf('.');
+  if (lastComma >= 0 && lastDot >= 0) {
+    // O separador que aparece por último é o decimal.
+    v = lastComma > lastDot ? v.replace(/\./g, '').replace(',', '.') : v.replace(/,/g, '');
+  } else if (lastComma >= 0) {
+    v = v.replace(/,/g, (m, i) => (i === lastComma ? '.' : ''));
+  } else if (lastDot >= 0 && !/^-?\d+\.\d{1,2}$/.test(v)) {
+    v = v.replace(/\./g, ''); // "1.500" / "1.500.000": pontos de milhar
+  }
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Formata número para campo de edição em pt-BR, sem separador de milhar (ex.: 1500.5 → "1500,50"). */
+export function moneyInputValue(n: number | null | undefined): string {
+  return n === null || n === undefined ? '' : n.toFixed(2).replace('.', ',');
+}
+
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 export function formatMoney(value: number | string | { toString(): string } | null | undefined): string {
   if (value === null || value === undefined || value === '') return '—';

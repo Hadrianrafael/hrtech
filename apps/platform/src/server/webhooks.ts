@@ -21,7 +21,8 @@ type StoredEvent =
 
 async function resolveIntegration(type: 'WHATSAPP' | 'INSTAGRAM', externalId: string) {
   const integration = await systemDb.integration.findFirst({
-    where: { type, externalId, status: { not: 'DISABLED' } },
+    // Somente integrações verificadas (posse comprovada no teste de conexão) recebem eventos.
+    where: { type, externalId, status: 'CONNECTED' },
     include: { organization: { select: { id: true, status: true } } },
   });
   if (!integration || integration.organization.status !== 'ACTIVE') return null;
@@ -46,7 +47,7 @@ async function handleEvent(ev: StoredEvent): Promise<{ orgId: string | null; ign
         externalId: m.id,
         receivedAt: m.timestamp,
       });
-      await systemDb.integration.update({ where: { id: integration.id }, data: { lastEventAt: new Date(), ...(integration.status !== 'CONNECTED' ? { status: 'CONNECTED' } : {}) } });
+      await systemDb.integration.update({ where: { id: integration.id }, data: { lastEventAt: new Date() } });
       return { orgId: integration.organizationId };
     }
     case 'wa_status': {
@@ -82,7 +83,7 @@ async function handleEvent(ev: StoredEvent): Promise<{ orgId: string | null; ign
         externalId: m.mid,
         receivedAt: m.timestamp,
       });
-      await systemDb.integration.update({ where: { id: integration.id }, data: { lastEventAt: new Date(), ...(integration.status !== 'CONNECTED' ? { status: 'CONNECTED' } : {}) } });
+      await systemDb.integration.update({ where: { id: integration.id }, data: { lastEventAt: new Date() } });
       return { orgId: integration.organizationId };
     }
   }

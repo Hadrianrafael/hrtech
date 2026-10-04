@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { audit } from '@/lib/audit';
 import { assertCan, type ServiceCtx } from '@/lib/auth/ctx';
 import { decryptJson, encrypt, encryptJson } from '@/lib/crypto';
-import { systemDb } from '@/lib/db';
+import { isUniqueViolation, systemDb } from '@/lib/db';
 import { env } from '@/lib/env';
 import { AppError, NotFoundError } from '@/lib/errors';
 import { assertWithinLimit } from './billing/limits';
@@ -33,10 +33,21 @@ export function platformIntegrationStatus() {
   };
 }
 
-async function ensureUniqueExternalId(type: string, externalId: string, currentId: string | null) {
-  // Checagem global (sistema): o mesmo número/conta não pode estar em duas empresas.
-  const other = await systemDb.integration.findFirst({ where: { type, externalId, NOT: currentId ? { id: currentId } : undefined } });
-  if (other) throw new AppError('Este identificador já está conectado a outra conta da plataforma.');
+/**
+ * Reserva o identificador externo (phone_number_id / conta do Instagram) para esta integração — somente depois que
+ * o token comprovou acesso a ele. Webhooks só são roteados para integrações verificadas (CONNECTED + externalId),
+ * então ninguém consegue "reivindicar" o número de outra empresa apenas digitando o ID.
+ */
+async function claimVerifiedExternalId(integrationId: string, type: string, externalId: string) {
+  const other = await systemDb.integration.findFirst({ where: { type, externalId, NOT: { id: integrationId } } });
+  if (other?.status === 'CONNECTED') throw new AppError('Este número/conta já está conectado e verificado em outra empresa da plataforma.');
+  if (other) await systemDb.integration.update({ where: { id: other.id }, data: { externalId: null, status: 'PENDING' } });
+  try {
+    await systemDb.integration.update({ where: { id: integrationId }, data: { externalId, status: 'CONNECTED', lastError: null } });
+  } catch (err) {
+    if (isUniqueViolation(err)) throw new AppError('Este número/conta acabou de ser conectado em outra empresa.');
+    throw err;
+  }
 }
 
 export const whatsappSchema = z.object({
@@ -49,14 +60,13 @@ export const whatsappSchema = z.object({
 export async function saveWhatsApp(ctx: ServiceCtx, id: string | null, input: z.input<typeof whatsappSchema>) {
   assertCan(ctx, 'integrations.manage');
   const data = whatsappSchema.parse(input);
-  await ensureUniqueExternalId('WHATSAPP', data.phoneNumberId, id);
   const existing = id ? await ctx.db.integration.findFirst({ where: { id, type: 'WHATSAPP' } }) : null;
   if (id && !existing) throw new NotFoundError('Integração não encontrada.');
   if (!existing) await assertWithinLimit(ctx, 'channels');
   if (!existing && !data.accessToken) throw new AppError('Informe o token de acesso (System User Token).');
   const values = {
     name: data.name,
-    externalId: data.phoneNumberId,
+    externalId: null, // definido somente após a verificação (testIntegration)
     config: { phoneNumberId: data.phoneNumberId, wabaId: data.wabaId || null } as Prisma.InputJsonValue,
     ...(data.accessToken ? { secretsEnc: encryptJson({ accessToken: data.accessToken } satisfies WaSecrets) } : {}),
     status: 'PENDING' as const,
@@ -80,14 +90,13 @@ export const instagramSchema = z.object({
 export async function saveInstagram(ctx: ServiceCtx, id: string | null, input: z.input<typeof instagramSchema>) {
   assertCan(ctx, 'integrations.manage');
   const data = instagramSchema.parse(input);
-  await ensureUniqueExternalId('INSTAGRAM', data.igUserId, id);
   const existing = id ? await ctx.db.integration.findFirst({ where: { id, type: 'INSTAGRAM' } }) : null;
   if (id && !existing) throw new NotFoundError('Integração não encontrada.');
   if (!existing) await assertWithinLimit(ctx, 'channels');
   if (!existing && !data.accessToken) throw new AppError('Informe o token de acesso.');
   const values = {
     name: data.name,
-    externalId: data.igUserId,
+    externalId: null, // definido somente após a verificação (testIntegration)
     config: { igUserId: data.igUserId, username: data.username || null, apiBase: data.apiBase } as Prisma.InputJsonValue,
     ...(data.accessToken ? { secretsEnc: encryptJson({ accessToken: data.accessToken } satisfies IgSecrets) } : {}),
     status: 'PENDING' as const,
@@ -157,15 +166,24 @@ export async function testIntegration(ctx: ServiceCtx, id: string) {
       case 'WHATSAPP': {
         const secrets = decryptJson<WaSecrets>(integration.secretsEnc);
         if (!secrets) throw new AppError('Credenciais ausentes.');
-        const r = await checkWhatsAppNumber(secrets, integration.externalId!);
+        const cfg = integration.config as { phoneNumberId?: string; wabaId?: string | null };
+        if (!cfg.phoneNumberId) throw new AppError('Phone Number ID ausente.');
+        // O token precisa ter acesso ao número (e ao WABA informado): isso comprova a posse.
+        const r = await checkWhatsAppNumber(secrets, cfg.phoneNumberId, cfg.wabaId ?? null);
         detail = `${r.verified_name ?? ''} ${r.display_phone_number ?? ''}`.trim();
+        await claimVerifiedExternalId(integration.id, 'WHATSAPP', cfg.phoneNumberId);
         break;
       }
       case 'INSTAGRAM': {
         const secrets = decryptJson<IgSecrets>(integration.secretsEnc);
         if (!secrets) throw new AppError('Credenciais ausentes.');
-        const r = await checkInstagramAccount(secrets, integration.config as unknown as IgConfig);
-        detail = r.username ? `@${r.username}` : r.id;
+        const cfg = integration.config as unknown as IgConfig;
+        const r = await checkInstagramAccount(secrets, cfg);
+        if (r.accountId !== cfg.igUserId) {
+          throw new AppError(`O token pertence à conta ${r.username ? `@${r.username}` : r.accountId}, diferente do ID informado (${cfg.igUserId}).`);
+        }
+        detail = r.username ? `@${r.username}` : r.accountId;
+        await claimVerifiedExternalId(integration.id, 'INSTAGRAM', cfg.igUserId);
         break;
       }
       case 'EMAIL': {
@@ -180,7 +198,9 @@ export async function testIntegration(ctx: ServiceCtx, id: string) {
         detail = 'Widget ativo';
         break;
     }
-    await ctx.db.integration.update({ where: { id }, data: { status: 'CONNECTED', lastError: null } });
+    if (integration.type === 'EMAIL' || integration.type === 'WEBCHAT') {
+      await ctx.db.integration.update({ where: { id }, data: { status: 'CONNECTED', lastError: null } });
+    }
     await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: 'integration.connected', entityType: 'Integration', entityId: id, metadata: { type: integration.type } });
     return { ok: true, detail };
   } catch (err) {
@@ -196,6 +216,7 @@ export async function setIntegrationEnabled(ctx: ServiceCtx, id: string, enabled
   const i = await ctx.db.integration.findFirst({ where: { id } });
   if (!i) throw new NotFoundError('Integração não encontrada.');
   if (enabled) await assertWithinLimit(ctx, 'channels');
+  // Reativar exige novo teste de conexão (que revalida a posse do número/conta).
   await ctx.db.integration.update({ where: { id }, data: { status: enabled ? 'PENDING' : 'DISABLED' } });
   await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: enabled ? 'integration.enabled' : 'integration.disabled', entityType: 'Integration', entityId: id, severity: 'warning' });
 }
@@ -217,26 +238,37 @@ export async function syncEmailAccount(ctx: ServiceCtx, integrationId: string) {
   try {
     const emails = await fetchNewEmails(emailConfig(account), account.lastUid);
     let imported = 0;
+    let failed = 0;
     let maxUid = account.lastUid;
     for (const e of emails) {
       maxUid = Math.max(maxUid, e.uid);
       if (!e.fromAddress || e.fromAddress === account.address) continue;
-      const r = await receiveInbound(ctx, {
-        channel: 'EMAIL',
-        integrationId: integration.id,
-        identityExternalId: e.fromAddress,
-        contactDefaults: { name: e.fromName, email: e.fromAddress },
-        externalThreadId: e.threadKey,
-        subject: e.subject,
-        body: e.text || '(mensagem sem texto)',
-        contentType: 'email',
-        externalId: e.messageId ?? `imap:${account.id}:${e.uid}`,
-        receivedAt: e.date,
-        metadata: { subject: e.subject },
-      });
-      if (!r.duplicate) imported++;
+      // Uma mensagem problemática não pode travar a caixa inteira: registra a falha e segue para a próxima.
+      try {
+        const r = await receiveInbound(ctx, {
+          channel: 'EMAIL',
+          integrationId: integration.id,
+          identityExternalId: e.fromAddress,
+          contactDefaults: { name: e.fromName, email: e.fromAddress },
+          externalThreadId: e.threadKey,
+          subject: e.subject,
+          body: e.text || '(mensagem sem texto)',
+          contentType: 'email',
+          externalId: e.messageId ?? `imap:${account.id}:${e.uid}`,
+          receivedAt: e.date,
+          metadata: { subject: e.subject },
+        });
+        if (!r.duplicate) imported++;
+      } catch (err) {
+        failed++;
+        logger.error('email.message_import_failed', { orgId: ctx.orgId, uid: e.uid, err });
+        await audit({ organizationId: ctx.orgId, action: 'integration.email_message_failed', entityType: 'Integration', entityId: integration.id, severity: 'error', metadata: { uid: e.uid, error: err instanceof Error ? err.message : String(err) } });
+      }
     }
-    await ctx.db.emailAccount.update({ where: { id: account.id }, data: { lastUid: maxUid, lastSyncAt: new Date(), syncError: null } });
+    await ctx.db.emailAccount.update({
+      where: { id: account.id },
+      data: { lastUid: maxUid, lastSyncAt: new Date(), syncError: failed ? `${failed} mensagem(ns) não importada(s) — ver logs.` : null },
+    });
     await ctx.db.integration.update({ where: { id: integration.id }, data: { lastEventAt: imported ? new Date() : undefined } });
     return { imported };
   } catch (err) {

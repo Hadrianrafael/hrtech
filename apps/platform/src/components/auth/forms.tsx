@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { acceptInviteAction, forgotPasswordAction, loginAction, resetPasswordAction } from '@/app/actions/auth';
+import { acceptInviteAction, acceptInviteAsUserAction, forgotPasswordAction, loginAction, resetPasswordAction } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
 import { Alert } from '@/components/ui/misc';
@@ -86,27 +86,29 @@ export function ResetForm({ token }: { token: string }) {
   );
 }
 
-export function AcceptInviteForm({ token, userExists, defaultName }: { token: string; userExists: boolean; defaultName?: string | null }) {
+export function AcceptInviteForm({ token, defaultName }: { token: string; defaultName?: string | null }) {
   const { run, pending, fieldErrors } = useAction(acceptInviteAction, { refresh: false });
   return (
     <form action={async (fd) => void (await run(fd))} className="space-y-4">
       <input type="hidden" name="token" value={token} />
-      {!userExists && (
-        <Field label="Seu nome" htmlFor="name" error={fieldErrors.name}>
-          <Input id="name" name="name" defaultValue={defaultName ?? ''} required />
-        </Field>
-      )}
-      <Field
-        label={userExists ? 'Senha da sua conta existente' : 'Crie uma senha'}
-        htmlFor="password"
-        error={fieldErrors.password}
-        hint={userExists ? 'Você já possui conta na plataforma: confirme sua senha para entrar na nova empresa.' : 'Mínimo de 8 caracteres, com letras e números.'}
-      >
-        <Input id="password" name="password" type="password" required />
+      <Field label="Seu nome" htmlFor="name" error={fieldErrors.name}>
+        <Input id="name" name="name" defaultValue={defaultName ?? ''} required />
+      </Field>
+      <Field label="Crie uma senha" htmlFor="password" error={fieldErrors.password} hint="Mínimo de 8 caracteres, com letras e números.">
+        <Input id="password" name="password" type="password" autoComplete="new-password" required />
       </Field>
       <Button type="submit" loading={pending} className="w-full justify-center">
         Aceitar convite
       </Button>
     </form>
+  );
+}
+
+export function AcceptInviteAsUserButton({ token }: { token: string }) {
+  const { run, pending } = useAction(() => acceptInviteAsUserAction(token), { refresh: false });
+  return (
+    <Button onClick={() => run()} loading={pending} className="w-full justify-center">
+      Aceitar convite
+    </Button>
   );
 }

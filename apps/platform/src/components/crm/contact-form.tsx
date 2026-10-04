@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/field';
 import { useAction } from '@/components/ui/use-action';
 import { DateTimeInput } from '@/components/shared/datetime-input';
-import { cn } from '@/lib/utils';
+import { cn, moneyInputValue } from '@/lib/utils';
 
 export interface ContactFormData {
   id?: string;
@@ -110,7 +110,7 @@ export function ContactForm({ initial, options, onDone }: { initial?: ContactFor
           </Select>
         </Field>
         <Field label="Valor potencial (R$)" error={fieldErrors.potentialValue}>
-          <Input name="potentialValue" inputMode="decimal" defaultValue={initial?.potentialValue ?? ''} placeholder="0,00" />
+          <Input name="potentialValue" inputMode="decimal" defaultValue={moneyInputValue(initial?.potentialValue)} placeholder="0,00" />
         </Field>
         <Field label="Interesse / serviço">
           <Input name="interest" defaultValue={initial?.interest ?? ''} />

@@ -102,7 +102,8 @@ const WIDGET_JS = String.raw`(function () {
       list.forEach(function (m) {
         if (state.seen[m.id]) return;
         state.seen[m.id] = true;
-        state.lastId = m.id;
+        // Somente ids reais do servidor avançam o cursor de leitura (ecos locais não).
+        if (String(m.id).indexOf('local-') !== 0) state.lastId = m.id;
         var el = document.createElement('div');
         el.className = 'm ' + m.from;
         if (m.from !== 'visitor') {
@@ -133,8 +134,12 @@ const WIDGET_JS = String.raw`(function () {
         typing.className = 'typing';
         typing.textContent = 'digitando…';
         state.msgsEl.appendChild(typing);
-        req('POST', '/messages', { text: text, after: state.lastId && state.lastId.indexOf('local-') === 0 ? null : state.lastId }, state.token)
-          .then(function (r) { typing.remove(); render(r.messages.filter(function (m) { return m.from !== 'visitor'; })); })
+        req('POST', '/messages', { text: text, after: state.lastId }, state.token)
+          .then(function (r) {
+            typing.remove();
+            if (r.sentId) state.seen[r.sentId] = true; // a mensagem já está na tela (eco local)
+            render(r.messages);
+          })
           .catch(function (err) { typing.textContent = err.message || 'Falha ao enviar.'; typing.className = 'err'; });
       });
       poll();
@@ -144,9 +149,9 @@ const WIDGET_JS = String.raw`(function () {
       clearInterval(state.timer);
       state.timer = setInterval(function () {
         if (!panel.classList.contains('open') || !state.token) return;
-        var after = state.lastId && state.lastId.indexOf('local-') === 0 ? null : state.lastId;
+        var after = state.lastId;
         req('GET', '/messages' + (after ? '?after=' + encodeURIComponent(after) : ''), null, state.token)
-          .then(function (r) { render(r.messages.filter(function (m) { return m.from !== 'visitor' || !after; })); })
+          .then(function (r) { render(r.messages); })
           .catch(function () {});
       }, 4000);
     }

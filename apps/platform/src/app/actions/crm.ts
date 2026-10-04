@@ -5,7 +5,7 @@ import { formToObject, type ActionResult } from '@/lib/action';
 import { withOrg, withOrgSchema } from '@/lib/action-ctx';
 import { recommendNextAction } from '@/server/ai/agent';
 import {
-  addNote, contactInputSchema, createContact, createTag, deleteTag, logInteraction, setContactTags, updateContact,
+  addNote, assertContactAccessible, contactInputSchema, createContact, createTag, deleteTag, logInteraction, setContactTags, updateContact,
 } from '@/server/contacts';
 import { anonymizeContact, deleteContactPermanently, recordConsent } from '@/server/lgpd';
 import {
@@ -64,7 +64,10 @@ export async function logInteractionAction(contactId: string, form: FormData): P
 }
 
 export async function setTagsAction(contactId: string, tagIds: string[]): Promise<ActionResult> {
-  return withOrg('contacts.write', async (ctx) => setContactTags(ctx, contactId, tagIds), 'Etiquetas atualizadas.');
+  return withOrg('contacts.write', async (ctx) => {
+    await assertContactAccessible(ctx, contactId);
+    await setContactTags(ctx, contactId, tagIds);
+  }, 'Etiquetas atualizadas.');
 }
 
 export async function createTagAction(form: FormData): Promise<ActionResult> {

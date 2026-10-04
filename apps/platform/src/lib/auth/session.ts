@@ -6,6 +6,7 @@ import { env } from '../env';
 
 export const SESSION_COOKIE = 'hrt_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14; // 14 dias, renovação deslizante
+const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // limite absoluto: novo login a cada 30 dias
 
 export async function requestMeta() {
   const h = await headers();
@@ -51,7 +52,7 @@ export async function findSessionByToken(token: string) {
     include: { user: true },
   });
   if (!session) return null;
-  if (session.expiresAt < new Date() || session.user.disabled) {
+  if (session.expiresAt < new Date() || session.user.disabled || Date.now() - session.createdAt.getTime() > SESSION_MAX_AGE_MS) {
     await systemDb.session.delete({ where: { id: session.id } }).catch(() => undefined);
     return null;
   }

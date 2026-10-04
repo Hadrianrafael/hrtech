@@ -5,7 +5,7 @@ import { logger } from './logger';
 import { rateLimit } from './rate-limit';
 import { clientIp } from './route';
 import { env } from './env';
-import { verifyMetaSignature } from '@/server/channels/meta';
+import { verifyMetaSignatureAny } from '@/server/channels/meta';
 import type { StoredRecord } from '@/server/webhooks';
 
 /** Verificação do endpoint (GET hub.challenge) exigida pela Meta. */
@@ -23,19 +23,22 @@ export function handleMetaVerification(req: NextRequest, verifyToken: string | u
  */
 export async function handleMetaWebhook(
   req: NextRequest,
-  provider: string,
+  provider: 'whatsapp' | 'instagram',
   ingest: (payload: unknown) => Promise<StoredRecord[]>,
   run: (records: StoredRecord[]) => Promise<string[]>,
 ) {
   const ip = clientIp(req);
   if (!rateLimit(`wh:${provider}:${ip}`, 600, 60_000).ok) return NextResponse.json({ error: 'rate limited' }, { status: 429 });
-  if (!env.metaAppSecret()) {
+  // WhatsApp: App Secret do app Meta. Instagram: App Secret do produto "Instagram API com login do Instagram"
+  // (INSTAGRAM_APP_SECRET) ou, no login via Página do Facebook, o App Secret do app (META_APP_SECRET).
+  const secrets = provider === 'instagram' ? [env.instagramAppSecret(), env.metaAppSecret()] : [env.metaAppSecret()];
+  if (!secrets.some(Boolean)) {
     logger.error('webhook.meta_secret_missing', { provider });
-    return NextResponse.json({ error: 'Webhook não configurado (META_APP_SECRET).' }, { status: 503 });
+    return NextResponse.json({ error: `Webhook não configurado (${provider === 'instagram' ? 'INSTAGRAM_APP_SECRET/META_APP_SECRET' : 'META_APP_SECRET'}).` }, { status: 503 });
   }
   const raw = await req.text();
   if (raw.length > 1_000_000) return NextResponse.json({ error: 'Payload muito grande.' }, { status: 413 });
-  if (!verifyMetaSignature(raw, req.headers.get('x-hub-signature-256'))) {
+  if (!verifyMetaSignatureAny(raw, req.headers.get('x-hub-signature-256'), secrets)) {
     await audit({ action: `webhook.${provider}.invalid_signature`, severity: 'warning', actorType: 'SYSTEM', ip });
     return NextResponse.json({ error: 'Assinatura inválida.' }, { status: 401 });
   }

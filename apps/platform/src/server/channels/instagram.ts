@@ -67,15 +67,31 @@ function base(cfg: IgConfig) {
 }
 
 export async function sendInstagramText(secrets: IgSecrets, cfg: IgConfig, recipientId: string, text: string) {
-  const res = await graphRequest<{ message_id?: string }>(`${base(cfg)}/${cfg.igUserId}/messages`, secrets.accessToken, {
+  // /me resolve para a conta profissional (token do Instagram) ou para a Página (token de Página do Facebook).
+  const res = await graphRequest<{ message_id?: string }>(`${base(cfg)}/me/messages`, secrets.accessToken, {
     method: 'POST',
     body: { recipient: { id: recipientId }, message: { text } },
   });
   return res.message_id ?? null;
 }
 
-export async function checkInstagramAccount(secrets: IgSecrets, cfg: IgConfig) {
-  return graphRequest<{ id: string; username?: string }>(`${base(cfg)}/me?fields=id,username`, secrets.accessToken);
+/**
+ * Descobre a conta profissional à qual o token dá acesso (prova de posse).
+ * - Login do Instagram (graph.instagram.com): o campo `user_id` é o ID que aparece nos webhooks (o `id` de /me é outro).
+ * - Login do Facebook (graph.facebook.com, token de Página): a conta é `instagram_business_account` da Página.
+ */
+export async function checkInstagramAccount(secrets: IgSecrets, cfg: IgConfig): Promise<{ accountId: string; username?: string }> {
+  if ((cfg.apiBase ?? 'https://graph.instagram.com').includes('graph.facebook.com')) {
+    const r = await graphRequest<{ instagram_business_account?: { id: string; username?: string } }>(
+      `${base(cfg)}/me?fields=instagram_business_account{id,username}`,
+      secrets.accessToken,
+    );
+    if (!r.instagram_business_account?.id) throw new Error('A Página deste token não tem conta profissional do Instagram vinculada.');
+    return { accountId: r.instagram_business_account.id, username: r.instagram_business_account.username };
+  }
+  const r = await graphRequest<{ user_id?: string | number; username?: string }>(`${base(cfg)}/me?fields=user_id,username`, secrets.accessToken);
+  if (!r.user_id) throw new Error('Não foi possível identificar a conta profissional deste token.');
+  return { accountId: String(r.user_id), username: r.username };
 }
 
 export async function fetchInstagramProfile(secrets: IgSecrets, cfg: IgConfig, igsid: string) {

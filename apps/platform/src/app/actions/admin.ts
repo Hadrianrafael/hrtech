@@ -31,7 +31,7 @@ const orgSchema = z.object({
   adminEmail: z.string().trim().email('E-mail do administrador inválido.'),
 });
 
-export async function createOrganizationAction(form: FormData): Promise<ActionResult<{ id: string; link: string; delivered: boolean }>> {
+export async function createOrganizationAction(form: FormData): Promise<ActionResult<{ id: string; link: string | null; delivered: boolean }>> {
   try {
     const { user } = await requirePlatformAdminAction();
     return runAction(orgSchema, form, async (d) => {

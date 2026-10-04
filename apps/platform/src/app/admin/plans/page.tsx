@@ -2,10 +2,13 @@ import { PlanList } from '@/components/admin/admin-forms';
 import { PageHeader } from '@/components/ui/misc';
 import { systemDb } from '@/lib/db';
 import { LIMIT_KEYS } from '@/server/billing/limits';
+import { requirePlatformAdminPage } from '@/lib/auth/context';
 
 export const metadata = { title: 'Planos' };
 
 export default async function PlansPage() {
+  // Cada página do painel verifica o acesso: o layout sozinho não protege requisições RSC parciais.
+  await requirePlatformAdminPage();
   const plans = await systemDb.plan.findMany({ orderBy: { position: 'asc' }, include: { _count: { select: { subscriptions: true } } } });
   return (
     <div>

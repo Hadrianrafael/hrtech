@@ -3,10 +3,13 @@ import { Badge, Card, PageHeader } from '@/components/ui/misc';
 import { fmtDateTime } from '@/components/shared/format';
 import { systemDb } from '@/lib/db';
 import { buttonClass } from '@/components/ui/button';
+import { requirePlatformAdminPage } from '@/lib/auth/context';
 
 export const metadata = { title: 'Logs' };
 
 export default async function LogsPage({ searchParams }: { searchParams: Promise<{ severity?: string; action?: string; page?: string; tab?: string }> }) {
+  // Cada página do painel verifica o acesso: o layout sozinho não protege requisições RSC parciais.
+  await requirePlatformAdminPage();
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page ?? 1));
   if (sp.tab === 'webhooks') {

@@ -17,7 +17,7 @@ import { Alert, Avatar, Badge, EmptyState } from '@/components/ui/misc';
 import { useToast } from '@/components/ui/toast';
 import { fmtDateTime, timeAgo } from '@/components/shared/format';
 import { CHANNEL_COLORS, CHANNEL_LABELS } from '@/components/shared/labels';
-import { cn, formatPhone } from '@/lib/utils';
+import { cn, formatPhone, moneyInputValue } from '@/lib/utils';
 
 type ListItem = Extract<Awaited<ReturnType<typeof listConversationsAction>>, { ok: true }>['data'][number];
 type Detail = Extract<Awaited<ReturnType<typeof getConversationAction>>, { ok: true }>['data'];
@@ -437,17 +437,22 @@ function ContactPanel({
   const c = detail.contact;
   const [form, setForm] = useState({
     name: c.name, email: c.email ?? '', phone: c.phone ?? '', status: c.status, ownerId: c.ownerId ?? '', interest: c.interest ?? '',
-    potentialValue: c.potentialValue?.toString() ?? '',
+    potentialValue: moneyInputValue(c.potentialValue),
   });
   const [saving, setSaving] = useState(false);
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const initial = useRef(form);
   const save = async () => {
+    // Envia somente os campos alterados (não regrava valores que o atendente não mexeu).
+    const changed = Object.fromEntries(Object.entries(form).filter(([k, v]) => initial.current[k as keyof typeof form] !== v));
+    if (!Object.keys(changed).length) return toast.info('Nenhuma alteração para salvar.');
     setSaving(true);
-    const r = await patchContactAction(c.id, { ...form, ownerId: form.ownerId || null });
+    const r = await patchContactAction(c.id, { ...changed, ...('ownerId' in changed ? { ownerId: form.ownerId || null } : {}) });
     setSaving(false);
     if (r.ok) {
       toast.success('Contato atualizado.');
+      initial.current = form;
       await onChanged();
     } else toast.error(r.error);
   };

@@ -8,6 +8,11 @@ export function verifyMetaSignature(rawBody: string, header: string | null, appS
   return safeEqual(expected, header);
 }
 
+/** Aceita a assinatura se ela corresponder a qualquer um dos segredos configurados. */
+export function verifyMetaSignatureAny(rawBody: string, header: string | null, secrets: (string | undefined)[]): boolean {
+  return secrets.some((s) => !!s && verifyMetaSignature(rawBody, header, s));
+}
+
 export function graphUrl(path: string, base = 'https://graph.facebook.com') {
   return `${base}/${env.metaGraphVersion()}/${path.replace(/^\//, '')}`;
 }

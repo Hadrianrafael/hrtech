@@ -60,11 +60,13 @@ export const startSchema = z.object({
 async function serializeMessages(conversationId: string, orgId: string, after?: string | null) {
   const ctx = systemCtx(orgId);
   const afterMsg = after ? await ctx.db.message.findFirst({ where: { id: after, conversationId } }) : null;
-  const messages = await ctx.db.message.findMany({
+  // Com "after": as próximas mensagens em ordem. Sem "after": as 100 mais recentes (não trava em conversas longas).
+  const found = await ctx.db.message.findMany({
     where: { conversationId, ...(afterMsg ? { createdAt: { gt: afterMsg.createdAt } } : {}), status: { not: 'FAILED' } },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: afterMsg ? 'asc' : 'desc' },
     take: 100,
   });
+  const messages = afterMsg ? found : found.reverse();
   return messages.map((m) => ({ id: m.id, from: m.direction === 'INBOUND' ? 'visitor' : m.senderType === 'AI' ? 'bot' : 'agent', text: m.body, at: m.createdAt }));
 }
 
@@ -85,7 +87,7 @@ export async function startVisitorSession(publicKey: string, origin: string | nu
       sourceDetail: data.page ?? origin ?? null,
       consent: data.consent ? 'on' : undefined,
     },
-    { eventKey: `lead:webchat:${visitorId}` },
+    { eventKey: `lead:webchat:${visitorId}`, inbound: true },
   );
   await ctx.db.contactIdentity.create({ data: { organizationId: ctx.orgId, contactId: contact.id, channel: 'WEBCHAT', externalId: visitorId } });
   const token = randomToken(32);
@@ -113,14 +115,15 @@ export async function postVisitorMessage(publicKey: string, origin: string | nul
   if (!body) throw new AppError('Mensagem vazia.');
   const { conversation } = await visitorConversation(publicKey, origin, token);
   const ctx = systemCtx(conversation.organizationId, 'CONTACT');
-  await receiveInbound(ctx, {
+  const r = await receiveInbound(ctx, {
     channel: 'WEBCHAT',
     conversationId: conversation.id,
     identityExternalId: conversation.contactId,
     contactDefaults: {},
     body,
   });
-  return { messages: await serializeMessages(conversation.id, conversation.organizationId, after) };
+  // sentId permite ao widget substituir o "eco" local pela mensagem real (sem duplicar).
+  return { sentId: r.message?.id ?? null, messages: await serializeMessages(conversation.id, conversation.organizationId, after) };
 }
 
 export async function getVisitorMessages(publicKey: string, origin: string | null, token: string, after?: string | null) {
@@ -174,7 +177,7 @@ export async function submitLeadForm(publicKey: string, origin: string | null, i
     interest: data.interest ?? data.service,
     notes: data.message,
     consent: data.consent ? 'on' : undefined,
-  });
+  }, { inbound: true });
   await applyExtractedFields(ctx, contact.id, {
     budget: data.budget,
     desiredDate: data.desiredDate,

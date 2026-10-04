@@ -1,11 +1,12 @@
 import type { Channel, LeadStatus, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { audit } from '@/lib/audit';
+import { isUniqueViolation } from '@/lib/db';
 import { assertCan, ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
 import { NotFoundError } from '@/lib/errors';
-import { normalizeEmail, normalizePhone } from '@/lib/utils';
+import { normalizeEmail, normalizePhone, parseMoney } from '@/lib/utils';
 import { optionalEmail, optionalId, optionalMoney, optionalString, optionalDate, stringArray } from '@/lib/validation';
-import { assertWithinLimit } from './billing/limits';
+import { assertWithinLimit, checkLimit } from './billing/limits';
 import { emitEvent } from './events';
 import { addTimeline } from './timeline';
 
@@ -151,11 +152,25 @@ async function defaultPipelineFirstStage(ctx: ServiceCtx) {
 export async function createContact(
   ctx: ServiceCtx,
   input: ContactInput,
-  opts: { createOpportunity?: boolean; eventKey?: string } = {},
+  opts: {
+    createOpportunity?: boolean;
+    eventKey?: string;
+    /** Lead recebido por canal (WhatsApp, Instagram, e-mail, site): nunca é descartado por limite do plano. */
+    inbound?: boolean;
+    /** Quando false, quem chamou dispara o evento lead.created depois (ex.: após vencer uma corrida). */
+    emitLeadEvent?: boolean;
+  } = {},
 ) {
   assertCan(ctx, 'contacts.write');
   const data = contactInputSchema.parse(input);
-  await assertWithinLimit(ctx, 'contacts');
+  if (opts.inbound) {
+    const limit = await checkLimit(ctx, 'contacts');
+    if (!limit.allowed) {
+      await audit({ organizationId: ctx.orgId, action: 'billing.contact_limit_exceeded', actorType: 'SYSTEM', severity: 'warning', metadata: { used: limit.used, limit: limit.limit, source: data.source } });
+    }
+  } else {
+    await assertWithinLimit(ctx, 'contacts');
+  }
   const ownerId = data.ownerId ?? (ctx.actorType === 'USER' ? ctx.userId : null);
   if (ownerId) await assertMember(ctx, ownerId);
   const contact = await ctx.db.contact.create({
@@ -208,8 +223,16 @@ export async function createContact(
       opportunityId = opp.id;
     }
   }
-  await emitEvent(ctx, 'lead.created', { contactId: contact.id, opportunityId, source: contact.source }, { eventKey: opts.eventKey ?? `lead:${contact.id}` });
+  if (opts.emitLeadEvent !== false) {
+    await emitEvent(ctx, 'lead.created', { contactId: contact.id, opportunityId, source: contact.source }, { eventKey: opts.eventKey ?? `lead:${contact.id}` });
+  }
   return contact;
+}
+
+export async function emitLeadCreated(ctx: ServiceCtx, contactId: string, eventKey: string) {
+  const contact = await ctx.db.contact.findFirst({ where: { id: contactId }, select: { source: true } });
+  const opp = await ctx.db.opportunity.findFirst({ where: { contactId }, orderBy: { createdAt: 'asc' }, select: { id: true } });
+  await emitEvent(ctx, 'lead.created', { contactId, opportunityId: opp?.id ?? null, source: contact?.source }, { eventKey });
 }
 
 /** Garante que o contato existe na empresa e está no escopo de visibilidade do usuário. */
@@ -352,7 +375,9 @@ export async function findOrCreateContactByIdentity(
 
   // Tenta casar com contato existente pelo telefone/e-mail antes de criar.
   const phone = normalizePhone(defaults.phone);
-  const email = normalizeEmail(defaults.email);
+  const rawEmail = normalizeEmail(defaults.email);
+  // Endereços fora do padrão (comuns em e-mails recebidos) não podem impedir o registro do lead.
+  const email = rawEmail && z.string().email().max(254).safeParse(rawEmail).success ? rawEmail : null;
   const existing = await ctx.db.contact.findFirst({
     where: {
       anonymizedAt: null,
@@ -371,21 +396,28 @@ export async function findOrCreateContactByIdentity(
   const contact = await createContact(
     { ...ctx, permissions: new Set([...ctx.permissions, 'contacts.write']) },
     {
-      name: defaults.name?.trim() || phone || email || 'Visitante',
+      name: (defaults.name?.trim() || phone || email || 'Visitante').slice(0, 160),
       email,
       phone,
       whatsapp: channel === 'WHATSAPP' ? phone : null,
-      instagram: defaults.instagram,
+      instagram: defaults.instagram?.slice(0, 80) ?? null,
       source: defaults.source,
       consent: false,
     },
-    { eventKey: `lead:${channel}:${externalId}` },
+    { inbound: true, emitLeadEvent: false },
   );
-  await ctx.db.contactIdentity.upsert({
-    where: { organizationId_channel_externalId: { organizationId: ctx.orgId, channel, externalId } },
-    create: { organizationId: ctx.orgId, contactId: contact.id, channel, externalId },
-    update: { contactId: contact.id },
-  });
+  // A identidade é única por (empresa, canal, id externo): se duas mensagens do mesmo remetente novo chegarem ao
+  // mesmo tempo, só uma vence; a outra descarta o contato recém-criado (antes de disparar automações).
+  try {
+    await ctx.db.contactIdentity.create({ data: { organizationId: ctx.orgId, contactId: contact.id, channel, externalId } });
+  } catch (err) {
+    if (!isUniqueViolation(err)) throw err;
+    await ctx.db.contact.delete({ where: { id: contact.id } });
+    const winner = await ctx.db.contactIdentity.findFirst({ where: { channel, externalId }, include: { contact: true } });
+    if (!winner) throw err;
+    return { contact: winner.contact, created: false };
+  }
+  await emitLeadCreated(ctx, contact.id, `lead:${channel}:${externalId}`);
   return { contact, created: true };
 }
 
@@ -421,8 +453,8 @@ export async function applyExtractedFields(ctx: ServiceCtx, contactId: string, e
     update.interest = interest;
     filled.push('interesse');
   }
-  const budget = typeof extracted.budget === 'number' ? extracted.budget : Number(str(extracted.budget)?.replace(/[^\d,]/g, '').replace(',', '.'));
-  if (Number.isFinite(budget) && budget > 0 && !contact.potentialValue) {
+  const budget = parseMoney(typeof extracted.budget === 'number' ? extracted.budget : str(extracted.budget));
+  if (budget !== null && budget > 0 && !contact.potentialValue) {
     update.potentialValue = budget;
     filled.push('orçamento');
   }
@@ -439,6 +471,21 @@ export async function applyExtractedFields(ctx: ServiceCtx, contactId: string, e
   await ctx.db.contact.update({ where: { id: contactId }, data: update });
   await addTimeline(ctx, { contactId, type: 'ai_action', actorType: 'AI', actorId: null, title: `IA qualificou o lead: ${filled.join(', ')}`, data: { extracted } });
   return filled;
+}
+
+/**
+ * Opções de contato para seletores (tarefas, agenda): os 500 primeiros visíveis ao usuário + os já vinculados aos
+ * registros exibidos, para que editar um item nunca desvincule o contato por ele não estar na lista.
+ */
+export async function contactOptions(ctx: ServiceCtx, includeIds: (string | null | undefined)[] = []) {
+  const scope = { AND: [{ anonymizedAt: null }, ownerScope(ctx, 'ownerId') as Prisma.ContactWhereInput] };
+  const ids = [...new Set(includeIds.filter((v): v is string => !!v))];
+  const [top, linked] = await Promise.all([
+    ctx.db.contact.findMany({ where: scope, select: { id: true, name: true }, orderBy: { name: 'asc' }, take: 500 }),
+    ids.length ? ctx.db.contact.findMany({ where: { AND: [scope, { id: { in: ids } }] }, select: { id: true, name: true } }) : Promise.resolve([]),
+  ]);
+  const map = new Map([...top, ...linked].map((c) => [c.id, c]));
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 }
 
 export async function listTags(ctx: ServiceCtx) {

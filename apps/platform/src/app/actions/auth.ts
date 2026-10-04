@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { runAction, type ActionResult } from '@/lib/action';
+import { actionError, runAction, type ActionResult } from '@/lib/action';
 import { audit } from '@/lib/audit';
 import { getUser } from '@/lib/auth/context';
 import { passwordSchema } from '@/lib/auth/password';
@@ -11,7 +11,7 @@ import { systemDb } from '@/lib/db';
 import { AppError, ForbiddenError, UnauthorizedError } from '@/lib/errors';
 import { assertRateLimit } from '@/lib/rate-limit';
 import { cookies } from 'next/headers';
-import { acceptInvitation, authenticate, changePassword, getInvitationByToken, requestPasswordReset, resetPassword } from '@/server/auth-service';
+import { acceptInvitation, acceptInvitationAsUser, authenticate, changePassword, requestPasswordReset, resetPassword } from '@/server/auth-service';
 
 function safeNext(next: unknown) {
   return typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : null;
@@ -78,24 +78,31 @@ export async function resetPasswordAction(form: FormData): Promise<ActionResult>
   return r;
 }
 
-const acceptSchema = z.object({ token: z.string().min(10), name: z.string().trim().max(120).optional(), password: z.string().min(1, 'Informe a senha.') });
+const acceptSchema = z.object({ token: z.string().min(10), name: z.string().trim().max(120).optional(), password: passwordSchema });
 
+/** Convite para e-mail SEM conta: cria a conta com a senha escolhida e entra na empresa. */
 export async function acceptInviteAction(form: FormData): Promise<ActionResult> {
   const r = await runAction(acceptSchema, form, async (d) => {
     const { ip } = await requestMeta();
     assertRateLimit(`invite:${ip}`, 10, 15 * 60_000);
-    // Para novos usuários, aplica a política de senha.
-    const inv = await getInvitationByToken(d.token);
-    if (!inv) throw new AppError('Convite inválido ou expirado.');
-    if (!inv.userExists) {
-      const p = passwordSchema.safeParse(d.password);
-      if (!p.success) throw new AppError(p.error.issues[0]!.message);
-    }
     const { userId, organizationId } = await acceptInvitation(d.token, { name: d.name, password: d.password });
     await startSession(userId, organizationId);
   });
   if (r.ok) redirect('/dashboard');
   return r;
+}
+
+/** Convite para e-mail que JÁ tem conta: aceito com a sessão atual (o login normal aplica o bloqueio por tentativas). */
+export async function acceptInviteAsUserAction(token: string): Promise<ActionResult> {
+  const auth = await getUser();
+  if (!auth) return { ok: false, error: new UnauthorizedError().message };
+  try {
+    const { organizationId } = await acceptInvitationAsUser(token, auth.user.id);
+    await systemDb.session.update({ where: { id: auth.session.id }, data: { activeOrgId: organizationId } });
+  } catch (err) {
+    return actionError(err);
+  }
+  redirect('/dashboard');
 }
 
 export async function switchOrganizationAction(organizationId: string): Promise<ActionResult> {
@@ -123,9 +130,9 @@ export async function changePasswordAction(form: FormData): Promise<ActionResult
     async (d) => {
       const auth = await getUser();
       if (!auth) throw new UnauthorizedError();
-      await changePassword(auth.user.id, d.current, d.password);
+      await changePassword(auth.user.id, d.current, d.password, auth.session.id); // encerra as demais sessões
     },
-    'Senha alterada com sucesso.',
+    'Senha alterada. Outras sessões abertas foram encerradas.',
   );
 }
 

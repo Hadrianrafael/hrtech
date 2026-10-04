@@ -14,7 +14,14 @@ export function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, ROUNDS);
 }
 
-export function verifyPassword(password: string, hash: string | null | undefined): Promise<boolean> {
-  if (!hash) return bcrypt.compare(password, '$2b$04$invalidinvalidinvalidinOq7cS1Jc5VxC9N0f3bK1t3XGq3m8yG'); // tempo constante
+let dummyHash: string | null = null;
+
+/** Compara a senha; sem hash (usuário inexistente) compara com um hash de mesmo custo para não revelar a existência pelo tempo. */
+export async function verifyPassword(password: string, hash: string | null | undefined): Promise<boolean> {
+  if (!hash) {
+    dummyHash ??= await bcrypt.hash('hrtech-dummy-password-for-constant-time', ROUNDS);
+    await bcrypt.compare(password, dummyHash);
+    return false;
+  }
   return bcrypt.compare(password, hash);
 }

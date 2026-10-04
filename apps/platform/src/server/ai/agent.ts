@@ -1,6 +1,6 @@
-import type { Chatbot, Message } from '@prisma/client';
+import type { Chatbot, Message, Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { assertCan, type ServiceCtx } from '@/lib/auth/ctx';
+import { assertCan, ownerScope, type ServiceCtx } from '@/lib/auth/ctx';
 import { LimitExceededError, NotConfiguredError, NotFoundError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 import { checkLimit, incrementUsage, USAGE_METRICS } from '../billing/limits';
@@ -74,17 +74,45 @@ export const assistantOutputSchema = z.object({
 });
 export type AssistantOutput = z.infer<typeof assistantOutputSchema>;
 
+function looksLikeJson(text: string) {
+  const t = text.trim();
+  return t.startsWith('{') || t.startsWith('[') || t.startsWith('```');
+}
+
+/**
+ * Interpreta a saída do modelo de forma tolerante: aproveita os campos válidos mesmo quando o JSON não segue
+ * exatamente o esquema, e NUNCA devolve JSON cru como resposta ao cliente.
+ */
 export function parseAssistantOutput(text: string): AssistantOutput {
-  try {
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-    const json = JSON.parse(start >= 0 ? text.slice(start, end + 1) : text);
-    const parsed = assistantOutputSchema.safeParse(json);
-    if (parsed.success) return { ...parsed.data, intent: parsed.data.intent in INTENTS ? parsed.data.intent : 'other' };
-  } catch {
-    /* resposta não-JSON: usa texto puro */
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    try {
+      const raw = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
+      if (raw && typeof raw === 'object') {
+        const reply = typeof raw.reply === 'string' ? raw.reply : typeof raw.message === 'string' ? raw.message : '';
+        const intent = typeof raw.intent === 'string' && raw.intent in INTENTS ? raw.intent : 'other';
+        const handoff = raw.handoff === true || raw.handoff === 'true';
+        const extracted: Record<string, string | number | null> = {};
+        if (raw.extracted && typeof raw.extracted === 'object') {
+          for (const [k, v] of Object.entries(raw.extracted as Record<string, unknown>)) {
+            if (typeof v === 'string' || typeof v === 'number') extracted[k] = v;
+            else if (v === null) extracted[k] = null;
+          }
+        }
+        return {
+          reply: looksLikeJson(reply) ? '' : reply.trim(),
+          intent,
+          handoff,
+          handoffReason: typeof raw.handoffReason === 'string' ? raw.handoffReason : null,
+          extracted,
+        };
+      }
+    } catch {
+      /* não é JSON válido: trata como texto */
+    }
   }
-  return { reply: text.trim(), intent: 'other', handoff: false, extracted: {} };
+  return { reply: looksLikeJson(text) ? '' : text.trim(), intent: 'other', handoff: false, extracted: {} };
 }
 
 export function buildSystemPrompt(input: {
@@ -231,7 +259,7 @@ export async function generateAssistantReply(ctx: ServiceCtx, conversationId: st
 export async function summarizeConversation(ctx: ServiceCtx, conversationId: string) {
   assertCan(ctx, 'ai.use');
   const conversation = await ctx.db.conversation.findFirst({
-    where: { id: conversationId },
+    where: { AND: [{ id: conversationId }, ownerScope(ctx, 'assigneeId') as Prisma.ConversationWhereInput] },
     include: { contact: true, messages: { orderBy: { createdAt: 'desc' }, take: 60 } },
   });
   if (!conversation) throw new NotFoundError('Conversa não encontrada.');
@@ -271,7 +299,7 @@ export async function summarizeConversation(ctx: ServiceCtx, conversationId: str
 export async function recommendNextAction(ctx: ServiceCtx, contactId: string) {
   assertCan(ctx, 'ai.use');
   const contact = await ctx.db.contact.findFirst({
-    where: { id: contactId },
+    where: { AND: [{ id: contactId, anonymizedAt: null }, ownerScope(ctx, 'ownerId') as Prisma.ContactWhereInput] },
     include: {
       opportunities: { include: { stage: true }, where: { status: 'OPEN' } },
       timelineEvents: { orderBy: { createdAt: 'desc' }, take: 15 },

@@ -63,13 +63,14 @@ export async function getConversation(ctx: ServiceCtx, id: string) {
     where: { AND: [{ id }, ownerScope(ctx, 'assigneeId') as Prisma.ConversationWhereInput] },
     include: {
       contact: { include: { tags: { include: { tag: true } }, opportunities: { where: { status: 'OPEN' }, include: { stage: true } } } },
-      messages: { orderBy: { createdAt: 'asc' }, take: 500 },
+      // As 500 mais recentes (invertidas abaixo para ordem cronológica).
+      messages: { orderBy: { createdAt: 'desc' }, take: 500 },
       integration: { select: { id: true, name: true, type: true, status: true } },
       tags: { include: { tag: true } },
     },
   });
   if (!conversation) throw new NotFoundError('Conversa não encontrada.');
-  return conversation;
+  return { ...conversation, messages: conversation.messages.reverse() };
 }
 
 export async function markConversationRead(ctx: ServiceCtx, id: string) {
@@ -132,7 +133,7 @@ export async function receiveInbound(ctx: ServiceCtx, input: InboundInput) {
       conversation = await ctx.db.conversation.findFirst({ where: { contactId: contact.id, channel: input.channel }, orderBy: { createdAt: 'desc' } });
     }
     if (!conversation) {
-      conversation = await ctx.db.conversation.create({
+      const created = await ctx.db.conversation.create({
         data: {
           organizationId: ctx.orgId,
           contactId: contact.id,
@@ -143,7 +144,22 @@ export async function receiveInbound(ctx: ServiceCtx, input: InboundInput) {
           assigneeId: contact.ownerId,
         },
       });
-      await incrementUsage(ctx.orgId, USAGE_METRICS.conversations);
+      // Mensagens simultâneas do mesmo contato podem criar duas conversas: fica a mais antiga, a outra é descartada.
+      const oldest = await ctx.db.conversation.findFirst({
+        where: {
+          contactId: contact.id,
+          channel: input.channel,
+          ...(input.channel === 'EMAIL' && input.externalThreadId ? { externalThreadId: input.externalThreadId } : {}),
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      });
+      if (oldest && oldest.id !== created.id) {
+        await ctx.db.conversation.delete({ where: { id: created.id } });
+        conversation = oldest;
+      } else {
+        conversation = created;
+        await incrementUsage(ctx.orgId, USAGE_METRICS.conversations);
+      }
     }
   }
   if (!contactId) throw new AppError('Contato não identificado.');
@@ -171,9 +187,12 @@ export async function receiveInbound(ctx: ServiceCtx, input: InboundInput) {
   }
 
   const now = new Date();
+  // Conversa resolvida que volta a receber mensagem = novo atendimento: a IA volta a atuar do zero.
+  const reopened = conversation.status === 'RESOLVED';
   conversation = await ctx.db.conversation.update({
     where: { id: conversation.id },
     data: {
+      ...(reopened ? { aiPaused: false, humanRequested: false, aiSessionStartedAt: now } : {}),
       status: 'OPEN',
       awaitingReply: true,
       unreadCount: { increment: 1 },
@@ -227,7 +246,7 @@ export async function handleAi(ctx: ServiceCtx, conversationId: string, lastInbo
     if (conv.aiPaused || conv.humanRequested) return null;
 
     const aiCtx: ServiceCtx = { ...ctx, actorType: 'AI' };
-    const aiTurns = await ctx.db.message.count({ where: { conversationId, senderType: 'AI' } });
+    const aiTurns = await ctx.db.message.count({ where: { conversationId, senderType: 'AI', createdAt: { gte: conv.aiSessionStartedAt } } });
     const rules = chatbot.handoffRules as HandoffRules;
     const ruleHandoff = detectHandoff(lastInboundText, rules, aiTurns);
     if (ruleHandoff) {
@@ -247,7 +266,7 @@ export async function handleAi(ctx: ServiceCtx, conversationId: string, lastInbo
     if (out.intent && out.intent !== conv.intent) {
       await ctx.db.conversation.update({ where: { id: conversationId }, data: { intent: out.intent } });
       if (!['other', 'greeting'].includes(out.intent)) {
-        await emitEvent(aiCtx, 'intent.detected', { contactId: conv.contactId, conversationId, intent: out.intent, channel: conv.channel }, { eventKey: `intent:${conversationId}:${out.intent}` });
+        await emitEvent(aiCtx, 'intent.detected', { contactId: conv.contactId, conversationId, intent: out.intent, channel: conv.channel }, { eventKey: `intent:${conversationId}:${conv.aiSessionStartedAt.getTime()}:${out.intent}` });
       }
     }
     if (out.reply.trim()) await sendMessage(aiCtx, conversationId, { body: out.reply, senderType: 'AI', metadata: { aiRunId: out.runId, sources: out.sources } });
@@ -423,7 +442,7 @@ export async function setConversationStatus(ctx: ServiceCtx, conversationId: str
   const conv = await getConversation(ctx, conversationId);
   await ctx.db.conversation.update({
     where: { id: conversationId },
-    data: { status, ...(status === 'RESOLVED' ? { awaitingReply: false, humanRequested: false, unreadCount: 0 } : {}) },
+    data: { status, ...(status === 'RESOLVED' ? { awaitingReply: false, humanRequested: false, aiPaused: false, unreadCount: 0 } : {}) },
   });
   if (status === 'RESOLVED') await addTimeline(ctx, { contactId: conv.contactId, type: 'conversation_resolved', title: `Conversa (${CHANNEL_LABELS[conv.channel]}) resolvida` });
 }
@@ -431,7 +450,7 @@ export async function setConversationStatus(ctx: ServiceCtx, conversationId: str
 export async function setAiPaused(ctx: ServiceCtx, conversationId: string, paused: boolean) {
   assertCan(ctx, 'inbox.use');
   const conv = await getConversation(ctx, conversationId);
-  await ctx.db.conversation.update({ where: { id: conversationId }, data: { aiPaused: paused, ...(paused ? {} : { humanRequested: false }) } });
+  await ctx.db.conversation.update({ where: { id: conversationId }, data: { aiPaused: paused, ...(paused ? {} : { humanRequested: false, aiSessionStartedAt: new Date() }) } });
   await addTimeline(ctx, { contactId: conv.contactId, type: 'ai_action', title: paused ? 'IA pausada nesta conversa (atendimento humano)' : 'IA reativada nesta conversa' });
 }
 

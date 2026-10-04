@@ -145,12 +145,21 @@ export async function sendWhatsAppTemplate(
   return res.messages?.[0]?.id ?? null;
 }
 
-/** Teste de conexão: consulta o número configurado. */
-export async function checkWhatsAppNumber(secrets: WaSecrets, phoneNumberId: string) {
-  return graphRequest<{ display_phone_number?: string; verified_name?: string }>(
-    graphUrl(`${phoneNumberId}?fields=display_phone_number,verified_name,quality_rating`),
+/**
+ * Teste de conexão e prova de posse: o token precisa conseguir ler o número e, se o WABA for informado,
+ * o número precisa estar listado nele.
+ */
+export async function checkWhatsAppNumber(secrets: WaSecrets, phoneNumberId: string, wabaId?: string | null) {
+  const number = await graphRequest<{ id?: string; display_phone_number?: string; verified_name?: string }>(
+    graphUrl(`${phoneNumberId}?fields=id,display_phone_number,verified_name,quality_rating`),
     secrets.accessToken,
   );
+  if (number.id && number.id !== phoneNumberId) throw new Error('O número retornado pela Meta não corresponde ao Phone Number ID informado.');
+  if (wabaId) {
+    const list = await graphRequest<{ data?: { id: string }[] }>(graphUrl(`${wabaId}/phone_numbers?fields=id&limit=200`), secrets.accessToken);
+    if (!list.data?.some((n) => n.id === phoneNumberId)) throw new Error('Este Phone Number ID não pertence ao WhatsApp Business Account informado.');
+  }
+  return number;
 }
 
 /** Baixa mídia recebida (URL temporária da Meta exige o token). */
