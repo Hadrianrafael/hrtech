@@ -20,7 +20,8 @@ A aplicação é um app Next.js padrão (Node.js 20+) + PostgreSQL. Não há aco
 5. Seed idempotente: `pnpm db:seed`. Em banco remoto ele exige `SEED_ADMIN_EMAIL` e `SEED_PASSWORD` no primeiro
    bootstrap (cria o Super Admin HR Tech e a organização HR Tech) e **não** cria dados fictícios, a menos que
    `SEED_DEMO=true`. Na Vercel isso já acontece no build de produção.
-6. Agendar a rotina `POST /api/cron/tick` (Bearer `CRON_SECRET`) a cada 5–15 minutos.
+6. Agendar a rotina `POST /api/cron/tick` (Bearer `CRON_SECRET`) a cada 5–15 minutos e, para a Equipe IA,
+   `POST /api/cron/ai` a cada 1–5 minutos. Requisitos de hospedagem: `docs/HOSPEDAGEM.md`.
 7. Configurar webhooks da Meta e do gateway de pagamento (ver `docs/INTEGRACOES.md`).
 8. Verificar `GET /api/health` e o painel `/admin` (alerta de RLS e variáveis pendentes).
 
@@ -100,6 +101,8 @@ Acesse `https://<projeto>.vercel.app/login` com `SEED_ADMIN_EMAIL` / `SEED_PASSW
 - Para follow-ups, sincronização de e-mail e reprocessamento de webhooks mais frequentes, crie um job gratuito
   (ex.: cron-job.org) a cada 10 minutos: `POST https://<projeto>.vercel.app/api/cron/tick` com o header
   `Authorization: Bearer <CRON_SECRET>`. No plano Pro, basta trocar o `schedule` no `vercel.json` para `*/10 * * * *`.
+- A Equipe IA usa `/api/cron/ai` (agendado 1x/dia no `vercel.json` como garantia). Para a fila andar em minutos,
+  importe `n8n/workflows/agendador-worker.json` no n8n ou crie um job externo a cada 2 minutos com o mesmo header.
 
 ### Observações
 - Deploys de **Preview** (branches/PRs) não aplicam migrations. Para usá-los com segurança, conecte um banco

@@ -10,7 +10,8 @@ Foco inicial: hotéis, pousadas, hospedagens, turismo e pequenos negócios de se
 - Documentação de arquitetura: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
 - Integrações e o que depende de credenciais: [`docs/INTEGRACOES.md`](docs/INTEGRACOES.md)
 - Segurança, multi-tenancy e LGPD: [`docs/SEGURANCA-LGPD.md`](docs/SEGURANCA-LGPD.md)
-- Deploy (Azure / Vercel / Docker): [`docs/DEPLOY.md`](docs/DEPLOY.md)
+- Deploy (Azure / Vercel / Docker): [`docs/DEPLOY.md`](docs/DEPLOY.md) — requisitos de hospedagem: [`docs/HOSPEDAGEM.md`](docs/HOSPEDAGEM.md)
+- Equipe IA (CEO Agent + agentes): [`docs/agents`](docs/agents/README.md) · n8n: [`docs/n8n`](docs/n8n/README.md) · segurança da IA: [`docs/ai-security`](docs/ai-security/README.md)
 
 ## Stack
 
@@ -20,7 +21,8 @@ Foco inicial: hotéis, pousadas, hospedagens, turismo e pequenos negócios de se
 | UI | Tailwind CSS 3, componentes próprios acessíveis, tema claro/escuro, ícones lucide |
 | Banco | PostgreSQL 16 + Prisma 6 (migrations versionadas) + **Row-Level Security** |
 | Validação | Zod em todas as entradas (server actions, rotas públicas, webhooks) |
-| IA | Camada de provedores (`AiProvider`) — OpenAI implementado; RAG por empresa |
+| IA | Camada de provedores (`AiProvider`) — OpenAI, Anthropic (Claude) e Google Gemini; um modelo por agente; RAG por empresa |
+| Automação externa | n8n (webhooks assinados com HMAC, fila com idempotência e novas tentativas) |
 | Canais | WhatsApp Cloud API (oficial), Instagram Messaging API (oficial), SMTP/IMAP, widget próprio |
 | Billing | Interface `BillingProvider` — manual (ativo), Stripe e Asaas preparados |
 | Testes | Vitest (unitários + integração com PostgreSQL real), Playwright (roteiro E2E manual) |
@@ -39,6 +41,11 @@ Foco inicial: hotéis, pousadas, hospedagens, turismo e pequenos negócios de se
   status de entrega, transferência para humano, janela de 24h do WhatsApp com envio de templates.
 - **IA**: resposta automática, sugestão ao atendente (copiloto), resumo de conversa, intenção, qualificação e
   extração de dados para o CRM, recomendação de próxima ação e mensagem de follow-up. Métricas de uso e aceitação.
+- **Equipe IA (HR Tech AI Company)**: CEO Agent que recebe objetivos ("Quero 5 clientes este mês"), analisa CRM,
+  funil, conversas, tarefas, agenda e métricas, planeja, delega a agentes especializados (Prospecção, Comercial/SDR,
+  Marketing, Desenvolvimento, Financeiro/Operações, Atendimento/CS), revisa e pede aprovação para ações sensíveis.
+  Allowlist de ferramentas por agente, proteção contra prompt injection, limites de loop/tokens/custo, memória,
+  prompts versionados, briefing diário e integração com o n8n. Funciona sem chave de IA (playbooks determinísticos).
 - **Base de conhecimento (RAG)** isolada por empresa, com teste de busca.
 - **Chatbot configurável**: nome, saudação, tom, instruções, FAQ, horário, regras de transferência, campos a coletar,
   canais, modo Desligado/Copiloto/Automático, cores e domínios autorizados do widget.
@@ -121,6 +128,9 @@ gera follow-ups de leads sem resposta (48h), dispara o gatilho de tarefas atrasa
 reprocessa webhooks com falha, aplica retenção LGPD, marca testes expirados e limpa sessões vencidas.
 Na Vercel, o `vercel.json` já agenda a rotina; no Azure use um Container Apps Job/Logic App (ver `docs/DEPLOY.md`).
 
+`POST /api/cron/ai` (mesmo `CRON_SECRET`) processa a fila da Equipe IA, os envios ao n8n, aprovações expiradas e o
+briefing diário — execute a cada 1–5 minutos (o fluxo `n8n/workflows/agendador-worker.json` faz isso).
+
 ## Estrutura
 
 ```
@@ -134,12 +144,14 @@ apps/platform
 │   ├── api/                webhooks (Meta, billing), APIs públicas do widget/formulário, cron, health
 │   └── widget.js/          script incorporável do chat/formulário
 ├── src/server/             regras de negócio (independentes do Next.js, testáveis)
-│   ├── ai/                 provedores, agente, RAG
+│   ├── ai/                 provedores (OpenAI, Anthropic, Gemini), preços, agente, RAG
+│   ├── ai-company/         Equipe IA: CEO, agentes, ferramentas, aprovações, memória, worker, n8n
 │   ├── channels/           WhatsApp, Instagram, e-mail, utilitários Meta
 │   ├── automations/        motor, catálogo de ações, condições
 │   └── billing/            planos/limites, provedores de pagamento, assinaturas
 ├── src/lib/                banco multi-tenant, auth, crypto, logs, auditoria, rate limit, validação
 ├── src/components/         UI
+├── n8n/                    fluxos importáveis do n8n (JSON) e gerador
 └── tests/                  unit/ e db/ (integração)
 ```
 
@@ -155,7 +167,11 @@ Todas documentadas em [`.env.example`](.env.example). Resumo:
 | `AUTH_SECRET` | sim (produção) | HMAC dos tokens de sessão/convite/senha (≥ 32 caracteres) |
 | `ENCRYPTION_KEY` | sim (produção) | AES-256-GCM das credenciais das integrações |
 | `CRON_SECRET` | recomendado | Protege `/api/cron/tick` |
-| `OPENAI_API_KEY` / `OPENAI_MODEL` | opcional | IA (sem ela, recursos de IA ficam desativados com aviso) |
+| `OPENAI_API_KEY` / `OPENAI_MODEL` | opcional | IA (sem nenhum provedor, recursos de IA ficam desativados com aviso) |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | opcional | Claude (Anthropic) — padrão `claude-opus-5-5` |
+| `GEMINI_API_KEY` / `GEMINI_MODEL` | opcional | Google Gemini |
+| `AI_PROVIDER` | opcional | provedor padrão (`openai`, `anthropic`, `gemini`); cada agente pode usar outro |
+| `N8N_BASE_URL`, `N8N_WEBHOOK_SECRET` | p/ n8n | Ações externas da Equipe IA (ver `docs/n8n`) |
 | `META_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `INSTAGRAM_VERIFY_TOKEN` | p/ Meta | Webhooks oficiais |
 | `INSTAGRAM_APP_SECRET` | p/ Instagram (login do Instagram) | Assinatura dos webhooks do Instagram |
 | `SMTP_*`, `EMAIL_FROM` | recomendado | E-mails transacionais |
