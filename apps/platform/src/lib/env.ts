@@ -34,11 +34,31 @@ export const env = {
   encryptionKey: () => read('ENCRYPTION_KEY'),
   cronSecret: () => read('CRON_SECRET'),
   // IA
-  aiProvider: () => (read('AI_PROVIDER') ?? (read('OPENAI_API_KEY') ? 'openai' : 'none')).toLowerCase(),
+  /** Provedor padrão (chatbot e agentes em "auto"): AI_PROVIDER ou o primeiro com chave configurada. */
+  aiProvider: () =>
+    (
+      read('AI_PROVIDER') ??
+      (read('OPENAI_API_KEY') ? 'openai' : read('ANTHROPIC_API_KEY') ? 'anthropic' : read('GEMINI_API_KEY') ?? read('GOOGLE_API_KEY') ? 'gemini' : 'none')
+    ).toLowerCase(),
   openaiKey: () => read('OPENAI_API_KEY'),
   openaiBaseUrl: () => read('OPENAI_BASE_URL') ?? 'https://api.openai.com/v1',
   openaiModel: () => read('OPENAI_MODEL') ?? 'gpt-4o-mini',
   openaiEmbeddingModel: () => read('OPENAI_EMBEDDING_MODEL') ?? 'text-embedding-3-small',
+  anthropicKey: () => read('ANTHROPIC_API_KEY'),
+  anthropicModel: () => read('ANTHROPIC_MODEL') ?? 'claude-opus-5-5',
+  anthropicBaseUrl: () => read('ANTHROPIC_BASE_URL'),
+  geminiKey: () => read('GEMINI_API_KEY') ?? read('GOOGLE_API_KEY'),
+  geminiModel: () => read('GEMINI_MODEL') ?? 'gemini-2.5-flash',
+  geminiBaseUrl: () => (read('GEMINI_BASE_URL') ?? 'https://generativelanguage.googleapis.com/v1beta').replace(/\/$/, ''),
+  /** Tabela de preços (US$/1M tokens) para estimativa de custo: {"modelo":[entrada,saida]} */
+  aiPricingJson: () => read('AI_PRICING_JSON'),
+  // n8n (serviço externo de automação)
+  n8nBaseUrl: () => read('N8N_BASE_URL')?.replace(/\/$/, ''),
+  /** Segredo compartilhado para assinar (HMAC-SHA256) as chamadas nos dois sentidos. */
+  n8nWebhookSecret: () => read('N8N_WEBHOOK_SECRET'),
+  /** Chave da API REST do n8n (opcional: consulta de saúde/execuções). */
+  n8nApiKey: () => read('N8N_API_KEY'),
+  n8nTimeoutMs: () => Math.min(Math.max(Number(read('N8N_TIMEOUT_MS') ?? 15_000) || 15_000, 1_000), 60_000),
   // Meta (WhatsApp / Instagram)
   metaAppId: () => read('META_APP_ID'),
   metaAppSecret: () => read('META_APP_SECRET'),
