@@ -1,0 +1,342 @@
+{
+  "name": "HR Tech — Prospecção (Google Places)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hrtech-prospeccao",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "781bf3a0-185f-5f8b-a34f-72161f6bac9a",
+      "name": "Webhook prospecção",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "0d9e3e58-4e3f-5c14-9b9a-af6eb7592a40"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica a assinatura HMAC-SHA256 enviada pela HR Tech (cabeçalho X-HRTech-Signature: t=<unix>,v1=<hex>).\n// Requer no n8n: NODE_FUNCTION_ALLOW_BUILTIN=crypto e a variável HRTECH_WEBHOOK_SECRET (= N8N_WEBHOOK_SECRET da SaaS).\nconst crypto = require('crypto');\nconst secret = $env.HRTECH_WEBHOOK_SECRET;\nif (!secret) throw new Error('HRTECH_WEBHOOK_SECRET não configurado (PENDENTE DE CREDENCIAL).');\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hrtech-signature'] || '');\nlet raw;\ntry {\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  raw = buf.toString('utf8');\n} catch (e) {\n  raw = JSON.stringify(item.json.body);\n}\nconst parts = Object.fromEntries(signature.split(',').map((p) => { const i = p.indexOf('='); return [p.slice(0, i).trim(), p.slice(i + 1).trim()]; }));\nconst t = Number(parts.t);\nconst v1 = String(parts.v1 || '');\nif (!t || Math.abs(Date.now() / 1000 - t) > 300) throw new Error('Assinatura ausente ou expirada.');\nconst expected = crypto.createHmac('sha256', secret).update(`${t}.${raw}`).digest('hex');\nif (expected.length !== v1.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) throw new Error('Assinatura inválida.');\nconst body = JSON.parse(raw);\nreturn [{ json: { ...body, _raw: raw, _signature: signature } }];"
+      },
+      "id": "2016d4b0-734a-5bc4-8298-76829fa10902",
+      "name": "Verificar assinatura",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ received: true }) }}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "id": "9867c350-bb0c-54cc-80cb-daea57e63a4a",
+      "name": "Responder 202",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Monta a consulta para a Google Places API (Text Search). Fonte oficial — sem scraping.\nconst d = $json.data || {};\nconst where = [d.city, d.state].filter(Boolean).join(' ');\nconst quantity = Math.min(Math.max(Number(d.quantity) || 20, 1), 20); // até 20 por página na API\nreturn [{ json: { textQuery: `${d.segment || 'pousadas'}${where ? ' em ' + where : ''}`, pageSize: quantity, languageCode: 'pt-BR', regionCode: 'BR' } }];"
+      },
+      "id": "49489b43-7a6f-5638-9300-705aab802e4b",
+      "name": "Montar busca",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://places.googleapis.com/v1/places:searchText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-Api-Key",
+              "value": "={{ $env.GOOGLE_PLACES_API_KEY }}"
+            },
+            {
+              "name": "X-Goog-FieldMask",
+              "value": "places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.rating,places.addressComponents"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "78bb26ad-3428-5c79-a20b-39e4e1ca0ce6",
+      "name": "Google Places — Text Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1080,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Converte o resultado em prospects no formato esperado pela HR Tech (leads.import_prospects).\nconst places = ($json.places || []);\nconst comp = (p, type) => ((p.addressComponents || []).find((c) => (c.types || []).includes(type)) || {});\nconst prospects = places.map((p) => ({\n  name: (p.displayName && p.displayName.text) || 'Sem nome',\n  phone: p.internationalPhoneNumber || p.nationalPhoneNumber || null,\n  website: p.websiteUri || null,\n  city: comp(p, 'administrative_area_level_2').longText || null,\n  state: comp(p, 'administrative_area_level_1').shortText || null,\n  notes: [p.formattedAddress, p.rating ? `Avaliação Google: ${p.rating}` : null].filter(Boolean).join(' — '),\n  segment: ($('Verificar assinatura').first().json.data || {}).segment || null,\n}));\nreturn [{ json: { prospects, source: 'google_places' } }];"
+      },
+      "id": "2fac66e3-561d-596a-b99c-5ebdd586bd52",
+      "name": "Normalizar prospects",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Monta o retorno para a HR Tech, assinado com o mesmo segredo (HMAC-SHA256 sobre \"<t>.<corpo>\").\nconst crypto = require('crypto');\nconst secret = $env.HRTECH_WEBHOOK_SECRET;\nconst req = $('Verificar assinatura').first().json;\nconst payload = JSON.stringify({\n  eventId: `${req.id}:completed`,\n  dispatchId: req.id,\n  idempotencyKey: req.idempotencyKey,\n  status: 'completed',\n  result: $json,\n  error: undefined,\n});\nconst t = Math.floor(Date.now() / 1000);\nconst signature = `t=${t},v1=${crypto.createHmac('sha256', secret).update(`${t}.${payload}`).digest('hex')}`;\nreturn [{ json: { callbackUrl: req.callbackUrl, payload, signature } }];"
+      },
+      "id": "97e10339-e320-5968-825a-1212575528ea",
+      "name": "Assinar retorno",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Monta o retorno para a HR Tech, assinado com o mesmo segredo (HMAC-SHA256 sobre \"<t>.<corpo>\").\nconst crypto = require('crypto');\nconst secret = $env.HRTECH_WEBHOOK_SECRET;\nconst req = $('Verificar assinatura').first().json;\nconst payload = JSON.stringify({\n  eventId: `${req.id}:failed`,\n  dispatchId: req.id,\n  idempotencyKey: req.idempotencyKey,\n  status: 'failed',\n  result: null,\n  error: String(($json.error && $json.error.message) || 'Falha na busca de prospects (verifique GOOGLE_PLACES_API_KEY).'),\n});\nconst t = Math.floor(Date.now() / 1000);\nconst signature = `t=${t},v1=${crypto.createHmac('sha256', secret).update(`${t}.${payload}`).digest('hex')}`;\nreturn [{ json: { callbackUrl: req.callbackUrl, payload, signature } }];"
+      },
+      "id": "5f2c4995-a13f-5507-99de-ab3e3f59d7f1",
+      "name": "Assinar falha",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callbackUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-HRTech-Signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.payload }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "id": "54ca184a-18ea-50be-aec9-5be6848c39dd",
+      "name": "Enviar retorno",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1740,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callbackUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-HRTech-Signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.payload }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "id": "93afa5b8-516d-5925-9305-ee1f01cecf55",
+      "name": "Enviar falha",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        420
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "connections": {
+    "Webhook prospecção": {
+      "main": [
+        [
+          {
+            "node": "Verificar assinatura",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar assinatura": {
+      "main": [
+        [
+          {
+            "node": "Responder 202",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder 202": {
+      "main": [
+        [
+          {
+            "node": "Montar busca",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar busca": {
+      "main": [
+        [
+          {
+            "node": "Google Places — Text Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Places — Text Search": {
+      "main": [
+        [
+          {
+            "node": "Normalizar prospects",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assinar falha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar prospects": {
+      "main": [
+        [
+          {
+            "node": "Assinar retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assinar retorno": {
+      "main": [
+        [
+          {
+            "node": "Enviar retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assinar falha": {
+      "main": [
+        [
+          {
+            "node": "Enviar falha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "hrtech"
+    },
+    {
+      "name": "prospeccao"
+    }
+  ]
+}

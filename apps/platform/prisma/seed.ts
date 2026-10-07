@@ -14,6 +14,7 @@ import { makeServiceCtx } from '../src/lib/auth/ctx';
 import { hashPassword, passwordSchema } from '../src/lib/auth/password';
 import { systemDb } from '../src/lib/db';
 import { saveKnowledgeDocument } from '../src/server/ai/rag';
+import { ensureAiCompany } from '../src/server/ai-company/agents';
 import { createAppointment } from '../src/server/calendar';
 import { createContact } from '../src/server/contacts';
 import { moveOpportunity } from '../src/server/pipeline';
@@ -339,6 +340,10 @@ async function main() {
     await seedHrTech(hrtech.id, superAdmin.id);
   }
 
+  // Equipe IA: a própria HR Tech é a primeira empresa usuária (idempotente; não sobrescreve configurações).
+  console.log('→ Equipe IA da HR Tech (CEO Agent + agentes especializados)');
+  await ensureAiCompany(hrtech.id, { enable: true, platformOwner: true });
+
   let createdDemo = false;
   if (DEMO && !(await systemDb.organization.findFirst({ where: { slug: 'pousada-exemplo' } }))) {
     console.log('→ Pousada Exemplo (dados fictícios)');
@@ -348,6 +353,7 @@ async function main() {
     await addMember(admin.id, pousada.id, 'org_admin');
     await addMember(agent.id, pousada.id, 'agent');
     await seedPousada(pousada.id, admin.id, agent.id);
+    await ensureAiCompany(pousada.id, { enable: true });
     createdDemo = true;
   }
 
