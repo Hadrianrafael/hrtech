@@ -52,12 +52,17 @@ export async function runAction<S extends ZodType, T>(
   }
 }
 
-export function actionError(err: unknown): { ok: false; error: string } {
+export function actionError(err: unknown): { ok: false; error: string; fieldErrors?: Record<string, string> } {
   // Redirecionamentos do Next.js devem continuar propagando.
   if (err && typeof err === 'object' && 'digest' in err && String((err as { digest: unknown }).digest).startsWith('NEXT_')) {
     throw err;
   }
   if (err instanceof AppError) return { ok: false, error: err.message };
+  // Validação feita dentro do serviço (schema.parse): devolve a mensagem do campo em vez de um erro genérico.
+  if (err instanceof ZodError) {
+    const fieldErrors = zodFieldErrors(err);
+    return { ok: false, error: Object.values(fieldErrors)[0] ?? 'Dados inválidos.', fieldErrors };
+  }
   logger.error('action.unexpected_error', { err });
   return { ok: false, error: 'Ocorreu um erro inesperado. Tente novamente; se persistir, contate o suporte.' };
 }

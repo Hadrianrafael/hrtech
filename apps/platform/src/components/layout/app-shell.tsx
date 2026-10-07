@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  BarChart3, BookOpen, Bot, CalendarDays, CheckSquare, ChevronsUpDown, CreditCard, KanbanSquare, LayoutDashboard, LogOut, Menu, MessagesSquare,
+  BarChart3, BookOpen, Bot, BrainCircuit, CalendarDays, CheckSquare, ChevronsUpDown, CreditCard, Crown, KanbanSquare, LayoutDashboard, LogOut, Menu, MessagesSquare,
   Moon, Plug, Settings, Shield, Sun, UserCog, Users, Workflow, X,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import type { NavItem } from './nav';
 
-const ICONS = { BarChart3, BookOpen, Bot, CalendarDays, CheckSquare, CreditCard, KanbanSquare, LayoutDashboard, MessagesSquare, Plug, Settings, UserCog, Users, Workflow };
+const ICONS = { BarChart3, BookOpen, Bot, BrainCircuit, Crown, CalendarDays, CheckSquare, CreditCard, KanbanSquare, LayoutDashboard, MessagesSquare, Plug, Settings, UserCog, Users, Workflow };
 const GROUPS: Record<NavItem['group'], string> = { main: 'Operação', ai: 'IA e automação', admin: 'Administração' };
 
 export interface ShellProps {
@@ -52,6 +52,10 @@ export function AppShell({ nav, user, org, roleName, memberships, isSupportMode,
   const [open, setOpen] = useState(false);
   const [orgMenu, setOrgMenu] = useState(false);
   useEffect(() => setOpen(false), [pathname]);
+  // Item ativo = o de caminho mais específico (ex.: /ai-team/ceo não acende também /ai-team).
+  const activeHref = nav
+    .filter((n) => pathname === n.href || pathname.startsWith(`${n.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   const sidebar = (
     <nav className="flex h-full flex-col" aria-label="Navegação principal">
@@ -105,7 +109,7 @@ export function AppShell({ nav, user, org, roleName, memberships, isSupportMode,
               <ul className="space-y-0.5">
                 {items.map((item) => {
                   const Icon = ICONS[item.icon as keyof typeof ICONS];
-                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const active = item.href === activeHref;
                   return (
                     <li key={item.href}>
                       <Link
