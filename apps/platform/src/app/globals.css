@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 246 247 249;
+  --surface: 255 255 255;
+  --muted: 241 243 246;
+  --border: 226 230 236;
+  --fg: 17 24 39;
+  --fg-muted: 100 112 130;
+  --brand: 234 88 12;
+  --brand-fg: 255 255 255;
+  --brand-soft: 255 237 222;
+  --success: 22 163 74;
+  --warning: 217 119 6;
+  --danger: 220 38 38;
+  --info: 37 99 235;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: 11 13 17;
+  --surface: 20 23 29;
+  --muted: 29 33 41;
+  --border: 41 46 56;
+  --fg: 236 239 244;
+  --fg-muted: 148 158 174;
+  --brand: 249 115 22;
+  --brand-fg: 255 255 255;
+  --brand-soft: 60 32 15;
+  --success: 34 197 94;
+  --warning: 245 158 11;
+  --danger: 239 68 68;
+  --info: 96 165 250;
+  color-scheme: dark;
+}
+
+html,
+body {
+  @apply bg-bg text-fg antialiased;
+}
+
+* {
+  @apply border-border;
+}
+
+:focus-visible {
+  @apply outline-none ring-2 ring-brand/60 ring-offset-1 ring-offset-bg;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border bg-surface shadow-card;
+  }
+  .input {
+    @apply h-9 w-full rounded-lg border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 transition focus:border-brand/60 focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:opacity-60;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-fg-muted;
+  }
+  .kbd {
+    @apply rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px];
+  }
+}

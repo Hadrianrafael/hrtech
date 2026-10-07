@@ -1,0 +1,70 @@
+{
+  "name": "hrtech-platform",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "vercel-build": "sh scripts/vercel-build.sh",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "6",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "geist": "^1.7.2",
+    "imapflow": "^2.2.4",
+    "lucide-react": "^1.51.0",
+    "mailparser": "^3.9.34",
+    "next": "15",
+    "nodemailer": "^10.0.14",
+    "react": "19",
+    "react-dom": "19",
+    "server-only": "^0.0.1",
+    "tailwind-merge": "^3.7.0",
+    "zod": "3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@types/mailparser": "^3.9.0",
+    "@types/node": "22",
+    "@types/nodemailer": "^8.0.2",
+    "@types/react": "19",
+    "@types/react-dom": "19",
+    "autoprefixer": "^10.6.1",
+    "eslint": "9",
+    "eslint-config-next": "15",
+    "postcss": "^8.5.28",
+    "prisma": "6",
+    "tailwindcss": "3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}

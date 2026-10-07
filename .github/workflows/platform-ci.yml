@@ -1,0 +1,62 @@
+name: Platform CI
+
+on:
+  pull_request:
+    paths:
+      - 'apps/platform/**'
+      - '.github/workflows/platform-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/platform/**'
+      - '.github/workflows/platform-ci.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/platform
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Usuário sem SUPERUSER/BYPASSRLS (com CREATEROLE para a migration criar o papel restrito hrtech_rls).
+      DATABASE_URL: postgresql://hrtech:hrtech@localhost:5432/hrtech_test
+      TEST_DATABASE_URL: postgresql://hrtech:hrtech@localhost:5432/hrtech_test
+      AUTH_SECRET: ci-only-secret-not-used-in-production-0123456789
+      ENCRYPTION_KEY: Y2ktb25seS1lbmNyeXB0aW9uLWtleS0zMmJ5dGVzISE=
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Criar papel e banco de testes (não-superuser)
+        run: |
+          psql "postgresql://postgres:postgres@localhost:5432/postgres" \
+            -c "CREATE ROLE hrtech LOGIN PASSWORD 'hrtech' CREATEDB CREATEROLE NOSUPERUSER NOBYPASSRLS;" \
+            -c "CREATE DATABASE hrtech_test OWNER hrtech;"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/platform/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/platform/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - run: pnpm prisma migrate deploy
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build

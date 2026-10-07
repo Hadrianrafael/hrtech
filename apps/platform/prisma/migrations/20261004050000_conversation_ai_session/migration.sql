@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Conversation" ADD COLUMN     "aiSessionStartedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

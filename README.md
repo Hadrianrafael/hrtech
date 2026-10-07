@@ -4,6 +4,15 @@ Site institucional da **HR Tech Sistemas**: sites, sistemas web, SaaS, automaç�
 com Inteligência Artificial. Publicado como site estático no GitHub Pages, com domínio próprio
 (`hrtechsistemas.com.br`, ver [`CNAME`](./CNAME)).
 
+## Repositório
+
+| Pasta | Conteúdo |
+| --- | --- |
+| raiz (`app/`, `components/`...) | Site institucional estático (GitHub Pages) — documentado abaixo |
+| [`apps/platform`](./apps/platform) | **HR Tech Omni** — plataforma SaaS omnichannel multiempresa com CRM e IA (Next.js + PostgreSQL). Veja o [README da plataforma](./apps/platform/README.md) |
+
+Os dois projetos são independentes (dependências, lockfile e CI próprios: `CI` para o site e `Platform CI` para a plataforma).
+
 Veja também [`REFERENCIAS.md`](./REFERENCIAS.md) — os três sites usados como referência de
 qualidade de design antes da reconstrução.
 

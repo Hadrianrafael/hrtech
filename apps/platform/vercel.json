@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm vercel-build",
+  "crons": [
+    {
+      "path": "/api/cron/tick",
+      "schedule": "17 11 * * *"
+    }
+  ]
+}
