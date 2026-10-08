@@ -19,10 +19,12 @@ async function dispatch(tc: ToolRunContext, workflow: N8nWorkflow, payload: Reco
   const d = await enqueueDispatch(tc.orgId, { workflow, payload, idempotencyKey: tc.idempotencyKey, taskId: tc.task.id, toolCallId: tc.toolCallId });
   const outcome = d.status === 'PENDING' ? await sendDispatch(d.id) : 'skipped';
   const fresh = await tc.ctx.db.n8nDispatch.findFirst({ where: { id: d.id } });
-  if (fresh && ['COMPLETED', 'FAILED', 'DEAD'].includes(fresh.status)) {
+  if (fresh?.status === 'COMPLETED') {
     // Fluxo síncrono: o resultado já veio na resposta do n8n.
-    return { data: { dispatchId: d.id, status: fresh.status, result: fresh.result ?? null, error: fresh.lastError }, summary: `${label}: ${fresh.status === 'COMPLETED' ? 'concluído' : `falhou (${fresh.lastError})`}.` };
+    return { data: { dispatchId: d.id, status: fresh.status, result: fresh.result ?? null }, summary: `${label}: concluído.` };
   }
+  // Falha definitiva já na resposta do n8n: a ação falhou (não é registrada como executada).
+  if (fresh && ['FAILED', 'DEAD', 'CANCELLED'].includes(fresh.status)) throw new AppError(`${label}: o n8n recusou o envio (${fresh.lastError ?? fresh.status}).`);
   const note = outcome === 'pending_credential' ? ` ${PENDING_CREDENTIAL}` : outcome === 'retry' ? ' n8n indisponível: nova tentativa automática agendada.' : '';
   return {
     data: { dispatchId: d.id, workflow, status: fresh?.status ?? d.status },

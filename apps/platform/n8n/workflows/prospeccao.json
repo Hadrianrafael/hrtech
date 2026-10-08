@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Verifica a assinatura HMAC-SHA256 enviada pela HR Tech (cabeçalho X-HRTech-Signature: t=<unix>,v1=<hex>).\n// Requer no n8n: NODE_FUNCTION_ALLOW_BUILTIN=crypto e a variável HRTECH_WEBHOOK_SECRET (= N8N_WEBHOOK_SECRET da SaaS).\nconst crypto = require('crypto');\nconst secret = $env.HRTECH_WEBHOOK_SECRET;\nif (!secret) throw new Error('HRTECH_WEBHOOK_SECRET não configurado (PENDENTE DE CREDENCIAL).');\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hrtech-signature'] || '');\nlet raw;\ntry {\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  raw = buf.toString('utf8');\n} catch (e) {\n  raw = JSON.stringify(item.json.body);\n}\nconst parts = Object.fromEntries(signature.split(',').map((p) => { const i = p.indexOf('='); return [p.slice(0, i).trim(), p.slice(i + 1).trim()]; }));\nconst t = Number(parts.t);\nconst v1 = String(parts.v1 || '');\nif (!t || Math.abs(Date.now() / 1000 - t) > 300) throw new Error('Assinatura ausente ou expirada.');\nconst expected = crypto.createHmac('sha256', secret).update(`${t}.${raw}`).digest('hex');\nif (expected.length !== v1.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) throw new Error('Assinatura inválida.');\nconst body = JSON.parse(raw);\n// Idempotência: a HR Tech reenvia o mesmo envio (mesma idempotencyKey) quando não sabe se ele chegou (timeout, 5xx,\n// queda). Chaves já vistas nos últimos 7 dias são respondidas como duplicadas e a ação NÃO é repetida.\n// (Dados estáticos do fluxo: valem para fluxos ativos em uma instância; com várias instâncias/fila, use Redis/Postgres.)\nconst key = String(body.idempotencyKey || headers['x-hrtech-idempotency-key'] || '');\nconst store = $getWorkflowStaticData('global');\nconst now = Date.now();\nstore.seen = store.seen || {};\nfor (const [k, at] of Object.entries(store.seen)) if (now - at > 7 * 86400000) delete store.seen[k];\nconst keys = Object.keys(store.seen);\nif (keys.length > 5000) keys.sort((a, b) => store.seen[a] - store.seen[b]).slice(0, keys.length - 5000).forEach((k) => delete store.seen[k]);\nconst duplicate = !!(key && store.seen[key]);\nif (key && !duplicate) store.seen[key] = now;\nreturn [{ json: { ...body, _raw: raw, _signature: signature, _duplicate: duplicate } }];"
+        "jsCode": "// Verifica a assinatura HMAC-SHA256 enviada pela HR Tech (cabeçalho X-HRTech-Signature: t=<unix>,v1=<hex>), feita com\n// a chave da empresa do envio. Requer no n8n: NODE_FUNCTION_ALLOW_BUILTIN=crypto e HRTECH_WEBHOOK_SECRET (= N8N_WEBHOOK_SECRET).\nconst crypto = require('crypto');\n// Segredos: Variáveis do n8n ($vars, recomendado: dispensa liberar o acesso a variáveis de ambiente) ou ambiente.\nconst readSecret = (name) => {\n  try { if ($vars && $vars[name]) return String($vars[name]); } catch (e) {}\n  try { return $env[name] ? String($env[name]) : undefined; } catch (e) { return undefined; }\n};\n// Chave da empresa: HMAC_SHA256(segredo, \"org:<organizationId>\") — igual à SaaS (orgSigningKey).\nconst orgKey = (secret, orgId) => crypto.createHmac('sha256', secret).update('org:' + String(orgId || '')).digest('hex');\nconst secret = readSecret('HRTECH_WEBHOOK_SECRET');\nif (!secret) throw new Error('HRTECH_WEBHOOK_SECRET não configurado (PENDENTE DE CREDENCIAL).');\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hrtech-signature'] || '');\nlet raw;\ntry {\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  raw = buf.toString('utf8');\n} catch (e) {\n  raw = JSON.stringify(item.json.body);\n}\nconst parts = Object.fromEntries(signature.split(',').map((p) => { const i = p.indexOf('='); return [p.slice(0, i).trim(), p.slice(i + 1).trim()]; }));\nconst t = Number(parts.t);\nconst v1 = String(parts.v1 || '');\nif (!t || Math.abs(Date.now() / 1000 - t) > 300) throw new Error('Assinatura ausente ou expirada.');\nconst body = JSON.parse(raw);\nconst expected = crypto.createHmac('sha256', orgKey(secret, body.organizationId)).update(`${t}.${raw}`).digest('hex');\nif (expected.length !== v1.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) throw new Error('Assinatura inválida.');\n// Empresas autorizadas a usar as credenciais de canais desta instância (WhatsApp, e-mail, Google): HRTECH_ALLOWED_ORG_IDS.\nconst allowedOrgs = String(readSecret('HRTECH_ALLOWED_ORG_IDS') || '').split(',').map((x) => x.trim()).filter(Boolean);\nconst orgAllowed = allowedOrgs.includes(String(body.organizationId));\n// Idempotência: a HR Tech reenvia o mesmo envio (mesma idempotencyKey) quando não sabe se ele chegou (timeout, 5xx,\n// queda). Chaves já vistas nos últimos 7 dias são respondidas como duplicadas e a ação NÃO é repetida.\n// (Dados estáticos do fluxo: valem para fluxos ativos em uma instância; com várias instâncias/fila, use Redis/Postgres.)\nconst key = String(body.idempotencyKey || headers['x-hrtech-idempotency-key'] || '');\nconst store = $getWorkflowStaticData('global');\nconst now = Date.now();\nstore.seen = store.seen || {};\nfor (const [k, at] of Object.entries(store.seen)) if (now - at > 7 * 86400000) delete store.seen[k];\nconst keys = Object.keys(store.seen);\nif (keys.length > 5000) keys.sort((a, b) => store.seen[a] - store.seen[b]).slice(0, keys.length - 5000).forEach((k) => delete store.seen[k]);\nconst duplicate = !!(key && store.seen[key]);\nif (key && !duplicate) store.seen[key] = now;\nreturn [{ json: { ...body, _raw: raw, _signature: signature, _duplicate: duplicate, _orgAllowed: orgAllowed } }];"
       },
       "id": "2016d4b0-734a-5bc4-8298-76829fa10902",
       "name": "Verificar assinatura",
@@ -100,6 +100,92 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json._orgAllowed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b44be81f-6537-508a-ae1b-e4bc06978d7c",
+      "name": "Empresa autorizada?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Monta o retorno para a HR Tech, assinado com a chave da empresa do envio (HMAC-SHA256 sobre \"<t>.<corpo>\").\nconst crypto = require('crypto');\n// Segredos: Variáveis do n8n ($vars, recomendado: dispensa liberar o acesso a variáveis de ambiente) ou ambiente.\nconst readSecret = (name) => {\n  try { if ($vars && $vars[name]) return String($vars[name]); } catch (e) {}\n  try { return $env[name] ? String($env[name]) : undefined; } catch (e) { return undefined; }\n};\n// Chave da empresa: HMAC_SHA256(segredo, \"org:<organizationId>\") — igual à SaaS (orgSigningKey).\nconst orgKey = (secret, orgId) => crypto.createHmac('sha256', secret).update('org:' + String(orgId || '')).digest('hex');\nconst req = $('Verificar assinatura').first().json;\nconst secret = orgKey(readSecret('HRTECH_WEBHOOK_SECRET'), req.organizationId);\nconst payload = JSON.stringify({\n  eventId: `${req.id}:failed`,\n  dispatchId: req.id,\n  idempotencyKey: req.idempotencyKey,\n  status: 'failed',\n  result: null,\n  error: 'Fluxo de prospecção não configurado para esta empresa nesta instância do n8n (HRTECH_ALLOWED_ORG_IDS).',\n});\nconst t = Math.floor(Date.now() / 1000);\nconst signature = `t=${t},v1=${crypto.createHmac('sha256', secret).update(`${t}.${payload}`).digest('hex')}`;\nreturn [{ json: { callbackUrl: req.callbackUrl, payload, signature } }];"
+      },
+      "id": "3f465de5-6379-5b58-a2b0-b88acf9373f3",
+      "name": "Assinar recusa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callbackUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-HRTech-Signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.payload }}",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "id": "ea27cc15-99d4-5970-835a-32211dc8dffb",
+      "name": "Enviar recusa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        660
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
         "jsCode": "// Monta a consulta para a Google Places API (Text Search). Fonte oficial — sem scraping.\nconst d = $json.data || {};\nconst where = [d.city, d.state].filter(Boolean).join(' ');\nconst quantity = Math.min(Math.max(Number(d.quantity) || 20, 1), 20); // até 20 por página na API\nreturn [{ json: { textQuery: `${d.segment || 'pousadas'}${where ? ' em ' + where : ''}`, pageSize: quantity, languageCode: 'pt-BR', regionCode: 'BR' } }];"
       },
       "id": "49489b43-7a6f-5638-9300-705aab802e4b",
@@ -163,7 +249,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Monta o retorno para a HR Tech, assinado com o mesmo segredo (HMAC-SHA256 sobre \"<t>.<corpo>\").\nconst crypto = require('crypto');\nconst secret = $env.HRTECH_WEBHOOK_SECRET;\nconst req = $('Verificar assinatura').first().json;\nconst payload = JSON.stringify({\n  eventId: `${req.id}:completed`,\n  dispatchId: req.id,\n  idempotencyKey: req.idempotencyKey,\n  status: 'completed',\n  result: $json,\n  error: undefined,\n});\nconst t = Math.floor(Date.now() / 1000);\nconst signature = `t=${t},v1=${crypto.createHmac('sha256', secret).update(`${t}.${payload}`).digest('hex')}`;\nreturn [{ json: { callbackUrl: req.callbackUrl, payload, signature } }];"
+        "jsCode": "// Monta o retorno para a HR Tech, assinado com a chave da empresa do envio (HMAC-SHA256 sobre \"<t>.<corpo>\").\nconst crypto = require('crypto');\n// Segredos: Variáveis do n8n ($vars, recomendado: dispensa liberar o acesso a variáveis de ambiente) ou ambiente.\nconst readSecret = (name) => {\n  try { if ($vars && $vars[name]) return String($vars[name]); } catch (e) {}\n  try { return $env[name] ? String($env[name]) : undefined; } catch (e) { return undefined; }\n};\n// Chave da empresa: HMAC_SHA256(segredo, \"org:<organizationId>\") — igual à SaaS (orgSigningKey).\nconst orgKey = (secret, orgId) => crypto.createHmac('sha256', secret).update('org:' + String(orgId || '')).digest('hex');\nconst req = $('Verificar assinatura').first().json;\nconst secret = orgKey(readSecret('HRTECH_WEBHOOK_SECRET'), req.organizationId);\nconst payload = JSON.stringify({\n  eventId: `${req.id}:completed`,\n  dispatchId: req.id,\n  idempotencyKey: req.idempotencyKey,\n  status: 'completed',\n  result: $json,\n  error: undefined,\n});\nconst t = Math.floor(Date.now() / 1000);\nconst signature = `t=${t},v1=${crypto.createHmac('sha256', secret).update(`${t}.${payload}`).digest('hex')}`;\nreturn [{ json: { callbackUrl: req.callbackUrl, payload, signature } }];"
       },
       "id": "97e10339-e320-5968-825a-1212575528ea",
       "name": "Assinar retorno",
@@ -176,7 +262,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Monta o retorno para a HR Tech, assinado com o mesmo segredo (HMAC-SHA256 sobre \"<t>.<corpo>\").\nconst crypto = require('crypto');\nconst secret = $env.HRTECH_WEBHOOK_SECRET;\nconst req = $('Verificar assinatura').first().json;\nconst payload = JSON.stringify({\n  eventId: `${req.id}:failed`,\n  dispatchId: req.id,\n  idempotencyKey: req.idempotencyKey,\n  status: 'failed',\n  result: null,\n  error: String(($json.error && $json.error.message) || 'Falha na busca de prospects (verifique GOOGLE_PLACES_API_KEY).'),\n});\nconst t = Math.floor(Date.now() / 1000);\nconst signature = `t=${t},v1=${crypto.createHmac('sha256', secret).update(`${t}.${payload}`).digest('hex')}`;\nreturn [{ json: { callbackUrl: req.callbackUrl, payload, signature } }];"
+        "jsCode": "// Monta o retorno para a HR Tech, assinado com a chave da empresa do envio (HMAC-SHA256 sobre \"<t>.<corpo>\").\nconst crypto = require('crypto');\n// Segredos: Variáveis do n8n ($vars, recomendado: dispensa liberar o acesso a variáveis de ambiente) ou ambiente.\nconst readSecret = (name) => {\n  try { if ($vars && $vars[name]) return String($vars[name]); } catch (e) {}\n  try { return $env[name] ? String($env[name]) : undefined; } catch (e) { return undefined; }\n};\n// Chave da empresa: HMAC_SHA256(segredo, \"org:<organizationId>\") — igual à SaaS (orgSigningKey).\nconst orgKey = (secret, orgId) => crypto.createHmac('sha256', secret).update('org:' + String(orgId || '')).digest('hex');\nconst req = $('Verificar assinatura').first().json;\nconst secret = orgKey(readSecret('HRTECH_WEBHOOK_SECRET'), req.organizationId);\nconst payload = JSON.stringify({\n  eventId: `${req.id}:failed`,\n  dispatchId: req.id,\n  idempotencyKey: req.idempotencyKey,\n  status: 'failed',\n  result: null,\n  error: String(($json.error && $json.error.message) || 'Falha na busca de prospects (verifique GOOGLE_PLACES_API_KEY).'),\n});\nconst t = Math.floor(Date.now() / 1000);\nconst signature = `t=${t},v1=${crypto.createHmac('sha256', secret).update(`${t}.${payload}`).digest('hex')}`;\nreturn [{ json: { callbackUrl: req.callbackUrl, payload, signature } }];"
       },
       "id": "5f2c4995-a13f-5507-99de-ab3e3f59d7f1",
       "name": "Assinar falha",
@@ -313,11 +399,40 @@
         ]
       ]
     },
+    "Assinar recusa": {
+      "main": [
+        [
+          {
+            "node": "Enviar recusa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Responder 202": {
       "main": [
         [
           {
+            "node": "Empresa autorizada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empresa autorizada?": {
+      "main": [
+        [
+          {
             "node": "Montar busca",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assinar recusa",
             "type": "main",
             "index": 0
           }

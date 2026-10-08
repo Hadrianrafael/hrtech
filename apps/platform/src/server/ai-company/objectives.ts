@@ -76,8 +76,12 @@ export async function syncObjective(orgId: string, objectiveId: string) {
     const tasks = await tx.aiTask.findMany({ where: { objectiveId, organizationId: orgId }, orderBy: { createdAt: 'asc' } });
     const cost = tasks.reduce((s, t) => s + t.costMicroUsd, 0);
     const plan = tasks.find((t) => t.kind === 'plan');
-    const review = tasks.find((t) => t.kind === 'review');
+    const reviews = tasks.filter((t) => t.kind === 'review');
     const work = tasks.filter((t) => t.kind === 'work');
+    // Uma revisão anterior à conclusão de alguma tarefa (ex.: tarefa reprocessada) está desatualizada: faz outra.
+    const lastWorkDone = Math.max(0, ...work.map((t) => t.completedAt?.getTime() ?? 0));
+    const latestReview = reviews.at(-1);
+    const review = latestReview && latestReview.createdAt.getTime() >= lastWorkDone ? latestReview : undefined;
     const allTerminal = tasks.every((t) => (TERMINAL as readonly string[]).includes(t.status));
 
     let status: AiObjectiveStatus = objective.status;

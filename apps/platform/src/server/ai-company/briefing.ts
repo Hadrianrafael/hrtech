@@ -9,6 +9,7 @@ import { assertCan, type ServiceCtx } from '@/lib/auth/ctx';
 import { safeTimeZone } from '@/lib/utils';
 import { formatMoney, toNumber } from '@/lib/utils';
 import { systemDb, tenantDb } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { logActivity } from './activity';
 import type { Outcome, RunContext } from './engine';
 import { invokeTool } from './invoke';
@@ -53,7 +54,12 @@ export async function scheduleDueBriefings(now = new Date()) {
     if (!cfg.enabled) continue;
     const clock = localClock(c.organization.timezone, now);
     if (!cfg.weekdays.includes(clock.weekday) || clock.hour < cfg.hour) continue;
-    if (await queueBriefing(c.organizationId, clock.day)) created++;
+    try {
+      if (await queueBriefing(c.organizationId, clock.day)) created++;
+    } catch (err) {
+      // Ex.: limite diário de tarefas do CEO de uma empresa — não impede as outras.
+      logger.warn('ai_briefing.schedule_failed', { orgId: c.organizationId, err });
+    }
   }
   return created;
 }

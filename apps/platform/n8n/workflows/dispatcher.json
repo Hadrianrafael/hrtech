@@ -22,79 +22,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// Verifica a assinatura HMAC-SHA256 enviada pela HR Tech (cabeçalho X-HRTech-Signature: t=<unix>,v1=<hex>).\n// Requer no n8n: NODE_FUNCTION_ALLOW_BUILTIN=crypto e a variável HRTECH_WEBHOOK_SECRET (= N8N_WEBHOOK_SECRET da SaaS).\nconst crypto = require('crypto');\nconst secret = $env.HRTECH_WEBHOOK_SECRET;\nif (!secret) throw new Error('HRTECH_WEBHOOK_SECRET não configurado (PENDENTE DE CREDENCIAL).');\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hrtech-signature'] || '');\nlet raw;\ntry {\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  raw = buf.toString('utf8');\n} catch (e) {\n  raw = JSON.stringify(item.json.body);\n}\nconst parts = Object.fromEntries(signature.split(',').map((p) => { const i = p.indexOf('='); return [p.slice(0, i).trim(), p.slice(i + 1).trim()]; }));\nconst t = Number(parts.t);\nconst v1 = String(parts.v1 || '');\nif (!t || Math.abs(Date.now() / 1000 - t) > 300) throw new Error('Assinatura ausente ou expirada.');\nconst expected = crypto.createHmac('sha256', secret).update(`${t}.${raw}`).digest('hex');\nif (expected.length !== v1.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) throw new Error('Assinatura inválida.');\nconst body = JSON.parse(raw);\n// Idempotência: a HR Tech reenvia o mesmo envio (mesma idempotencyKey) quando não sabe se ele chegou (timeout, 5xx,\n// queda). Chaves já vistas nos últimos 7 dias são respondidas como duplicadas e a ação NÃO é repetida.\n// (Dados estáticos do fluxo: valem para fluxos ativos em uma instância; com várias instâncias/fila, use Redis/Postgres.)\nconst key = String(body.idempotencyKey || headers['x-hrtech-idempotency-key'] || '');\nconst store = $getWorkflowStaticData('global');\nconst now = Date.now();\nstore.seen = store.seen || {};\nfor (const [k, at] of Object.entries(store.seen)) if (now - at > 7 * 86400000) delete store.seen[k];\nconst keys = Object.keys(store.seen);\nif (keys.length > 5000) keys.sort((a, b) => store.seen[a] - store.seen[b]).slice(0, keys.length - 5000).forEach((k) => delete store.seen[k]);\nconst duplicate = !!(key && store.seen[key]);\nif (key && !duplicate) store.seen[key] = now;\nreturn [{ json: { ...body, _raw: raw, _signature: signature, _duplicate: duplicate } }];"
+        "jsCode": "// Verifica a assinatura HMAC-SHA256 enviada pela HR Tech (cabeçalho X-HRTech-Signature: t=<unix>,v1=<hex>), feita com\n// a chave da empresa do envio. Requer no n8n: NODE_FUNCTION_ALLOW_BUILTIN=crypto e HRTECH_WEBHOOK_SECRET (= N8N_WEBHOOK_SECRET).\nconst crypto = require('crypto');\n// Segredos: Variáveis do n8n ($vars, recomendado: dispensa liberar o acesso a variáveis de ambiente) ou ambiente.\nconst readSecret = (name) => {\n  try { if ($vars && $vars[name]) return String($vars[name]); } catch (e) {}\n  try { return $env[name] ? String($env[name]) : undefined; } catch (e) { return undefined; }\n};\n// Chave da empresa: HMAC_SHA256(segredo, \"org:<organizationId>\") — igual à SaaS (orgSigningKey).\nconst orgKey = (secret, orgId) => crypto.createHmac('sha256', secret).update('org:' + String(orgId || '')).digest('hex');\nconst secret = readSecret('HRTECH_WEBHOOK_SECRET');\nif (!secret) throw new Error('HRTECH_WEBHOOK_SECRET não configurado (PENDENTE DE CREDENCIAL).');\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hrtech-signature'] || '');\nlet raw;\ntry {\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  raw = buf.toString('utf8');\n} catch (e) {\n  raw = JSON.stringify(item.json.body);\n}\nconst parts = Object.fromEntries(signature.split(',').map((p) => { const i = p.indexOf('='); return [p.slice(0, i).trim(), p.slice(i + 1).trim()]; }));\nconst t = Number(parts.t);\nconst v1 = String(parts.v1 || '');\nif (!t || Math.abs(Date.now() / 1000 - t) > 300) throw new Error('Assinatura ausente ou expirada.');\nconst body = JSON.parse(raw);\nconst expected = crypto.createHmac('sha256', orgKey(secret, body.organizationId)).update(`${t}.${raw}`).digest('hex');\nif (expected.length !== v1.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) throw new Error('Assinatura inválida.');\n// Empresas autorizadas a usar as credenciais de canais desta instância (WhatsApp, e-mail, Google): HRTECH_ALLOWED_ORG_IDS.\nconst allowedOrgs = String(readSecret('HRTECH_ALLOWED_ORG_IDS') || '').split(',').map((x) => x.trim()).filter(Boolean);\nconst orgAllowed = allowedOrgs.includes(String(body.organizationId));\nconst duplicate = false; // o dispatcher só encaminha; cada fluxo deduplica na própria entrada\nreturn [{ json: { ...body, _raw: raw, _signature: signature, _duplicate: duplicate, _orgAllowed: orgAllowed } }];"
       },
       "id": "41d7414b-1622-5afa-8a65-44012c57618e",
       "name": "Verificar assinatura",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        370,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "typeValidation": "loose"
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $json._duplicate }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "4031d8bf-79f9-54a2-acf0-2a283815a6e9",
-      "name": "Já recebido?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        530,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ received: true, duplicate: true }) }}",
-        "options": {
-          "responseCode": 200
-        }
-      },
-      "id": "ac27f4a5-89d2-5dde-92aa-c68cc889ad44",
-      "name": "Responder duplicado",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        700,
-        480
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ received: true }) }}",
-        "options": {
-          "responseCode": 202
-        }
-      },
-      "id": "8bfd3746-9dcb-5a50-8f6d-af369fdf6543",
-      "name": "Responder 202",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        700,
+        420,
         300
       ]
     },
@@ -240,7 +175,7 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        880,
+        640,
         300
       ]
     },
@@ -266,7 +201,7 @@
         "rawContentType": "application/json",
         "body": "={{ $json._raw }}",
         "options": {
-          "timeout": 15000
+          "timeout": 10000
         }
       },
       "id": "00d65f63-fbc8-537d-83c7-2357ed7799cc",
@@ -274,12 +209,13 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1140,
+        900,
         80
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -303,7 +239,7 @@
         "rawContentType": "application/json",
         "body": "={{ $json._raw }}",
         "options": {
-          "timeout": 15000
+          "timeout": 10000
         }
       },
       "id": "ebaee4cd-f9bf-5ed8-bd8f-4a67ef11c6a1",
@@ -311,12 +247,13 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1140,
+        900,
         190
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -340,7 +277,7 @@
         "rawContentType": "application/json",
         "body": "={{ $json._raw }}",
         "options": {
-          "timeout": 15000
+          "timeout": 10000
         }
       },
       "id": "d6d9d0cd-58ab-5111-a942-bcef734feae8",
@@ -348,12 +285,13 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1140,
+        900,
         300
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -377,7 +315,7 @@
         "rawContentType": "application/json",
         "body": "={{ $json._raw }}",
         "options": {
-          "timeout": 15000
+          "timeout": 10000
         }
       },
       "id": "2b17d5bf-c151-5fc3-bfeb-713df9553413",
@@ -385,12 +323,13 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1140,
+        900,
         410
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -414,7 +353,7 @@
         "rawContentType": "application/json",
         "body": "={{ $json._raw }}",
         "options": {
-          "timeout": 15000
+          "timeout": 10000
         }
       },
       "id": "c5349b87-0b8e-5cfa-bd33-30ae458fea11",
@@ -422,12 +361,13 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1140,
+        900,
         520
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -451,7 +391,7 @@
         "rawContentType": "application/json",
         "body": "={{ $json._raw }}",
         "options": {
-          "timeout": 15000
+          "timeout": 10000
         }
       },
       "id": "77766347-f0f6-53c4-ac46-0e188202d780",
@@ -459,23 +399,62 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1140,
+        900,
         630
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "// O campo workflow não corresponde a nenhum fluxo conhecido: registre e investigue.\nreturn [{ json: { ignored: true, workflow: $json.workflow } }];"
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ received: true, forwarded: true }) }}",
+        "options": {
+          "responseCode": 202
+        }
       },
-      "id": "702c2627-ea06-5f88-912a-3930f496cc23",
-      "name": "Fluxo desconhecido",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "8bfd3746-9dcb-5a50-8f6d-af369fdf6543",
+      "name": "Responder 202",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
       "position": [
         1140,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ received: false, error: \"Fluxo indisponível no n8n; tente novamente.\" }) }}",
+        "options": {
+          "responseCode": 503
+        }
+      },
+      "id": "d76db27b-3d9a-50b9-871d-366d8d52f3b8",
+      "name": "Responder 503",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1140,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ received: false, error: \"Fluxo desconhecido.\" }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "c2d40280-2920-5694-bf94-3b1cbca9b22c",
+      "name": "Fluxo desconhecido (400)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
         760
       ]
     }
@@ -496,36 +475,115 @@
       "main": [
         [
           {
-            "node": "Já recebido?",
+            "node": "Rotear por fluxo",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Já recebido?": {
+    "Encaminhar: prospeccao": {
       "main": [
-        [
-          {
-            "node": "Responder duplicado",
-            "type": "main",
-            "index": 0
-          }
-        ],
         [
           {
             "node": "Responder 202",
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Responder 503",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
-    "Responder 202": {
+    "Encaminhar: comercial": {
       "main": [
         [
           {
-            "node": "Rotear por fluxo",
+            "node": "Responder 202",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 503",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encaminhar: briefing": {
+      "main": [
+        [
+          {
+            "node": "Responder 202",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 503",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encaminhar: marketing": {
+      "main": [
+        [
+          {
+            "node": "Responder 202",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 503",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encaminhar: desenvolvimento": {
+      "main": [
+        [
+          {
+            "node": "Responder 202",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 503",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encaminhar: financeiro": {
+      "main": [
+        [
+          {
+            "node": "Responder 202",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 503",
             "type": "main",
             "index": 0
           }
@@ -578,7 +636,7 @@
         ],
         [
           {
-            "node": "Fluxo desconhecido",
+            "node": "Fluxo desconhecido (400)",
             "type": "main",
             "index": 0
           }

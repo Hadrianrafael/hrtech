@@ -300,7 +300,7 @@ describe('fluxos importáveis do n8n', () => {
   });
 
   it('reenvios com a mesma chave de idempotência não repetem a ação (deduplicação na entrada de cada fluxo)', () => {
-    for (const f of files.filter((x) => x !== 'agendador-worker.json')) {
+    for (const f of files.filter((x) => x !== 'agendador-worker.json' && x !== 'dispatcher.json')) {
       const wf = load(f);
       const verify = wf.nodes.find((n) => n.name === 'Verificar assinatura')!;
       expect(String(verify.parameters.jsCode)).toContain('$getWorkflowStaticData');
@@ -310,6 +310,36 @@ describe('fluxos importáveis do n8n', () => {
       expect(dup![0]!.node).toBe('Responder duplicado');
       expect(fresh![0]!.node).toBe('Responder 202');
       expect(wf.connections['Responder duplicado']).toBeUndefined(); // duplicado não segue adiante
+    }
+  });
+
+  it('dispatcher só responde depois de encaminhar (503 se o fluxo falhar, 400 se for desconhecido)', () => {
+    const wf = load('dispatcher.json');
+    const forwards = wf.nodes.filter((n) => n.name.startsWith('Encaminhar: '));
+    expect(forwards).toHaveLength(6);
+    for (const n of forwards) {
+      const [ok, fail] = wf.connections[n.name]!.main;
+      expect(ok![0]!.node).toBe('Responder 202');
+      expect(fail![0]!.node).toBe('Responder 503');
+    }
+    const routes = wf.connections['Rotear por fluxo']!.main;
+    expect(routes.at(-1)![0]!.node).toBe('Fluxo desconhecido (400)');
+    expect(wf.connections['Verificar assinatura']!.main[0]![0]!.node).toBe('Rotear por fluxo');
+  });
+
+  it('assinatura com a chave da empresa e fluxos com credenciais de canais só para empresas autorizadas', () => {
+    for (const f of ['dispatcher.json', 'prospeccao.json', 'comercial.json', 'briefing.json']) {
+      const wf = load(f);
+      const verify = String(wf.nodes.find((n) => n.name === 'Verificar assinatura')!.parameters.jsCode);
+      expect(verify).toContain("'org:'");
+      expect(verify).toContain('$vars');
+      expect(verify).toContain('HRTECH_ALLOWED_ORG_IDS');
+      for (const n of wf.nodes.filter((x) => x.name.startsWith('Assinar'))) expect(String(n.parameters.jsCode)).toContain('orgKey(');
+    }
+    for (const f of ['prospeccao.json', 'comercial.json', 'briefing.json']) {
+      const wf = load(f);
+      expect(wf.connections['Responder 202']!.main[0]![0]!.node).toBe('Empresa autorizada?');
+      expect(wf.connections['Empresa autorizada?']!.main[1]![0]!.node).toBe('Assinar recusa');
     }
   });
 

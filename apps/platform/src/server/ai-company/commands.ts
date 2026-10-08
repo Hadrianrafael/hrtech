@@ -7,7 +7,7 @@ import { systemCtx } from '@/lib/auth/ctx';
 import { isUniqueViolation, systemDb } from '@/lib/db';
 import { env } from '@/lib/env';
 import { AppError } from '@/lib/errors';
-import { PENDING_CREDENTIAL, verifySignature } from './n8n';
+import { PENDING_CREDENTIAL, orgSigningKey, verifySignature } from './n8n';
 import { createObjective } from './objectives';
 
 export const commandSchema = z.object({
@@ -20,13 +20,15 @@ export const commandSchema = z.object({
 export async function handleN8nCommand(rawBody: string, signature: string | null): Promise<{ status: number; body: Record<string, unknown> }> {
   const secret = env.n8nWebhookSecret();
   if (!secret) return { status: 503, body: { error: PENDING_CREDENTIAL } };
-  if (!verifySignature(secret, signature, rawBody)) return { status: 401, body: { error: 'Assinatura inválida.' } };
+  if (!signature) return { status: 401, body: { error: 'Assinatura inválida.' } };
   let d: z.infer<typeof commandSchema>;
   try {
     d = commandSchema.parse(JSON.parse(rawBody));
   } catch {
     return { status: 400, body: { error: 'Payload inválido.' } };
   }
+  // Assinado com a chave da empresa indicada no comando: a chave de uma empresa não comanda outra.
+  if (!verifySignature(orgSigningKey(secret, d.organizationId), signature, rawBody)) return { status: 401, body: { error: 'Assinatura inválida.' } };
   const company = await systemDb.aiCompany.findUnique({ where: { organizationId: d.organizationId }, include: { organization: { select: { status: true } } } });
   if (!company?.enabled || !company.n8nEnabled || company.organization.status !== 'ACTIVE') {
     return { status: 403, body: { error: 'Equipe IA ou integração com o n8n desativada para esta empresa.' } };
@@ -34,8 +36,15 @@ export async function handleN8nCommand(rawBody: string, signature: string | null
   try {
     await systemDb.webhookEvent.create({ data: { provider: 'n8n-command', eventKey: d.eventId, organizationId: d.organizationId, payload: { command: d.command.slice(0, 200) }, status: 'RECEIVED' } });
   } catch (err) {
-    if (isUniqueViolation(err)) return { status: 200, body: { duplicate: true } };
-    throw err;
+    if (!isUniqueViolation(err)) throw err;
+    const ev = await systemDb.webhookEvent.findFirst({ where: { provider: 'n8n-command', eventKey: d.eventId }, select: { status: true } });
+    if (ev?.status === 'PROCESSED') return { status: 200, body: { duplicate: true } };
+    // Tentativa anterior falhou (ou foi interrompida há mais de 2 min): reprocessa, reivindicando de forma atômica.
+    const reclaimed = await systemDb.webhookEvent.updateMany({
+      where: { provider: 'n8n-command', eventKey: d.eventId, OR: [{ status: 'FAILED' }, { status: 'RECEIVED', receivedAt: { lt: new Date(Date.now() - 120_000) } }] },
+      data: { status: 'RECEIVED', receivedAt: new Date(), error: null, attempts: { increment: 1 } },
+    });
+    if (!reclaimed.count) return { status: 409, body: { error: 'Comando em processamento; tente novamente em instantes.' } };
   }
   // Quem pediu: só é registrado se for membro ativo com permissão de comandar a Equipe IA.
   let createdById: string | null = null;

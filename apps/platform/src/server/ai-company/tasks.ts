@@ -102,6 +102,11 @@ export async function createAiTask(t: NewTaskInput): Promise<AiTask> {
       nextRunAt: waitingFor ? FAR_FUTURE : new Date(),
     },
   });
+  if (waitingFor && t.dependsOnTaskId) {
+    // A etapa anterior pode ter terminado entre a verificação e a criação: libera (ou cancela) agora.
+    const dep = await db.aiTask.findFirst({ where: { id: t.dependsOnTaskId }, select: { status: true } });
+    if (dep && ['COMPLETED', 'FAILED', 'CANCELLED'].includes(dep.status)) await releaseDependents(t.orgId, t.dependsOnTaskId, dep.status === 'COMPLETED');
+  }
   await logActivity({
     orgId: t.orgId,
     agentId: agent.id,

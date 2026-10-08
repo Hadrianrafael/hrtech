@@ -24,13 +24,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.HRTECH_APP_URL + '/api/cron/ai' }}",
+        "url": "={{ ($vars.HRTECH_APP_URL || $env.HRTECH_APP_URL) + '/api/cron/ai' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "={{ 'Bearer ' + $env.HRTECH_CRON_SECRET }}"
+              "value": "={{ 'Bearer ' + ($vars.HRTECH_CRON_SECRET || $env.HRTECH_CRON_SECRET) }}"
             }
           ]
         },

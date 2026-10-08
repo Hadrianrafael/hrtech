@@ -26,11 +26,13 @@ Na SaaS (Vercel / `.env`):
 | `N8N_TIMEOUT_MS` | opcional (padrão 15000) |
 | `CRON_SECRET` | usado pelo agendador do n8n para chamar `/api/cron/ai` |
 
-No n8n (Settings → Variables ou variáveis de ambiente do container):
+No n8n — de preferência em **Settings → Variables** (`$vars`); os fluxos também aceitam variáveis de ambiente do
+container como alternativa:
 
 | Variável | Descrição |
 | --- | --- |
-| `HRTECH_WEBHOOK_SECRET` | o mesmo valor de `N8N_WEBHOOK_SECRET` |
+| `HRTECH_WEBHOOK_SECRET` | o mesmo valor de `N8N_WEBHOOK_SECRET` (segredo mestre: dele os fluxos derivam a chave de cada empresa) |
+| `HRTECH_ALLOWED_ORG_IDS` | IDs (separados por vírgula) das empresas que podem usar as credenciais de canais desta instância (WhatsApp, e-mail, Google). As demais recebem um retorno de falha, sem envio |
 | `HRTECH_APP_URL` | URL pública da SaaS (ex.: `https://app.hrtechsistemas.com.br`) |
 | `HRTECH_CRON_SECRET` | o mesmo valor de `CRON_SECRET` |
 | `N8N_INTERNAL_BASE_URL` | URL interna do próprio n8n para o dispatcher chamar os subfluxos (padrão `http://localhost:5678`) |
@@ -38,20 +40,24 @@ No n8n (Settings → Variables ou variáveis de ambiente do container):
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_TEMPLATE_FOLLOWUP` | sequências por WhatsApp (Cloud API oficial, template aprovado) |
 | `HRTECH_EMAIL_FROM` + credencial SMTP no n8n | e-mails (sequências e briefing) |
 
-Para o nó Code verificar/assinar HMAC, o n8n precisa de `NODE_FUNCTION_ALLOW_BUILTIN=crypto` e acesso a variáveis
-(`N8N_BLOCK_ENV_ACCESS_IN_NODE=false`).
+Para o nó Code verificar/assinar HMAC, o n8n precisa de `NODE_FUNCTION_ALLOW_BUILTIN=crypto`. Prefira **Variables**
+(`$vars`) para os segredos e mantenha o acesso dos nós ao ambiente bloqueado (`N8N_BLOCK_ENV_ACCESS_IN_NODE=true`).
+Se a sua edição do n8n não tiver Variables e você precisar liberar o ambiente (`false`), qualquer pessoa que edite
+fluxos nessa instância poderá ler as variáveis do container: restrinja a edição a pessoas de confiança da HR Tech e
+não coloque nelas segredos que não sejam do n8n.
 
 ## Fluxos importáveis (`n8n/workflows/`)
 
 | Arquivo | Webhook | Função |
 | --- | --- | --- |
-| `dispatcher.json` | `/webhook/hrtech-dispatcher` | entrada única: verifica a assinatura, responde 202 e encaminha pelo campo `workflow` |
+| `dispatcher.json` | `/webhook/hrtech-dispatcher` | entrada única: verifica a assinatura, encaminha pelo campo `workflow` e só então responde — 202 se o fluxo aceitou, 503 se o encaminhamento falhou (a SaaS tenta de novo), 400 para fluxo desconhecido |
 | `prospeccao.json` | `/webhook/hrtech-prospeccao` | Google Places Text Search → prospects normalizados → retorno assinado |
 | `comercial.json` | `/webhook/hrtech-comercial` | WhatsApp (template) ou e-mail por contato → resumo → retorno |
 | `briefing.json` | `/webhook/hrtech-briefing` | envia o briefing por e-mail aos destinatários → retorno |
 | `agendador-worker.json` | — | a cada 2 min chama `POST /api/cron/ai` com o `CRON_SECRET` |
 
-Todos os fluxos com webhook verificam a assinatura e **deduplicam pela `idempotencyKey`** (chaves vistas nos últimos
+Os fluxos de prospecção, comercial e briefing verificam a assinatura, conferem se a empresa está em
+`HRTECH_ALLOWED_ORG_IDS` e **deduplicam pela `idempotencyKey`** (chaves vistas nos últimos
 7 dias respondem `200 {"duplicate": true}` sem repetir a ação), porque a SaaS reenvia o mesmo envio quando não sabe se
 ele chegou (timeout, 5xx, queda). A deduplicação usa os dados estáticos do fluxo, que valem para fluxos **ativos** em
 uma instância; em n8n com várias instâncias/fila, troque por uma tabela Postgres ou Redis. Fluxos próprios que
@@ -69,8 +75,11 @@ nem outro host). Para regenerar os JSONs: `python3 n8n/generate-workflows.py`.
 
 `POST <N8N_BASE_URL>/webhook/hrtech-dispatcher` (ou o caminho configurado por fluxo em Equipe IA → Configurações)
 
-Cabeçalhos: `X-HRTech-Signature: t=<unix>,v1=<hex>`, `X-HRTech-Idempotency-Key`, `X-HRTech-Workflow`.
-A assinatura é `HMAC_SHA256(N8N_WEBHOOK_SECRET, "<t>.<corpo bruto>")`; rejeite se `|agora − t| > 300 s`.
+Cabeçalhos: `X-HRTech-Signature: t=<unix>,v1=<hex>`, `X-HRTech-Idempotency-Key`, `X-HRTech-Workflow`,
+`X-HRTech-Organization`. Cada mensagem é assinada com a **chave da empresa**:
+`chave = hex(HMAC_SHA256(N8N_WEBHOOK_SECRET, "org:<organizationId>"))` e
+`v1 = hex(HMAC_SHA256(chave, "<t>.<corpo bruto>"))`; rejeite se `|agora − t| > 300 s`. Uma mensagem assinada para uma
+empresa não vale para outra, e um fluxo exclusivo de uma empresa pode receber só a chave dela (sem o segredo mestre).
 
 ```json
 {
@@ -93,20 +102,24 @@ Envios `SENT` sem retorno em 24 h são marcados como falha. Reenvio manual em Eq
 
 ### n8n → SaaS (retorno)
 
-`POST /api/webhooks/n8n` com o mesmo esquema de assinatura sobre o corpo exato enviado:
+`POST /api/webhooks/n8n` assinado com a chave da empresa dona do envio, sobre o corpo exato enviado:
 
 ```json
 { "eventId": "<id único e estável do evento>", "dispatchId": "<id>", "idempotencyKey": "<opcional>",
   "status": "completed | failed | progress", "result": { "prospects": [ ... ] }, "error": "<se failed>" }
 ```
 
-Idempotente pelo `eventId` (reentregas não duplicam). O resultado é tratado como **dado não confiável** (higienizado e
-delimitado antes de chegar a qualquer modelo). Limite de 1 MB.
+Idempotente pelo `eventId` (reentregas não duplicam). Retornos de envios que ainda não saíram da fila são recusados
+(409). O resultado é tratado como **dado não confiável** (higienizado e delimitado antes de chegar a qualquer modelo).
+Limite de 1 MB. O nó "Enviar retorno" tenta 5 vezes; se a SaaS ficar fora do ar por mais tempo, o envio é marcado como
+falho depois de 24 h sem retorno ("resultado desconhecido") — confira no n8n antes de reenviar uma ação externa.
 
 ### n8n → SaaS (comandos ao CEO)
 
-`POST /api/n8n/commands` (mesma assinatura): `{ "eventId": "...", "organizationId": "...", "command": "Quero 5 clientes este mês", "requestedByEmail": "dono@empresa.com" }`.
+`POST /api/n8n/commands` assinado com a chave da empresa do campo `organizationId`:
+`{ "eventId": "...", "organizationId": "...", "command": "Quero 5 clientes este mês", "requestedByEmail": "dono@empresa.com" }`.
 Exige Equipe IA e n8n ativados na empresa; o e-mail só é associado se for membro com permissão `ai_team.command`.
+Reenviar o mesmo `eventId` depois de uma falha reprocessa o comando; depois de processado, responde `duplicate`.
 
 ## Indisponibilidade
 

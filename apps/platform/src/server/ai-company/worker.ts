@@ -12,6 +12,7 @@ import { scheduleDueBriefings } from './briefing';
 import { RUN_WALL_MS, executeTask } from './engine';
 import { processDueDispatches } from './n8n';
 import { syncObjective } from './objectives';
+import { releaseDependents } from './tasks';
 
 const LEASE_MINUTES = 10;
 const MIN_RUN_MS = 8_000;
@@ -55,7 +56,10 @@ export async function recoverStaleTasks(now = new Date(), orgId?: string) {
     });
     if (r.count) {
       await logActivity({ orgId: t.organizationId, agentId: t.agentId, objectiveId: t.objectiveId, taskId: t.id, type: 'task.recovered', level: 'warning', message: exhausted ? `"${t.title}" falhou após interrupções repetidas.` : `"${t.title}" foi interrompida e voltou para a fila.` });
-      if (exhausted && t.objectiveId) await syncObjective(t.organizationId, t.objectiveId);
+      if (exhausted) {
+        await releaseDependents(t.organizationId, t.id, false);
+        if (t.objectiveId) await syncObjective(t.organizationId, t.objectiveId);
+      }
     }
   }
   return stale.length;
@@ -91,15 +95,20 @@ export async function runAiWorker(opts: { orgId?: string; maxTasks?: number; bud
   const budget = opts.budgetMs ?? 40_000;
   const summary: WorkerSummary = { tasks: 0, outcomes: {}, recovered: 0, approvalsExpired: 0, briefingsQueued: 0, dispatches: { processed: 0, outcomes: {} }, deferred: false };
   if (opts.housekeeping !== false) {
-    try {
-      // Com orgId (ex.: botão "processar agora" de uma empresa), a manutenção fica restrita a essa empresa.
-      summary.recovered = await recoverStaleTasks(new Date(), opts.orgId);
-      summary.approvalsExpired = await expireApprovals(new Date(), opts.orgId);
-      summary.briefingsQueued = opts.orgId ? 0 : await scheduleDueBriefings();
-      summary.dispatches = await processDueDispatches(25, new Date(), opts.orgId);
-    } catch (err) {
-      logger.error('ai_worker.housekeeping_failed', { err });
-    }
+    // Cada etapa isolada: uma falha (ex.: limite de uma empresa) não impede as demais.
+    // Com orgId (ex.: botão "processar agora" de uma empresa), a manutenção fica restrita a essa empresa.
+    const safely = async <T>(name: string, fn: () => Promise<T>, fallback: T) => {
+      try {
+        return await fn();
+      } catch (err) {
+        logger.error('ai_worker.housekeeping_failed', { step: name, err });
+        return fallback;
+      }
+    };
+    summary.recovered = await safely('recover', () => recoverStaleTasks(new Date(), opts.orgId), 0);
+    summary.approvalsExpired = await safely('approvals', () => expireApprovals(new Date(), opts.orgId), 0);
+    summary.briefingsQueued = opts.orgId ? 0 : await safely('briefings', () => scheduleDueBriefings(), 0);
+    summary.dispatches = await safely('dispatches', () => processDueDispatches(25, new Date(), opts.orgId), { processed: 0, outcomes: {} });
   }
   const max = opts.maxTasks ?? 20;
   const deadline = started + budget;

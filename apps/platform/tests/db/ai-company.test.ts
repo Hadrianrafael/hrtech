@@ -16,7 +16,7 @@ import { handleN8nCommand } from '@/server/ai-company/commands';
 import { executeTask } from '@/server/ai-company/engine';
 import { invokeTool, type InvokeContext } from '@/server/ai-company/invoke';
 import { createMemory, formatMemoriesForPrompt, saveAgentMemory, searchMemories } from '@/server/ai-company/memory';
-import { N8N_DISPATCHER_PATH, PENDING_CREDENTIAL, applyDispatchResult, handleN8nCallback, processDueDispatches, sendDispatch, signBody, verifySignature } from '@/server/ai-company/n8n';
+import { N8N_DISPATCHER_PATH, PENDING_CREDENTIAL, applyDispatchResult, handleN8nCallback, orgSigningKey, processDueDispatches, sendDispatch, signBody, verifySignature } from '@/server/ai-company/n8n';
 import { cancelObjective, createObjective } from '@/server/ai-company/objectives';
 import { resolveLimits } from '@/server/ai-company/policy';
 import { cancelAiTask } from '@/server/ai-company/queries';
@@ -240,7 +240,9 @@ describe.skipIf(!ok)('Equipe IA', () => {
       expect(await sendDispatch(dispatch.id, new Date(d.nextAttemptAt.getTime() + 1000))).toBe('sent');
       const req = requests.at(-1)!;
       expect(req.url).toBe(`${N8N_URL}${N8N_DISPATCHER_PATH}`);
-      expect(verifySignature(N8N_SECRET, req.headers['X-HRTech-Signature']!, req.body)).toBe(true);
+      expect(verifySignature(orgSigningKey(N8N_SECRET, orgId), req.headers['X-HRTech-Signature']!, req.body)).toBe(true);
+      expect(verifySignature(N8N_SECRET, req.headers['X-HRTech-Signature']!, req.body)).toBe(false); // chave da empresa, não o segredo mestre
+      expect(req.headers['X-HRTech-Organization']).toBe(orgId);
       expect(req.headers['X-HRTech-Idempotency-Key']).toBe(dispatch.idempotencyKey);
       expect(JSON.parse(req.body)).toMatchObject({ id: dispatch.id, workflow: 'prospeccao', organizationId: orgId, callbackUrl: expect.stringContaining('/api/webhooks/n8n') });
       d = await db.n8nDispatch.findFirstOrThrow({ where: { id: dispatch.id } });
@@ -262,11 +264,13 @@ describe.skipIf(!ok)('Equipe IA', () => {
         },
       });
       expect(await handleN8nCallback(callback, signBody('segredo-errado', callback))).toMatchObject({ ok: false, status: 401 });
+      expect(await handleN8nCallback(callback, signBody(N8N_SECRET, callback))).toMatchObject({ ok: false, status: 401 }); // segredo mestre não assina retorno
+      expect(await handleN8nCallback(callback, signBody(orgSigningKey(N8N_SECRET, 'outra-empresa-xyz'), callback))).toMatchObject({ ok: false, status: 401 });
       expect(await handleN8nCallback(callback, null)).toMatchObject({ ok: false, status: 401 });
-      expect(await handleN8nCallback(callback, signBody(N8N_SECRET, callback))).toEqual({ ok: true, duplicate: false, applied: true });
-      expect(await handleN8nCallback(callback, signBody(N8N_SECRET, callback))).toEqual({ ok: true, duplicate: true, applied: false });
+      expect(await handleN8nCallback(callback, signBody(orgSigningKey(N8N_SECRET, orgId), callback))).toEqual({ ok: true, duplicate: false, applied: true });
+      expect(await handleN8nCallback(callback, signBody(orgSigningKey(N8N_SECRET, orgId), callback))).toEqual({ ok: true, duplicate: true, applied: false });
       const otherEvent = callback.replace('evt-prospect-0001', 'evt-prospect-0002');
-      expect(await handleN8nCallback(otherEvent, signBody(N8N_SECRET, otherEvent))).toMatchObject({ ok: true, applied: false }); // envio já finalizado
+      expect(await handleN8nCallback(otherEvent, signBody(orgSigningKey(N8N_SECRET, orgId), otherEvent))).toMatchObject({ ok: true, applied: false }); // envio já finalizado
       t = await db.aiTask.findFirstOrThrow({ where: { id: prospTask.id } });
       expect(t).toMatchObject({ status: 'QUEUED', waitingFor: null });
 
@@ -538,7 +542,7 @@ describe.skipIf(!ok)('Equipe IA', () => {
           if (steps === 1) return json({ action: { tool: 'agents.delegate', args: { agentKey: 'sdr', title: 'Levantar leads', instructions: 'Buscar leads de pousadas' } } });
           return json({ final: { summary: 'Plano: SDR levanta os leads.' } });
         }
-        if (user.includes('Título: Levantar leads')) {
+        if (user.includes('pedido_de_outro_agente') && user.includes('Levantar leads')) {
           if (steps === 0) return json({ action: { tool: 'git.merge_main', args: {} } });
           if (steps === 1) return `Claro! ${json({ action: { tool: 'leads.search', args: { query: 'Pousada' } } })}`;
           return json({ final: { summary: 'Encontrei 1 lead.' } });
@@ -554,7 +558,10 @@ describe.skipIf(!ok)('Equipe IA', () => {
       expect(o.result).toBe('Relatório final da equipe');
       expect(o.costMicroUsd).toBeGreaterThan(0);
 
-      const sdrCalls = provider.calls.filter((m) => m[1]!.content.includes('Título: Levantar leads'));
+      const sdrCalls = provider.calls.filter((m) => m[1]!.content.includes('pedido_de_outro_agente') && m[1]!.content.includes('Levantar leads'));
+      // Instruções escritas por outro agente entram como dados (podem ter sido influenciadas por conteúdo externo).
+      const firstUser = sdrCalls[0]![1]!.content;
+      expect(firstUser.slice(firstUser.indexOf(UNTRUSTED_OPEN), firstUser.indexOf(UNTRUSTED_CLOSE))).toContain('Buscar leads de pousadas');
       const system = sdrCalls[0]![0]!.content;
       expect(system).toContain(SECURITY_PREAMBLE);
       expect(system).toContain('leads.search');
@@ -650,7 +657,8 @@ describe.skipIf(!ok)('Equipe IA', () => {
       await db.aiAgent.update({ where: { id: ic.agent.id }, data: { autonomy: 'AUTONOMOUS' } });
       const agent = await agentByKey(orgId, 'dev');
       const r = await invokeTool({ ...ic, agent, company: companyAutonomous }, 'n8n.dev_issue', { title: 'Corrigir filtro do funil', body: 'Detalhes do problema encontrado.' });
-      expect(r.status).toBe('executed'); // 4xx: falha imediata, sem esperar retorno
+      expect(r.status).toBe('failed'); // 4xx: falha imediata e registrada como falha (não como executada)
+      expect(r.summary).toMatch(/recusou/);
       const d = await db.n8nDispatch.findFirstOrThrow({});
       expect(d.status).toBe('FAILED');
       expect(d.attempts).toBe(1);
@@ -677,7 +685,7 @@ describe.skipIf(!ok)('Equipe IA', () => {
       const body = json({ eventId: 'evt-x-000001', dispatchId: 'dispatch-inexistente', status: 'completed' });
       expect(await handleN8nCallback(body, 't=1,v1=00')).toMatchObject({ ok: false, status: 503 });
       process.env.N8N_WEBHOOK_SECRET = N8N_SECRET;
-      expect(await handleN8nCallback(body, signBody(N8N_SECRET, body))).toMatchObject({ ok: false, status: 404 });
+      expect(await handleN8nCallback(body, signBody(N8N_SECRET, body))).toMatchObject({ ok: false, status: 401 }); // envio inexistente: sem chave de empresa para verificar
       expect(await handleN8nCallback('{', signBody(N8N_SECRET, '{'))).toMatchObject({ ok: false, status: 400 });
     });
 
@@ -685,20 +693,23 @@ describe.skipIf(!ok)('Equipe IA', () => {
       const { orgId, adminId } = await setupOrg('Comandos', { n8n: false });
       process.env.N8N_WEBHOOK_SECRET = N8N_SECRET;
       const admin = await systemDb.user.findUniqueOrThrow({ where: { id: adminId } });
+      const sign = (raw: string) => signBody(orgSigningKey(N8N_SECRET, orgId), raw);
       const body = json({ eventId: 'cmd-0000001', organizationId: orgId, command: 'Quero 5 clientes este mês', requestedByEmail: admin.email });
       expect((await handleN8nCommand(body, signBody('errado', body))).status).toBe(401);
-      expect((await handleN8nCommand(body, signBody(N8N_SECRET, body))).status).toBe(403); // n8n desativado na empresa
+      expect((await handleN8nCommand(body, signBody(N8N_SECRET, body))).status).toBe(401); // segredo mestre não comanda
+      expect((await handleN8nCommand(body, signBody(orgSigningKey(N8N_SECRET, 'outra-empresa-xyz'), body))).status).toBe(401);
+      expect((await handleN8nCommand(body, sign(body))).status).toBe(403); // n8n desativado na empresa
       await tenantDb(orgId).aiCompany.updateMany({ data: { n8nEnabled: true } }); // habilitada pela equipe HR Tech
       const body2 = body.replace('cmd-0000001', 'cmd-0000002');
-      const r = await handleN8nCommand(body2, signBody(N8N_SECRET, body2));
+      const r = await handleN8nCommand(body2, sign(body2));
       expect(r.status).toBe(202);
-      expect((await handleN8nCommand(body2, signBody(N8N_SECRET, body2))).body).toEqual({ duplicate: true });
+      expect((await handleN8nCommand(body2, sign(body2))).body).toEqual({ duplicate: true });
       const objectives = await tenantDb(orgId).aiObjective.findMany({});
       expect(objectives).toHaveLength(1);
       expect(objectives[0]).toMatchObject({ source: 'N8N', createdById: adminId, playbook: 'meta_vendas' });
       // E-mail de fora da empresa não é associado.
       const body3 = json({ eventId: 'cmd-0000003', organizationId: orgId, command: 'Analise meu pipeline', requestedByEmail: 'estranho@fora.example' });
-      await handleN8nCommand(body3, signBody(N8N_SECRET, body3));
+      await handleN8nCommand(body3, sign(body3));
       expect((await tenantDb(orgId).aiObjective.findFirstOrThrow({ where: { command: 'Analise meu pipeline' } })).createdById).toBeNull();
     });
   });
@@ -889,6 +900,74 @@ describe.skipIf(!ok)('Equipe IA', () => {
       const a = await delegateTask(ic, { agentKey: 'sdr', title: 'Follow-ups', instructions: 'Fazer follow-ups' });
       const b = await delegateTask(ic, { agentKey: 'sdr', title: 'Follow-ups', instructions: 'Fazer follow-ups' });
       expect(b.id).toBe(a.id);
+    });
+
+    it('retorno de envio que nunca saiu da fila é recusado', async () => {
+      const { orgId } = await setupOrg('Retorno Precoce');
+      process.env.N8N_WEBHOOK_SECRET = N8N_SECRET;
+      const d = await tenantDb(orgId).n8nDispatch.create({ data: { organizationId: orgId, workflow: 'marketing', payload: {}, idempotencyKey: 'precoce-1' } });
+      const body = json({ eventId: 'evt-precoce-1', dispatchId: d.id, status: 'completed', result: { ok: true } });
+      expect(await handleN8nCallback(body, signBody(orgSigningKey(N8N_SECRET, orgId), body))).toMatchObject({ ok: false, status: 409 });
+      expect((await tenantDb(orgId).n8nDispatch.findFirstOrThrow({ where: { id: d.id } })).status).toBe('PENDING');
+    });
+
+    it('comando do n8n que falhou é reprocessado no reenvio (não vira "duplicado")', async () => {
+      const { orgId } = await setupOrg('Comando Retry');
+      process.env.N8N_WEBHOOK_SECRET = N8N_SECRET;
+      const ceo = await agentByKey(orgId, 'ceo');
+      await tenantDb(orgId).aiAgent.update({ where: { id: ceo.id }, data: { status: 'DISABLED' } });
+      const body = json({ eventId: 'cmd-retry-0001', organizationId: orgId, command: 'Analise meu pipeline' });
+      const sign = (raw: string) => signBody(orgSigningKey(N8N_SECRET, orgId), raw);
+      expect((await handleN8nCommand(body, sign(body))).status).toBe(400); // CEO desativado: falha
+      await tenantDb(orgId).aiAgent.update({ where: { id: ceo.id }, data: { status: 'ACTIVE' } });
+      expect((await handleN8nCommand(body, sign(body))).status).toBe(202); // reenvio processa
+      expect((await handleN8nCommand(body, sign(body))).body).toEqual({ duplicate: true });
+      expect(await tenantDb(orgId).aiObjective.count({})).toBe(1);
+    });
+
+    it('tarefa criada depois que a etapa anterior terminou não fica esperando para sempre', async () => {
+      const { orgId } = await setupOrg('Dependencia');
+      const db = tenantDb(orgId);
+      const ic = await invokeContext(orgId, 'ceo');
+      const first = await delegateTask(ic, { agentKey: 'sdr', title: 'Primeira', instructions: 'Fazer algo' });
+      await db.aiTask.update({ where: { id: first.id }, data: { status: 'COMPLETED', completedAt: new Date() } });
+      const second = await delegateTask(ic, { agentKey: 'cs', title: 'Segunda', instructions: 'Depois da primeira', afterPrevious: true });
+      expect((await db.aiTask.findFirstOrThrow({ where: { id: second.id } })).waitingFor).toBeNull();
+    });
+
+    it('esperas por aprovação não gastam tentativas; interrupção esgotada libera (cancela) as dependentes', async () => {
+      const { orgId } = await setupOrg('Tentativas');
+      const db = tenantDb(orgId);
+      const fin = await agentByKey(orgId, 'financeiro');
+      const task = await createAiTask({ orgId, agentId: fin.id, title: 'Cobrança', instructions: 'x', input: { mode: 'playbook', steps: [{ tool: 'n8n.finance_charge', args: CHARGE }] } });
+      await drain(orgId);
+      expect(await db.aiTask.findFirstOrThrow({ where: { id: task.id } })).toMatchObject({ status: 'WAITING_APPROVAL', attempts: 0 });
+
+      const ceo = await agentByKey(orgId, 'ceo');
+      const a = await createAiTask({ orgId, agentId: ceo.id, title: 'A', instructions: 'x' });
+      const b = await createAiTask({ orgId, agentId: ceo.id, title: 'B', instructions: 'x', dependsOnTaskId: a.id });
+      await db.aiTask.update({ where: { id: a.id }, data: { status: 'RUNNING', attempts: 3, lockedUntil: new Date(Date.now() - 1000) } });
+      await recoverStaleTasks();
+      expect((await db.aiTask.findFirstOrThrow({ where: { id: a.id } })).status).toBe('FAILED');
+      expect((await db.aiTask.findFirstOrThrow({ where: { id: b.id } })).status).toBe('CANCELLED');
+    });
+
+    it('reprocessar uma tarefa depois da revisão gera nova revisão com o resultado atualizado', async () => {
+      const { orgId, ctx } = await setupOrg('Revisao Nova');
+      const db = tenantDb(orgId);
+      const objective = await createObjective(ctx, { command: 'Quero prospectar 3 pousadas em Gramado/RS' });
+      await drain(orgId);
+      // Rejeita a busca: prospecção falha, SDR é cancelado, CEO revisa.
+      const approval = await db.aiApproval.findFirstOrThrow({ where: { status: 'PENDING' } });
+      await decideApproval(ctx, approval.id, { decision: 'reject' });
+      await drain(orgId);
+      expect((await db.aiObjective.findFirstOrThrow({ where: { id: objective.id } })).status).toBe('COMPLETED');
+      expect(await db.aiTask.count({ where: { objectiveId: objective.id, kind: 'review' } })).toBe(1);
+      const failed = await db.aiTask.findFirstOrThrow({ where: { objectiveId: objective.id, agent: { key: 'prospeccao' } } });
+      expect(failed.status).toBe('FAILED');
+      const { retryAiTask } = await import('@/server/ai-company/queries');
+      await retryAiTask(ctx, failed.id);
+      expect((await db.aiObjective.findFirstOrThrow({ where: { id: objective.id } })).status).not.toBe('COMPLETED');
     });
 
     it('comandar a Equipe IA exige também ver todos os registros da empresa', async () => {

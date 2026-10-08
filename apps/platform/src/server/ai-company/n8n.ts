@@ -48,7 +48,16 @@ export function n8nConfig() {
 
 // ─────────────── Assinatura ───────────────
 
-/** Cabeçalho X-HRTech-Signature: "t=<unix>,v1=<hex(hmac_sha256(secret, `${t}.${body}`))>". */
+/**
+ * Chave de assinatura de uma empresa: HMAC_SHA256(N8N_WEBHOOK_SECRET, "org:<organizationId>") em hexadecimal.
+ * Envios, retornos e comandos são assinados com a chave da empresa a que se referem: uma mensagem assinada para uma
+ * empresa não vale para outra, e um fluxo exclusivo de uma empresa pode receber só a chave dela.
+ */
+export function orgSigningKey(secret: string, orgId: string) {
+  return hmacSha256Hex(secret, `org:${orgId}`);
+}
+
+/** Cabeçalho X-HRTech-Signature: "t=<unix>,v1=<hex(hmac_sha256(chave, `${t}.${body}`))>". */
 export function signBody(secret: string, body: string, t = Math.floor(Date.now() / 1000)) {
   return `t=${t},v1=${hmacSha256Hex(secret, `${t}.${body}`)}`;
 }
@@ -161,7 +170,8 @@ export async function sendDispatch(id: string, now = new Date()): Promise<SendOu
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-HRTech-Signature': signBody(env.n8nWebhookSecret()!, body),
+        'X-HRTech-Signature': signBody(orgSigningKey(env.n8nWebhookSecret()!, d.organizationId), body),
+        'X-HRTech-Organization': d.organizationId,
         'X-HRTech-Idempotency-Key': d.idempotencyKey,
         'X-HRTech-Workflow': d.workflow,
       },
@@ -310,15 +320,19 @@ export type CallbackOutcome = { ok: true; duplicate?: boolean; applied?: boolean
 export async function handleN8nCallback(rawBody: string, signature: string | null): Promise<CallbackOutcome> {
   const secret = env.n8nWebhookSecret();
   if (!secret) return { ok: false, status: 503, error: PENDING_CREDENTIAL };
-  if (!verifySignature(secret, signature, rawBody)) return { ok: false, status: 401, error: 'Assinatura inválida.' };
+  if (!signature) return { ok: false, status: 401, error: 'Assinatura inválida.' };
   let parsed: z.infer<typeof callbackSchema>;
   try {
     parsed = callbackSchema.parse(JSON.parse(rawBody));
   } catch {
     return { ok: false, status: 400, error: 'Payload inválido.' };
   }
+  // A assinatura é verificada com a chave da empresa dona do envio (um retorno de outra empresa não vale).
   const dispatch = await systemDb.n8nDispatch.findUnique({ where: { id: parsed.dispatchId } });
-  if (!dispatch || (parsed.idempotencyKey && parsed.idempotencyKey !== dispatch.idempotencyKey)) return { ok: false, status: 404, error: 'Envio não encontrado.' };
+  if (!dispatch || !verifySignature(orgSigningKey(secret, dispatch.organizationId), signature, rawBody)) return { ok: false, status: 401, error: 'Assinatura inválida.' };
+  if (parsed.idempotencyKey && parsed.idempotencyKey !== dispatch.idempotencyKey) return { ok: false, status: 404, error: 'Envio não encontrado.' };
+  // Retorno de um envio que nunca saiu da fila não é legítimo.
+  if (dispatch.status === 'PENDING' && dispatch.attempts === 0) return { ok: false, status: 409, error: 'Este envio ainda não foi realizado.' };
   // Idempotência pelo eventId. O evento só fica PROCESSED depois de aplicado; uma reentrega de evento ainda não
   // processado é reaplicada com segurança (applyDispatchResult só altera envios que ainda não terminaram).
   let duplicate = false;
