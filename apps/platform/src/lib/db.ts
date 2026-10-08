@@ -74,6 +74,9 @@ export const TENANT_MODELS = new Set<string>([
   'MessageTemplate', 'Conversation', 'ConversationTag', 'Message', 'Chatbot', 'KnowledgeBase',
   'KnowledgeDocument', 'KnowledgeChunk', 'AiRun', 'Appointment', 'Task', 'Automation', 'AutomationRun',
   'AuditLog',
+  // Equipe IA
+  'AiCompany', 'AiAgent', 'AiPromptVersion', 'AiObjective', 'AiTask', 'AiTaskRun', 'AiToolCall', 'AiApproval',
+  'AiMemory', 'AiActivity', 'AiBriefing', 'N8nDispatch',
 ]);
 
 const WHERE_OPS = new Set([

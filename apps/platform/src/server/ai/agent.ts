@@ -165,22 +165,34 @@ export function historyToMessages(history: Pick<Message, 'direction' | 'body' | 
 
 function requireProvider(): AiProvider {
   const p = getAiProvider();
-  if (!p) throw new NotConfiguredError('IA não configurada. Defina OPENAI_API_KEY (ou outro provedor) nas variáveis de ambiente.');
+  if (!p) throw new NotConfiguredError('IA não configurada. Defina OPENAI_API_KEY, ANTHROPIC_API_KEY ou GEMINI_API_KEY nas variáveis de ambiente.');
   return p;
 }
 
-async function assertAiQuota(ctx: ServiceCtx) {
+export async function assertAiQuota(ctx: ServiceCtx) {
   const r = await checkLimit(ctx, 'aiMessagesPerMonth');
   if (!r.allowed) throw new LimitExceededError('Limite mensal de mensagens de IA do plano atingido.');
 }
 
-/** Executa uma chamada de IA registrando métricas (AiRun) e consumo. */
-async function trackedChat(ctx: ServiceCtx, kind: string, messages: ChatMessage[], opts: { json?: boolean; conversationId?: string | null; maxTokens?: number }) {
-  const provider = requireProvider();
+export interface TrackedChatOptions {
+  json?: boolean;
+  conversationId?: string | null;
+  maxTokens?: number;
+  effort?: 'low' | 'medium' | 'high';
+  /** Provedor específico (ex.: o modelo de um agente da Equipe IA). Padrão: provedor do ambiente. */
+  provider?: AiProvider;
+}
+
+/**
+ * Executa uma chamada de IA registrando métricas (AiRun), consumo do plano e respeitando a cota mensal.
+ * Usada pelo chatbot e pela Equipe IA (cada agente com seu provedor/modelo).
+ */
+export async function trackedChat(ctx: ServiceCtx, kind: string, messages: ChatMessage[], opts: TrackedChatOptions = {}) {
+  const provider = opts.provider ?? requireProvider();
   await assertAiQuota(ctx);
   const started = Date.now();
   try {
-    const res = await provider.chat(messages, { json: opts.json, maxTokens: opts.maxTokens });
+    const res = await provider.chat(messages, { json: opts.json, maxTokens: opts.maxTokens, effort: opts.effort });
     const run = await ctx.db.aiRun.create({
       data: {
         organizationId: ctx.orgId,
@@ -194,7 +206,7 @@ async function trackedChat(ctx: ServiceCtx, kind: string, messages: ChatMessage[
       },
     });
     await incrementUsage(ctx.orgId, USAGE_METRICS.aiMessages);
-    return { ...res, runId: run.id };
+    return { ...res, runId: run.id, provider: provider.name, latencyMs: Date.now() - started };
   } catch (err) {
     await ctx.db.aiRun.create({
       data: {
@@ -254,7 +266,7 @@ export async function generateAssistantReply(ctx: ServiceCtx, conversationId: st
   if (kind === 'suggest') {
     messages.push({ role: 'system', content: 'Gere a próxima resposta que o ATENDENTE humano deve enviar ao cliente.' });
   }
-  const res = await trackedChat(ctx, kind, messages, { json: true, conversationId });
+  const res = await trackedChat(ctx, kind, messages, { json: true, conversationId, effort: 'low' }); // chat: respostas rápidas
   const output = parseAssistantOutput(res.text);
   return { ...output, runId: res.runId, sources: knowledge.map((k) => k.title) };
 }

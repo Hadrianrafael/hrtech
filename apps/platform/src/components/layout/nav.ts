@@ -16,6 +16,8 @@ export const NAV: NavItem[] = [
   { href: '/calendar', label: 'Agenda', icon: 'CalendarDays', permission: 'calendar.manage', group: 'main' },
   { href: '/tasks', label: 'Tarefas', icon: 'CheckSquare', permission: 'tasks.manage', group: 'main' },
   { href: '/analytics', label: 'Métricas', icon: 'BarChart3', permission: 'analytics.view', group: 'main' },
+  { href: '/ai-team', label: 'Equipe IA', icon: 'BrainCircuit', permission: 'ai_team.view', group: 'ai' },
+  { href: '/ai-team/ceo', label: 'Central do CEO', icon: 'Crown', permission: 'ai_team.view', group: 'ai' },
   { href: '/chatbot', label: 'Chatbot e IA', icon: 'Bot', permission: 'chatbot.manage', group: 'ai' },
   { href: '/knowledge', label: 'Base de conhecimento', icon: 'BookOpen', permission: 'knowledge.manage', group: 'ai' },
   { href: '/automations', label: 'Automações', icon: 'Workflow', permission: 'automations.manage', group: 'ai' },

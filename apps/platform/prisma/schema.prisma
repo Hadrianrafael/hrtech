@@ -48,6 +48,11 @@ model Organization {
   chatbots      Chatbot[]
   automations   Automation[]
   auditLogs     AuditLog[]
+  aiCompany     AiCompany?
+  aiAgents      AiAgent[]
+  aiObjectives  AiObjective[]
+  aiMemories    AiMemory[]
+  n8nDispatches N8nDispatch[]
 }
 
 model User {
@@ -378,25 +383,25 @@ enum OpportunityStatus {
 }
 
 model Opportunity {
-  id             String            @id @default(cuid())
-  organizationId String
-  pipelineId     String
-  stageId        String
-  contactId      String
-  title          String
-  value          Decimal?          @db.Decimal(12, 2)
-  ownerId        String?
-  status         OpportunityStatus @default(OPEN)
-  position       Float             @default(0)
+  id              String            @id @default(cuid())
+  organizationId  String
+  pipelineId      String
+  stageId         String
+  contactId       String
+  title           String
+  value           Decimal?          @db.Decimal(12, 2)
+  ownerId         String?
+  status          OpportunityStatus @default(OPEN)
+  position        Float             @default(0)
   expectedCloseAt DateTime?
-  closedAt       DateTime?
-  lostReason     String?
-  stageChangedAt DateTime          @default(now())
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  pipeline       Pipeline          @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
-  stage          PipelineStage     @relation(fields: [stageId], references: [id])
-  contact        Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  closedAt        DateTime?
+  lostReason      String?
+  stageChangedAt  DateTime          @default(now())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  pipeline        Pipeline          @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  stage           PipelineStage     @relation(fields: [stageId], references: [id])
+  contact         Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, stageId])
 }
@@ -436,24 +441,24 @@ enum IntegrationStatus {
 
 /// Conexão de um canal/serviço externo por organização. Segredos ficam cifrados (AES-256-GCM).
 model Integration {
-  id               String            @id @default(cuid())
-  organizationId   String
-  type             String // WHATSAPP, INSTAGRAM, EMAIL, WEBCHAT
-  name             String
-  status           IntegrationStatus @default(NOT_CONFIGURED)
+  id             String            @id @default(cuid())
+  organizationId String
+  type           String // WHATSAPP, INSTAGRAM, EMAIL, WEBCHAT
+  name           String
+  status         IntegrationStatus @default(NOT_CONFIGURED)
   /// Identificador externo usado para rotear webhooks (phone_number_id, IG account id...).
-  externalId       String?
-  config           Json              @default("{}")
-  secretsEnc       String?
-  lastError        String?
-  lastErrorAt      DateTime?
-  lastEventAt      DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  emailAccount     EmailAccount?
-  conversations    Conversation[]
-  templates        MessageTemplate[]
+  externalId     String?
+  config         Json              @default("{}")
+  secretsEnc     String?
+  lastError      String?
+  lastErrorAt    DateTime?
+  lastEventAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  emailAccount   EmailAccount?
+  conversations  Conversation[]
+  templates      MessageTemplate[]
 
   @@unique([type, externalId])
   @@index([organizationId])
@@ -612,29 +617,29 @@ enum AiMode {
 }
 
 model Chatbot {
-  id               String       @id @default(cuid())
-  organizationId   String
-  name             String       @default("Assistente")
-  enabled          Boolean      @default(false)
-  mode             AiMode       @default(COPILOT)
-  greeting         String       @default("Olá! Como posso ajudar?")
-  tone             String       @default("cordial e objetivo")
-  instructions     String       @default("")
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String       @default("Assistente")
+  enabled        Boolean      @default(false)
+  mode           AiMode       @default(COPILOT)
+  greeting       String       @default("Olá! Como posso ajudar?")
+  tone           String       @default("cordial e objetivo")
+  instructions   String       @default("")
   /// { enabled, timezone, days: { mon: ["09:00","18:00"], ... }, outOfHoursMessage }
-  businessHours    Json         @default("{}")
+  businessHours  Json         @default("{}")
   /// { keywords: string[], onNegativeSentiment, maxAiTurns, message }
-  handoffRules     Json         @default("{}")
+  handoffRules   Json         @default("{}")
   /// Campos a coletar (name, phone, email, interest, budget, desiredDate, checkIn, checkOut, guests, roomType...)
-  collectFields    String[]
-  faq              Json         @default("[]")
-  channels         Channel[]
-  publicKey        String       @unique
-  allowedOrigins   String[]
-  widgetColor      String       @default("#ea580c")
-  widgetPosition   String       @default("right")
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  collectFields  String[]
+  faq            Json         @default("[]")
+  channels       Channel[]
+  publicKey      String       @unique
+  allowedOrigins String[]
+  widgetColor    String       @default("#ea580c")
+  widgetPosition String       @default("right")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model KnowledgeBase {
@@ -817,4 +822,339 @@ model AuditLog {
 
   @@index([organizationId, createdAt])
   @@index([action])
+}
+
+// ───────────────────────────── AI Company (Equipe IA) ─────────────────────────────
+//
+// Hierarquia: pessoa (objetivo) → CEO Agent → agentes especializados → ferramentas/n8n → dados da SaaS.
+// Toda tabela é multi-tenant (organizationId + RLS). Detalhes em docs/agents e docs/ai-security.
+
+enum AiAgentStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+/// MANUAL: toda ação com efeito exige aprovação. SUPERVISED: ações internas de baixo risco automáticas.
+/// AUTONOMOUS: ações internas de baixo/médio risco automáticas. Ações sensíveis SEMPRE exigem aprovação.
+enum AiAutonomy {
+  MANUAL
+  SUPERVISED
+  AUTONOMOUS
+}
+
+enum AiTaskStatus {
+  QUEUED
+  RUNNING
+  WAITING_APPROVAL
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AiObjectiveStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_APPROVAL
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AiApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+/// Configuração da Equipe IA da empresa (uma por organização).
+model AiCompany {
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  enabled            Boolean      @default(false)
+  /// Pausa geral: nenhuma tarefa é executada (novas tarefas ficam na fila).
+  paused             Boolean      @default(false)
+  pausedReason       String?
+  dailyBudgetCents   Int          @default(500)
+  monthlyBudgetCents Int          @default(5000)
+  /// { maxStepsPerRun, maxTasksPerObjective, maxDelegationDepth, maxAttempts, maxTokensPerTask }
+  limits             Json         @default("{}")
+  /// { enabled, hour, weekdays: number[], recipients: userId[], deliverViaN8n }
+  briefing           Json         @default("{}")
+  n8nEnabled         Boolean      @default(false)
+  /// Caminho de webhook por fluxo, sobrescrevendo o padrão: { dispatcher: "/webhook/...", ... }
+  n8nWorkflows       Json         @default("{}")
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model AiAgent {
+  id              String            @id @default(cuid())
+  organizationId  String
+  key             String
+  name            String
+  title           String
+  description     String            @default("")
+  department      String
+  isCeo           Boolean           @default(false)
+  /// openai | anthropic | gemini | auto (usa o provedor padrão do ambiente)
+  provider        String            @default("auto")
+  model           String?
+  autonomy        AiAutonomy        @default(SUPERVISED)
+  status          AiAgentStatus     @default(ACTIVE)
+  /// Allowlist de ferramentas que o agente pode usar (subconjunto das permitidas ao cargo).
+  tools           String[]
+  /// { maxStepsPerRun, maxTokensPerTask, dailyBudgetCents, maxTasksPerDay }
+  limits          Json              @default("{}")
+  currentPromptId String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  promptVersions  AiPromptVersion[]
+  tasks           AiTask[]
+
+  @@unique([organizationId, key])
+}
+
+/// Prompts versionados: cada alteração cria uma versão; o agente aponta para a versão ativa (rollback = reativar).
+model AiPromptVersion {
+  id             String   @id @default(cuid())
+  organizationId String
+  agentId        String
+  version        Int
+  systemPrompt   String
+  notes          String?
+  createdById    String?
+  createdAt      DateTime @default(now())
+  agent          AiAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, version])
+}
+
+/// Objetivo/comando enviado ao CEO Agent ("Quero 5 clientes este mês").
+model AiObjective {
+  id             String            @id @default(cuid())
+  organizationId String
+  title          String
+  command        String
+  status         AiObjectiveStatus @default(OPEN)
+  playbook       String?
+  plan           Json              @default("{}")
+  result         String?
+  resultData     Json              @default("{}")
+  source         String            @default("USER") // USER, N8N, BRIEFING, SYSTEM
+  createdById    String?
+  costMicroUsd   Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  completedAt    DateTime?
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tasks          AiTask[]
+
+  @@index([organizationId, createdAt])
+}
+
+model AiTask {
+  id               String       @id @default(cuid())
+  organizationId   String
+  objectiveId      String?
+  parentTaskId     String?
+  agentId          String
+  title            String
+  instructions     String
+  /// plan (CEO planeja), work (agente executa), review (CEO revisa), briefing
+  kind             String       @default("work")
+  status           AiTaskStatus @default(QUEUED)
+  priority         Int          @default(5)
+  depth            Int          @default(0)
+  input            Json         @default("{}")
+  result           String?
+  resultData       Json         @default("{}")
+  error            String?
+  attempts         Int          @default(0)
+  maxAttempts      Int          @default(3)
+  nextRunAt        DateTime     @default(now())
+  /// Lease do worker: tarefa RUNNING com lease vencido volta para a fila (recuperação de falhas).
+  lockedUntil      DateTime?
+  /// O que a tarefa aguarda: "children", "n8n:<dispatchId>", "approval:<id>"
+  waitingFor       String?
+  /// Motivo de espera na fila: budget, paused, credential
+  blockedReason    String?
+  steps            Int          @default(0)
+  tokensIn         Int          @default(0)
+  tokensOut        Int          @default(0)
+  costMicroUsd     Int          @default(0)
+  createdByUserId  String?
+  createdByAgentId String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  agent            AiAgent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  objective        AiObjective? @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextRunAt])
+  @@index([organizationId, status])
+  @@index([objectiveId])
+  @@index([parentTaskId])
+}
+
+/// Cada execução (tentativa) de uma tarefa, com consumo e transcrição resumida dos passos.
+model AiTaskRun {
+  id             String    @id @default(cuid())
+  organizationId String
+  taskId         String
+  agentId        String
+  attempt        Int
+  /// RUNNING, SUCCEEDED, FAILED, WAITING_APPROVAL, WAITING_EXTERNAL, WAITING_CHILDREN, BLOCKED, CANCELLED
+  status         String    @default("RUNNING")
+  /// llm | playbook
+  mode           String
+  provider       String?
+  model          String?
+  steps          Int       @default(0)
+  tokensIn       Int       @default(0)
+  tokensOut      Int       @default(0)
+  costMicroUsd   Int       @default(0)
+  latencyMs      Int       @default(0)
+  error          String?
+  transcript     Json      @default("[]")
+  startedAt      DateTime  @default(now())
+  finishedAt     DateTime?
+
+  @@index([organizationId, startedAt])
+  @@index([taskId])
+  @@index([agentId, startedAt])
+}
+
+/// Chamada de ferramenta feita por um agente (auditoria + idempotência).
+model AiToolCall {
+  id             String    @id @default(cuid())
+  organizationId String
+  taskId         String
+  runId          String?
+  agentId        String
+  tool           String
+  risk           String
+  input          Json
+  output         Json?
+  /// EXECUTED, FAILED, PENDING_APPROVAL, APPROVED, REJECTED, BLOCKED, WAITING_EXTERNAL
+  status         String
+  idempotencyKey String
+  error          String?
+  suspicious     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  executedAt     DateTime?
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([taskId])
+  @@index([organizationId, createdAt])
+}
+
+/// Ação sensível aguardando decisão humana. O payload aprovado é exatamente o que será executado.
+model AiApproval {
+  id             String           @id @default(cuid())
+  organizationId String
+  taskId         String
+  toolCallId     String           @unique
+  agentId        String
+  tool           String
+  risk           String
+  categories     String[]
+  summary        String
+  reason         String
+  payload        Json
+  payloadHash    String
+  status         AiApprovalStatus @default(PENDING)
+  decidedById    String?
+  decidedAt      DateTime?
+  decisionNote   String?
+  expiresAt      DateTime
+  createdAt      DateTime         @default(now())
+
+  @@index([organizationId, status, createdAt])
+}
+
+/// Memória da empresa (escopo COMPANY) ou de um agente (escopo AGENT).
+model AiMemory {
+  id             String       @id @default(cuid())
+  organizationId String
+  agentId        String?
+  scope          String       @default("COMPANY")
+  kind           String       @default("FACT") // FACT, PREFERENCE, LESSON, CONTEXT, GOAL
+  title          String?
+  content        String
+  /// USER (orientação da empresa), AGENT (aprendizado do agente, tratado como dado), SYSTEM
+  source         String       @default("USER")
+  importance     Int          @default(1)
+  pinned         Boolean      @default(false)
+  sourceTaskId   String?
+  createdById    String?
+  expiresAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, agentId])
+}
+
+/// Linha do tempo de atividades da Equipe IA.
+model AiActivity {
+  id             String   @id @default(cuid())
+  organizationId String
+  agentId        String?
+  objectiveId    String?
+  taskId         String?
+  type           String
+  message        String
+  level          String   @default("info") // info, warning, error
+  data           Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([objectiveId])
+  @@index([taskId])
+}
+
+/// Briefing diário do CEO (um por dia, no fuso da empresa).
+model AiBriefing {
+  id             String   @id @default(cuid())
+  organizationId String
+  day            String
+  content        String
+  data           Json     @default("{}")
+  delivery       Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@unique([organizationId, day])
+}
+
+/// Envio para um fluxo do n8n: fila com idempotência, novas tentativas (backoff) e registro da resposta.
+model N8nDispatch {
+  id             String       @id @default(cuid())
+  organizationId String
+  workflow       String
+  taskId         String?
+  toolCallId     String?
+  idempotencyKey String       @unique
+  payload        Json
+  /// PENDING (aguardando envio/nova tentativa), SENT (aceito pelo n8n), COMPLETED, FAILED, DEAD (tentativas esgotadas), CANCELLED
+  status         String       @default("PENDING")
+  attempts       Int          @default(0)
+  maxAttempts    Int          @default(8)
+  nextAttemptAt  DateTime     @default(now())
+  lastError      String?
+  responseStatus Int?
+  result         Json?
+  externalId     String?
+  sentAt         DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([organizationId, createdAt])
 }

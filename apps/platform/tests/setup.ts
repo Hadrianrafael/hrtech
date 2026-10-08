@@ -20,4 +20,10 @@ process.env.META_APP_SECRET ||= 'test-meta-secret';
 process.env.APP_URL ||= 'http://localhost:3000';
 // Garante que nenhum teste chame provedores externos reais.
 delete process.env.OPENAI_API_KEY;
+delete process.env.ANTHROPIC_API_KEY;
+delete process.env.GEMINI_API_KEY;
+delete process.env.GOOGLE_API_KEY;
+delete process.env.AI_PROVIDER;
+delete process.env.N8N_BASE_URL;
+delete process.env.N8N_WEBHOOK_SECRET;
 delete process.env.SMTP_HOST;

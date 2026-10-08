@@ -11,7 +11,9 @@ validada contra o serviço real**, pois as credenciais ainda não foram fornecid
 | Instagram Messaging API | ✅ Implementada | App Meta aprovado para mensagens, conta profissional, token |
 | E-mail (SMTP + IMAP) | ✅ Implementada | Servidor/conta de e-mail e senha de app |
 | E-mail transacional (convites/senhas) | ✅ Implementada | Servidor SMTP |
-| IA (OpenAI) | ✅ Implementada | `OPENAI_API_KEY` |
+| IA (OpenAI / Anthropic / Gemini) | ✅ Implementada | ao menos uma chave: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` ou `GEMINI_API_KEY` — **PENDENTE DE CREDENCIAL** |
+| Equipe IA (CEO Agent + agentes) | ✅ Funcionando (modo determinístico sem IA) | chave de IA para planejamento livre; agendar `/api/cron/ai` |
+| n8n (ações externas da Equipe IA) | ✅ Implementada + fluxos importáveis | instância n8n, `N8N_BASE_URL`, `N8N_WEBHOOK_SECRET` — **PENDENTE DE CREDENCIAL** |
 | Billing manual | ✅ Funcionando | — |
 | Stripe | 🟡 Checkout + webhook implementados, não testados | Conta Stripe, chaves e webhook |
 | Asaas | 🟡 Webhook implementado; criação de assinatura pendente | Conta Asaas e chave de API |
@@ -95,7 +97,11 @@ Em **Chatbot e IA → Instalação no site**:
 - Restrinja os domínios autorizados na configuração do chatbot. Há rate limit por IP e honeypot anti-spam.
 - Demonstração: `/embed-demo?key=pk_...`.
 
-## IA (OpenAI)
+## IA (OpenAI, Anthropic, Gemini)
+
+- Provedores: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` (Claude, padrão `claude-opus-5-5`), `GEMINI_API_KEY`
+  (ou `GOOGLE_API_KEY`). `AI_PROVIDER` escolhe o padrão; cada agente da Equipe IA pode usar outro provedor/modelo.
+  Embeddings (RAG) usam a OpenAI.
 
 - `OPENAI_API_KEY` (e opcionalmente `OPENAI_MODEL`, `OPENAI_EMBEDDING_MODEL`, `OPENAI_BASE_URL`).
 - Sem a chave, a plataforma funciona normalmente e exibe "IA pendente de credencial" nas telas de IA.
@@ -114,7 +120,15 @@ plano e a solicitação fica auditada.
   `/api/webhooks/billing/asaas` (header `asaas-access-token`). Falta implementar a criação de cliente/assinatura
   na API do Asaas (`createCheckout`) quando a conta estiver disponível.
 
+## Equipe IA e n8n
+
+Ver [`docs/agents`](agents/README.md), [`docs/n8n`](n8n/README.md) e [`docs/ai-security`](ai-security/README.md).
+Sem n8n configurado, as ações externas ficam na fila como **PENDENTE DE CREDENCIAL** e são enviadas quando o n8n
+for configurado.
+
 ## Rotina periódica
 
 Configure um agendador chamando `POST https://SEU_DOMINIO/api/cron/tick` com
 `Authorization: Bearer $CRON_SECRET` a cada 5–15 minutos (Vercel Cron já configurado em `vercel.json`).
+Para a Equipe IA, agende também `POST https://SEU_DOMINIO/api/cron/ai` a cada 1–5 minutos (ex.: fluxo
+`n8n/workflows/agendador-worker.json`).

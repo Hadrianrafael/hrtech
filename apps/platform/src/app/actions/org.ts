@@ -51,6 +51,10 @@ export async function saveRoleAction(id: string | null, form: FormData) {
     if (!name) throw new AppError('Nome do papel é obrigatório.');
     const perms = ([] as unknown[]).concat(raw.permissions ?? []).map(String).filter(isPermission);
     if (!perms.length) throw new AppError('Selecione ao menos uma permissão.');
+    // Os agentes de IA trabalham com os dados de toda a empresa: quem comanda ou vê a Equipe IA precisa poder vê-los.
+    if (perms.some((p) => p.startsWith('ai_team.')) && !perms.includes('records.view_all')) {
+      throw new AppError('As permissões da Equipe IA exigem também "Ver todos os registros" (os agentes trabalham com os dados de toda a empresa).');
+    }
     assertGrantable(ctx, perms); // ninguém concede permissões que não possui
     if (id) {
       const role = await ctx.db.role.findFirst({ where: { id, organizationId: ctx.orgId } });

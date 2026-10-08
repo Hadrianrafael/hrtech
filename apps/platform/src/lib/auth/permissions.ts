@@ -28,6 +28,10 @@ export const PERMISSIONS = {
   'billing.manage': 'Alterar plano e assinatura',
   'audit.view': 'Ver logs de auditoria',
   'ai.use': 'Usar recursos de IA (sugestões, resumos)',
+  'ai_team.view': 'Ver a Equipe IA (agentes, tarefas, resultados e custos)',
+  'ai_team.command': 'Enviar objetivos e comandos ao CEO Agent',
+  'ai_team.approve': 'Aprovar ou rejeitar ações sensíveis dos agentes de IA',
+  'ai_team.manage': 'Configurar agentes, prompts, ferramentas, limites, n8n e pausar a Equipe IA',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -41,6 +45,7 @@ const AGENT: Permission[] = [
 const MANAGER: Permission[] = [
   ...AGENT, 'records.view_all', 'inbox.assign', 'analytics.view', 'contacts.export',
   'knowledge.manage', 'automations.manage', 'pipeline.manage', 'billing.view',
+  'ai_team.view', 'ai_team.command',
 ];
 
 export const SYSTEM_ROLES: { key: string; name: string; description: string; permissions: Permission[] }[] = [
@@ -50,5 +55,5 @@ export const SYSTEM_ROLES: { key: string; name: string; description: string; per
 ];
 
 export function isPermission(value: string): value is Permission {
-  return value in PERMISSIONS;
+  return Object.prototype.hasOwnProperty.call(PERMISSIONS, value);
 }
