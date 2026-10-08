@@ -27,7 +27,19 @@ if (!t || Math.abs(Date.now() / 1000 - t) > 300) throw new Error('Assinatura aus
 const expected = crypto.createHmac('sha256', secret).update(`${t}.${raw}`).digest('hex');
 if (expected.length !== v1.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) throw new Error('Assinatura inválida.');
 const body = JSON.parse(raw);
-return [{ json: { ...body, _raw: raw, _signature: signature } }];"""
+// Idempotência: a HR Tech reenvia o mesmo envio (mesma idempotencyKey) quando não sabe se ele chegou (timeout, 5xx,
+// queda). Chaves já vistas nos últimos 7 dias são respondidas como duplicadas e a ação NÃO é repetida.
+// (Dados estáticos do fluxo: valem para fluxos ativos em uma instância; com várias instâncias/fila, use Redis/Postgres.)
+const key = String(body.idempotencyKey || headers['x-hrtech-idempotency-key'] || '');
+const store = $getWorkflowStaticData('global');
+const now = Date.now();
+store.seen = store.seen || {};
+for (const [k, at] of Object.entries(store.seen)) if (now - at > 7 * 86400000) delete store.seen[k];
+const keys = Object.keys(store.seen);
+if (keys.length > 5000) keys.sort((a, b) => store.seen[a] - store.seen[b]).slice(0, keys.length - 5000).forEach((k) => delete store.seen[k]);
+const duplicate = !!(key && store.seen[key]);
+if (key && !duplicate) store.seen[key] = now;
+return [{ json: { ...body, _raw: raw, _signature: signature, _duplicate: duplicate } }];"""
 
 def sign_code(status_expr, result_expr, error_expr='undefined'):
     return r"""// Monta o retorno para a HR Tech, assinado com o mesmo segredo (HMAC-SHA256 sobre "<t>.<corpo>").
@@ -56,6 +68,17 @@ def code(name, js, pos, seed):
 def respond(name, pos, seed, code_=202, body='={{ JSON.stringify({ received: true }) }}'):
     return {"parameters": {"respondWith": "json", "responseBody": body, "options": {"responseCode": code_}},
             "id": nid(seed + name), "name": name, "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": pos}
+
+def entry(hook_name, path, seed):
+    """Entrada comum: webhook → verificação HMAC + idempotência → (duplicado? responde 200 e para) → responde 202."""
+    dup_if = {"parameters": {"conditions": {"options": {"caseSensitive": True, "typeValidation": "loose"}, "combinator": "and",
+              "conditions": [{"leftValue": "={{ $json._duplicate }}", "rightValue": "", "operator": {"type": "boolean", "operation": "true", "singleValue": True}}]}, "options": {}},
+              "id": nid(seed + 'dup'), "name": "Já recebido?", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [530, 300]}
+    nodes = [webhook(hook_name, path, [200, 300], seed), code("Verificar assinatura", VERIFY, [370, 300], seed), dup_if,
+             respond("Responder duplicado", [700, 480], seed, 200, '={{ JSON.stringify({ received: true, duplicate: true }) }}'), respond("Responder 202", [700, 300], seed)]
+    conns = merge_conn(link(hook_name, "Verificar assinatura", "Já recebido?"),
+                       {"Já recebido?": {"main": [[{"node": "Responder duplicado", "type": "main", "index": 0}], [{"node": "Responder 202", "type": "main", "index": 0}]]}})
+    return nodes, conns
 
 def callback(name, pos, seed):
     return {"parameters": {"method": "POST", "url": "={{ $json.callbackUrl }}", "sendHeaders": True,
@@ -113,8 +136,9 @@ for i, w in enumerate(["prospeccao", "comercial", "briefing", "marketing", "dese
     route_conn["Rotear por fluxo"]["main"].append([{"node": n["name"], "type": "main", "index": 0}])
 unknown = code("Fluxo desconhecido", "// O campo workflow não corresponde a nenhum fluxo conhecido: registre e investigue.\nreturn [{ json: { ignored: true, workflow: $json.workflow } }];", [1140, 760], s)
 route_conn["Rotear por fluxo"]["main"].append([{"node": unknown["name"], "type": "main", "index": 0}])
-nodes = [webhook("Webhook HR Tech", "hrtech-dispatcher", [200, 300], s), code("Verificar assinatura", VERIFY, [420, 300], s), respond("Responder 202", [640, 300], s), route] + forward_nodes + [unknown]
-conns = merge_conn(link("Webhook HR Tech", "Verificar assinatura", "Responder 202", "Rotear por fluxo"), route_conn)
+head, head_conn = entry("Webhook HR Tech", "hrtech-dispatcher", s)
+nodes = head + [route] + forward_nodes + [unknown]
+conns = merge_conn(head_conn, link("Responder 202", "Rotear por fluxo"), route_conn)
 write('dispatcher.json', workflow("HR Tech — Dispatcher (entrada única)", nodes, conns, ["hrtech", "dispatcher"]))
 
 # ── Prospecção ──
@@ -145,9 +169,9 @@ const prospects = places.map((p) => ({
 return [{ json: { prospects, source: 'google_places' } }];""", [1300, 220], s)
 ok = code("Assinar retorno", sign_code('completed', '$json'), [1520, 220], s)
 fail = code("Assinar falha", sign_code('failed', 'null', "String(($json.error && $json.error.message) || 'Falha na busca de prospects (verifique GOOGLE_PLACES_API_KEY).')"), [1300, 420], s)
-nodes = [webhook("Webhook prospecção", "hrtech-prospeccao", [200, 300], s), code("Verificar assinatura", VERIFY, [420, 300], s), respond("Responder 202", [640, 300], s), build, places, normalize, ok, fail,
-         callback("Enviar retorno", [1740, 220], s), callback("Enviar falha", [1520, 420], s)]
-conns = merge_conn(link("Webhook prospecção", "Verificar assinatura", "Responder 202", "Montar busca", "Google Places — Text Search"),
+head, head_conn = entry("Webhook prospecção", "hrtech-prospeccao", s)
+nodes = head + [build, places, normalize, ok, fail, callback("Enviar retorno", [1740, 220], s), callback("Enviar falha", [1520, 420], s)]
+conns = merge_conn(head_conn, link("Responder 202", "Montar busca", "Google Places — Text Search"),
                    {"Google Places — Text Search": {"main": [[{"node": "Normalizar prospects", "type": "main", "index": 0}], [{"node": "Assinar falha", "type": "main", "index": 0}]]}},
                    link("Normalizar prospects", "Assinar retorno", "Enviar retorno"), link("Assinar falha", "Enviar falha"))
 write('prospeccao.json', workflow("HR Tech — Prospecção (Google Places)", nodes, conns, ["hrtech", "prospeccao"]))
@@ -173,9 +197,9 @@ mail = {"parameters": {"fromEmail": "={{ $env.HRTECH_EMAIL_FROM }}", "toEmail": 
 summary = code("Resumir envios", r"""const items = $input.all();
 const failed = items.filter((i) => i.json.error).length;
 return [{ json: { total: items.length, enviados: items.length - failed, falhas: failed } }];""", [1520, 300], s)
-nodes = [webhook("Webhook comercial", "hrtech-comercial", [200, 300], s), code("Verificar assinatura", VERIFY, [420, 300], s), respond("Responder 202", [640, 300], s), split, has_phone, wa, mail,
-         summary, code("Assinar retorno", sign_code('completed', '$json'), [1740, 300], s), callback("Enviar retorno", [1960, 300], s)]
-conns = merge_conn(link("Webhook comercial", "Verificar assinatura", "Responder 202", "Preparar envios", "Tem WhatsApp?"),
+head, head_conn = entry("Webhook comercial", "hrtech-comercial", s)
+nodes = head + [split, has_phone, wa, mail, summary, code("Assinar retorno", sign_code('completed', '$json'), [1740, 300], s), callback("Enviar retorno", [1960, 300], s)]
+conns = merge_conn(head_conn, link("Responder 202", "Preparar envios", "Tem WhatsApp?"),
                    {"Tem WhatsApp?": {"main": [[{"node": "WhatsApp Cloud API (template)", "type": "main", "index": 0}], [{"node": "Enviar e-mail (SMTP)", "type": "main", "index": 0}]]}},
                    link("WhatsApp Cloud API (template)", "Resumir envios"), link("Enviar e-mail (SMTP)", "Resumir envios"), link("Resumir envios", "Assinar retorno", "Enviar retorno"))
 write('comercial.json', workflow("HR Tech — Comercial (sequências de contato)", nodes, conns, ["hrtech", "comercial"]))
@@ -188,9 +212,9 @@ mail = {"parameters": {"fromEmail": "={{ $env.HRTECH_EMAIL_FROM }}", "toEmail": 
         "id": nid(s + 'mail'), "name": "Enviar briefing por e-mail", "type": "n8n-nodes-base.emailSend", "typeVersion": 2.1, "position": [1080, 300], "onError": "continueRegularOutput",
         "credentials": {"smtp": {"id": "PENDENTE", "name": "SMTP HR Tech (PENDENTE DE CREDENCIAL)"}}}
 summary = code("Resumir", "return [{ json: { enviados: $input.all().filter((i) => !i.json.error).length } }];", [1300, 300], s)
-nodes = [webhook("Webhook briefing", "hrtech-briefing", [200, 300], s), code("Verificar assinatura", VERIFY, [420, 300], s), respond("Responder 202", [640, 300], s), rec, mail, summary,
-         code("Assinar retorno", sign_code('completed', '$json'), [1520, 300], s), callback("Enviar retorno", [1740, 300], s)]
-conns = merge_conn(link("Webhook briefing", "Verificar assinatura", "Responder 202", "Destinatários", "Enviar briefing por e-mail", "Resumir", "Assinar retorno", "Enviar retorno"))
+head, head_conn = entry("Webhook briefing", "hrtech-briefing", s)
+nodes = head + [rec, mail, summary, code("Assinar retorno", sign_code('completed', '$json'), [1520, 300], s), callback("Enviar retorno", [1740, 300], s)]
+conns = merge_conn(head_conn, link("Responder 202", "Destinatários", "Enviar briefing por e-mail", "Resumir", "Assinar retorno", "Enviar retorno"))
 write('briefing.json', workflow("HR Tech — Envio do briefing diário", nodes, conns, ["hrtech", "briefing"]))
 
 # ── Agendador do worker ──

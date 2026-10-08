@@ -4,7 +4,7 @@
  * o envio permanece na fila e é reenviado depois.
  */
 import { z } from 'zod';
-import { NotFoundError } from '@/lib/errors';
+import { AppError, NotFoundError } from '@/lib/errors';
 import { formatMoney } from '@/lib/utils';
 import { enqueueDispatch, N8N_WORKFLOWS, PENDING_CREDENTIAL, sendDispatch, type N8nWorkflow } from '../n8n';
 import { scanSensitive } from '../security';
@@ -13,6 +13,9 @@ import { defineTool, type ToolResult, type ToolRunContext } from './types';
 const id = z.string().trim().min(5).max(60);
 
 async function dispatch(tc: ToolRunContext, workflow: N8nWorkflow, payload: Record<string, unknown>, label: string): Promise<ToolResult> {
+  // Defesa em profundidade (invokeTool já bloqueia): a empresa precisa ter habilitado a integração.
+  const company = await tc.ctx.db.aiCompany.findFirst({ select: { n8nEnabled: true } });
+  if (!company?.n8nEnabled) throw new AppError('A integração com o n8n está desativada nesta empresa.');
   const d = await enqueueDispatch(tc.orgId, { workflow, payload, idempotencyKey: tc.idempotencyKey, taskId: tc.task.id, toolCallId: tc.toolCallId });
   const outcome = d.status === 'PENDING' ? await sendDispatch(d.id) : 'skipped';
   const fresh = await tc.ctx.db.n8nDispatch.findFirst({ where: { id: d.id } });
@@ -92,6 +95,8 @@ export const n8nDevIssue = defineTool({
   argsHint: '{"title": "...", "body": "contexto, passos, critério de aceite", "labels": ["bug"]}',
   risk: 'high',
   schema: z.object({ title: z.string().trim().min(5).max(200), body: z.string().trim().min(10).max(8000), labels: z.array(z.string().trim().max(40)).max(8).default([]) }),
+  // Publica fora da empresa: dados de clientes, valores ou credenciais no texto exigem aprovação.
+  assess: (_tc, a) => ({ categories: scanSensitive(`${a.title}\n${a.body}\n${a.labels.join(' ')}`) }),
   describe: (a) => `Abrir issue: ${a.title}`,
   run: (tc, a) => dispatch(tc, 'desenvolvimento', a, `Issue "${a.title}"`),
 });

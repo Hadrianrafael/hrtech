@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { audit } from '@/lib/audit';
 import { assertCan, type ServiceCtx } from '@/lib/auth/ctx';
-import { tenantDb, withSystem } from '@/lib/db';
+import { systemDb, tenantDb, withSystem } from '@/lib/db';
 import { AppError, NotFoundError } from '@/lib/errors';
 import { isProviderName } from '../ai/provider';
 import { logActivity } from './activity';
@@ -158,7 +158,12 @@ export async function setCompanyPaused(ctx: ServiceCtx, paused: boolean, reason?
   await audit({ organizationId: ctx.orgId, actorUserId: ctx.userId, action: paused ? 'ai_team.paused' : 'ai_team.resumed', entityType: 'AiCompany', entityId: company.id, severity: 'warning' });
 }
 
-const workflowPath = z.string().trim().regex(/^\/[\w\-/.]{1,200}$/, 'Caminho de webhook inválido (ex.: /webhook/hrtech-prospeccao).');
+// Somente caminhos de webhook do próprio n8n (sem "..", sem host): /webhook/<nome>[/<sub>].
+const workflowPath = z
+  .string()
+  .trim()
+  .max(200)
+  .regex(/^\/webhook(-test)?(\/[A-Za-z0-9_-]+){1,4}$/, 'Caminho de webhook inválido (ex.: /webhook/hrtech-prospeccao).');
 
 export const companySettingsSchema = z.object({
   enabled: z.boolean(),
@@ -187,6 +192,18 @@ export async function updateCompanySettings(ctx: ServiceCtx, input: z.input<type
   if (d.briefing.recipients.length) {
     const members = await ctx.db.membership.count({ where: { userId: { in: d.briefing.recipients }, status: 'ACTIVE' } });
     if (members !== new Set(d.briefing.recipients).size) throw new AppError('Os destinatários do briefing devem ser membros ativos da empresa.');
+  }
+  if (d.n8nEnabled && !company.n8nEnabled) {
+    // Os fluxos do n8n usam credenciais de canais (WhatsApp, e-mail, Google) da instância configurada pela HR Tech:
+    // a integração é liberada para a própria HR Tech ou por um administrador da plataforma, após configurar os
+    // fluxos e credenciais da empresa.
+    const [org, actor] = await Promise.all([
+      ctx.db.organization.findFirstOrThrow({ select: { isPlatformOwner: true } }),
+      ctx.userId ? systemDb.user.findUnique({ where: { id: ctx.userId }, select: { isPlatformAdmin: true } }) : null,
+    ]);
+    if (!org.isPlatformOwner && !actor?.isPlatformAdmin) {
+      throw new AppError('A integração com o n8n é habilitada pela equipe HR Tech, depois de configurar os fluxos e as credenciais desta empresa.');
+    }
   }
   const workflows = Object.fromEntries(Object.entries(d.n8nWorkflows).filter(([, v]) => v));
   const updated = await ctx.db.aiCompany.update({

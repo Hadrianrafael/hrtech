@@ -42,6 +42,7 @@ export const SENSITIVE_CATEGORIES = {
   gasto: 'Gasto (custo externo)',
   exclusao: 'Exclusão de dados',
   credencial: 'Credencial/segredo',
+  link: 'Link externo',
   irreversivel: 'Ação irreversível',
   merge_main: 'Merge na main',
   deploy_producao: 'Deploy em produção',

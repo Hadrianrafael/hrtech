@@ -28,7 +28,7 @@ import { syncObjective } from './objectives';
 import { buildDelegations, ceoReadSteps, composeReport, detectPlaybook, type DetectedPlaybook, type PlaybookKey } from './playbooks';
 import { backoffMs, resolveLimits } from './policy';
 import { SECURITY_PREAMBLE, extractJsonObject, sanitizeText, stableStringify, wrapUntrusted } from './security';
-import { delegateTask, readInput, releaseDependents, type HistoryEntry, type PlaybookStep, type TaskInput } from './tasks';
+import { readInput, releaseDependents, type HistoryEntry, type PlaybookStep, type TaskInput } from './tasks';
 import { allowedToolsFor, isToolAllowed } from './tools';
 
 const MAX_HISTORY = 30;
@@ -42,6 +42,10 @@ export interface RunContext extends InvokeContext {
   usage: { tokensIn: number; tokensOut: number; costMicroUsd: number; steps: number };
   transcript: unknown[];
   provider: AiProvider | null;
+  /** Tokens já consumidos por execuções anteriores desta tarefa (somados dos AiTaskRun, que são gravados a cada passo). */
+  priorTokens: number;
+  /** Momento limite desta execução (as funções serverless têm duração máxima): depois dele a tarefa volta para a fila. */
+  deadlineAt: number;
 }
 
 export type Outcome =
@@ -49,7 +53,15 @@ export type Outcome =
   | { type: 'waiting_approval'; approvalId?: string }
   | { type: 'waiting_external'; dispatchId?: string }
   | { type: 'blocked'; reason: 'budget' | 'quota' | 'paused'; message: string; retryAt: Date }
+  /** Tempo da execução esgotado: o progresso já está salvo e a tarefa continua na próxima rodada do worker. */
+  | { type: 'yield' }
+  /** A tarefa foi cancelada por uma pessoa durante a execução. */
+  | { type: 'cancelled' }
   | { type: 'failed'; error: string; retryable: boolean };
+
+/** Duração máxima de uma execução de tarefa (cada chamada ao modelo tem tempo limite próprio de ~50 s). */
+export const RUN_WALL_MS = 35_000;
+const LEASE_MS = 10 * 60_000;
 
 // ─────────────── Orçamento ───────────────
 
@@ -94,6 +106,36 @@ function entryFromResult(r: InvokeResult, args: Record<string, unknown>, step?: 
   return { kind: 'tool', tool: r.tool, args, toolCallId: r.toolCallId, status: r.status, summary: r.summary, output: r.data, ...(step !== undefined ? { step } : {}) };
 }
 
+/**
+ * Salva o progresso (histórico, consumo) e renova o lease a cada passo: se a função for interrompida no meio, a
+ * próxima execução vê o que já foi feito (não repete ações) e o custo já gasto conta nos orçamentos.
+ */
+async function checkpoint(rc: RunContext) {
+  const now = Date.now();
+  await rc.ctx.db.aiTask.updateMany({
+    where: { id: rc.task.id, status: 'RUNNING' },
+    data: { input: { ...rc.input, history: rc.history } as unknown as Prisma.InputJsonValue, lockedUntil: new Date(now + LEASE_MS) },
+  });
+  await rc.ctx.db.aiTaskRun.update({
+    where: { id: rc.run.id },
+    data: { steps: rc.usage.steps, tokensIn: rc.usage.tokensIn, tokensOut: rc.usage.tokensOut, costMicroUsd: rc.usage.costMicroUsd, transcript: rc.transcript as Prisma.InputJsonValue },
+  });
+}
+
+/** A tarefa continua em execução? (uma pessoa pode tê-la cancelado no meio) */
+async function stillRunning(rc: RunContext) {
+  const t = await rc.ctx.db.aiTask.findFirst({ where: { id: rc.task.id }, select: { status: true } });
+  return t?.status === 'RUNNING';
+}
+
+/** Executa uma ferramenta e registra o passo no histórico (com checkpoint). */
+async function step(rc: RunContext, tool: string, args: Record<string, unknown>, stepIndex?: number) {
+  const r = await invokeTool(rc, tool, args);
+  pushHistory(rc, entryFromResult(r, args, stepIndex));
+  await checkpoint(rc);
+  return r;
+}
+
 /** Reflete no histórico as decisões humanas e os retornos externos que chegaram desde a última execução. */
 async function settlePending(rc: RunContext) {
   const pending = rc.history.filter((h) => h.toolCallId && (h.status === 'approval' || h.status === 'waiting' || h.status === 'interrupted'));
@@ -123,7 +165,7 @@ async function settlePending(rc: RunContext) {
 async function systemPrompt(rc: RunContext, extra = '') {
   const prompt = rc.agent.currentPromptId ? await rc.ctx.db.aiPromptVersion.findFirst({ where: { id: rc.agent.currentPromptId } }) : null;
   const base = prompt?.systemPrompt ?? AGENT_DEFINITIONS.find((a) => a.key === rc.agent.key)?.prompt ?? `Você é ${rc.agent.name}.`;
-  const tools = allowedToolsFor(rc.agent);
+  const tools = allowedToolsFor(rc.agent, rc.company);
   const now = new Date().toLocaleString('pt-BR', { timeZone: rc.org.timezone || 'America/Sao_Paulo' });
   return [
     base,
@@ -145,8 +187,10 @@ function historyForPrompt(history: HistoryEntry[]) {
   return history
     .map((h, i) => {
       if (h.kind !== 'tool') return `${i + 1}. ${h.kind === 'error' ? 'Erro' : 'Nota'}: ${sanitizeText(h.text ?? h.summary ?? '', 400)}`;
-      const head = `${i + 1}. ${h.tool} ${stableStringify(h.args ?? {}).slice(0, 300)} → ${h.status}: ${sanitizeText(h.summary ?? '', 300)}`;
-      return h.output !== undefined && h.status === 'executed' ? `${head}\n${wrapUntrusted(`ferramenta:${h.tool}`, h.output, 3500)}` : head;
+      // Somente campos estruturais ficam fora do bloco de dados; argumentos, resumo e resultado podem conter texto de
+      // terceiros (nomes de contatos, mensagens, erros de canais) e vão delimitados como não confiáveis.
+      const detail = { argumentos: h.args ?? {}, resumo: h.summary ?? '', ...(h.output !== undefined && h.status === 'executed' ? { resultado: h.output } : {}) };
+      return `${i + 1}. ${sanitizeText(h.tool ?? '', 80)} → ${sanitizeText(h.status ?? '', 20)}\n${wrapUntrusted(`ferramenta:${h.tool}`, detail, 3500)}`;
     })
     .join('\n');
 }
@@ -172,7 +216,7 @@ const decisionSchema = z.union([
 /** Chamada ao modelo do agente com controle de orçamento, tokens e custo. */
 async function agentChat(rc: RunContext, messages: ChatMessage[], maxTokens = 4000) {
   if (!rc.provider) throw new NotConfiguredError('Provedor de IA do agente não configurado (PENDENTE DE CREDENCIAL).');
-  if (rc.task.tokensIn + rc.task.tokensOut + rc.usage.tokensIn + rc.usage.tokensOut >= rc.limits.maxTokensPerTask) {
+  if (rc.priorTokens + rc.usage.tokensIn + rc.usage.tokensOut >= rc.limits.maxTokensPerTask) {
     throw new LimitExceededError(`Limite de ${rc.limits.maxTokensPerTask} tokens por tarefa atingido.`);
   }
   const budget = await checkBudget(rc.orgId, rc.company, rc.agent, rc.limits, rc.usage.costMicroUsd);
@@ -181,6 +225,7 @@ async function agentChat(rc: RunContext, messages: ChatMessage[], maxTokens = 40
   rc.usage.tokensIn += res.tokensIn;
   rc.usage.tokensOut += res.tokensOut;
   rc.usage.costMicroUsd += estimateCostMicroUsd(res.model, res.tokensIn, res.tokensOut);
+  await checkpoint(rc);
   return res;
 }
 
@@ -191,32 +236,34 @@ async function runLlmLoop(rc: RunContext, extraSystem = ''): Promise<Outcome> {
   const system = await systemPrompt(rc, extraSystem);
   const seen = new Map<string, number>();
   let invalid = 0;
-  for (let step = 0; step < rc.limits.maxStepsPerRun; step++) {
+  for (let i = 0; i < rc.limits.maxStepsPerRun; i++) {
+    if (Date.now() > rc.deadlineAt) return { type: 'yield' };
+    if (!(await stillRunning(rc))) return { type: 'cancelled' };
     rc.usage.steps++;
     const res = await agentChat(rc, [{ role: 'system', content: system }, { role: 'user', content: await userPrompt(rc) }]);
     const parsed = decisionSchema.safeParse(extractJsonObject(res.text));
     if (!parsed.success) {
       invalid++;
-      rc.transcript.push({ step, invalid: true, text: res.text.slice(0, 500) });
+      rc.transcript.push({ step: i, invalid: true, text: res.text.slice(0, 500) });
       pushHistory(rc, { kind: 'error', text: 'Resposta fora do formato JSON esperado; responda apenas com o JSON pedido.' });
       if (invalid >= 2) return { type: 'failed', error: 'O modelo não respondeu no formato esperado.', retryable: true };
       continue;
     }
     const d = parsed.data;
     if ('final' in d) {
-      rc.transcript.push({ step, thought: d.thought?.slice(0, 500), final: true });
+      rc.transcript.push({ step: i, thought: d.thought?.slice(0, 500), final: true });
       return { type: 'completed', summary: d.final.summary, data: { highlights: d.final.highlights ?? [], nextSteps: d.final.nextSteps ?? [] } };
     }
     const signature = `${d.action.tool}:${stableStringify(d.action.args)}`;
     const count = (seen.get(signature) ?? 0) + 1;
     seen.set(signature, count);
-    rc.transcript.push({ step, thought: d.thought?.slice(0, 500), tool: d.action.tool });
+    rc.transcript.push({ step: i, thought: d.thought?.slice(0, 500), tool: d.action.tool });
     if (count > 2) {
       await logActivity({ orgId: rc.orgId, agentId: rc.agent.id, objectiveId: rc.task.objectiveId, taskId: rc.task.id, type: 'limits.loop_detected', level: 'warning', message: `${rc.agent.name} repetiu a mesma ação (${d.action.tool}); execução interrompida.` });
       return { type: 'failed', error: `Loop detectado: a ação ${d.action.tool} foi repetida com os mesmos argumentos.`, retryable: false };
     }
-    const r = await invokeTool(rc, d.action.tool, d.action.args);
-    pushHistory(rc, entryFromResult(r, d.action.args));
+    if (!(await stillRunning(rc))) return { type: 'cancelled' };
+    const r = await step(rc, d.action.tool, d.action.args);
     if (r.status === 'approval') return { type: 'waiting_approval', approvalId: r.approvalId };
     if (r.status === 'waiting') return { type: 'waiting_external', dispatchId: r.dispatchId };
   }
@@ -247,16 +294,18 @@ async function runSteps(rc: RunContext, steps: PlaybookStep[]): Promise<Outcome>
     if (done && ['executed', 'failed', 'blocked', 'invalid', 'rejected'].includes(done.status ?? '')) continue;
     if (done?.status === 'approval') return { type: 'waiting_approval' };
     if (done?.status === 'waiting') return { type: 'waiting_external', dispatchId: dispatchIdOf(done) };
-    const step = steps[i]!;
-    const args = resolveRefs(step.args, rc.history);
+    const s = steps[i]!;
+    const args = resolveRefs(s.args, rc.history);
     if (!args) {
-      pushHistory(rc, { kind: 'tool', tool: step.tool, status: 'failed', summary: `${step.tool} não executado: depende de um passo anterior que não foi concluído.`, step: i });
+      if (done) rc.history.splice(rc.history.indexOf(done), 1);
+      pushHistory(rc, { kind: 'tool', tool: s.tool, status: 'failed', summary: `${s.tool} não executado: depende de um passo anterior que não foi concluído.`, step: i });
       continue;
     }
+    if (Date.now() > rc.deadlineAt) return { type: 'yield' };
+    if (!(await stillRunning(rc))) return { type: 'cancelled' };
     rc.usage.steps++;
-    const r = await invokeTool(rc, step.tool, args);
     if (done) rc.history.splice(rc.history.indexOf(done), 1);
-    pushHistory(rc, entryFromResult(r, args, i));
+    const r = await step(rc, s.tool, args, i);
     if (r.status === 'approval') return { type: 'waiting_approval', approvalId: r.approvalId };
     if (r.status === 'waiting') return { type: 'waiting_external', dispatchId: r.dispatchId };
   }
@@ -271,13 +320,12 @@ async function fallbackWithoutAi(rc: RunContext): Promise<Outcome> {
   if (!isToolAllowed(rc.agent, 'tasks.create')) {
     return { type: 'failed', error: 'IA não configurada para este agente (PENDENTE DE CREDENCIAL: defina a chave do provedor).', retryable: false };
   }
-  const r = await invokeTool(rc, 'tasks.create', {
+  const r = await step(rc, 'tasks.create', {
     title: rc.task.title.slice(0, 200),
     description: `${rc.task.instructions}\n\n(Encaminhada à equipe porque o provedor de IA do agente está PENDENTE DE CREDENCIAL.)`,
     type: 'TASK',
     priority: 'MEDIUM',
   });
-  pushHistory(rc, entryFromResult(r, {}));
   if (r.status === 'approval') return { type: 'waiting_approval', approvalId: r.approvalId };
   return r.status === 'executed'
     ? { type: 'completed', summary: `IA PENDENTE DE CREDENCIAL: a tarefa foi encaminhada para a equipe humana (${r.summary})` }
@@ -298,36 +346,38 @@ async function runPlan(rc: RunContext): Promise<Outcome> {
     }
     return outcome;
   }
-  // Modo determinístico: CEO lê os dados, monta o plano e delega roteiros aos especialistas.
+  // Modo determinístico: CEO lê os dados, monta o plano e delega roteiros aos especialistas — tudo pelo mesmo
+  // pipeline de ferramentas (allowlist, autonomia/aprovação, idempotência e registro de auditoria).
   const data: Record<string, Record<string, unknown>> = {};
-  for (const step of ceoReadSteps(detected.key)) {
-    const r = await invokeTool(rc, step.tool, step.args);
-    const key = step.tool === 'tasks.list' ? `tasks.list#${String(step.args.scope)}` : step.tool;
-    pushHistory(rc, entryFromResult(r, step.args));
+  for (const s of ceoReadSteps(detected.key)) {
+    const r = await step(rc, s.tool, s.args);
+    const key = s.tool === 'tasks.list' ? `tasks.list#${String(s.args.scope)}` : s.tool;
     if (r.status === 'executed') data[key] = r.data as Record<string, unknown>;
   }
   const { delegations, planNotes } = buildDelegations(detected, data);
   const created: typeof delegations = [];
+  let awaitingApproval: { approvalId?: string } | null = null;
   if (delegations.length && !isToolAllowed(rc.agent, 'agents.delegate')) {
     planNotes.push('Delegação desativada para o CEO (ferramenta agents.delegate fora da allowlist): plano apenas informativo.');
   } else {
     for (const d of delegations) {
-      try {
-        await delegateTask(rc, { agentKey: d.agentKey, title: d.title, instructions: d.instructions, priority: d.priority, afterPrevious: d.afterPrevious, input: { mode: 'playbook', playbook: detected.key, steps: d.steps } });
-        created.push(d);
-      } catch (err) {
-        planNotes.push(`Não foi possível delegar "${d.title}": ${err instanceof Error ? err.message : 'erro'}`);
-      }
+      if (!(await stillRunning(rc))) return { type: 'cancelled' };
+      const r = await step(rc, 'agents.delegate', { agentKey: d.agentKey, title: d.title, instructions: d.instructions, priority: d.priority, afterPrevious: d.afterPrevious ?? false, playbook: detected.key, steps: d.steps });
+      if (r.status === 'executed') created.push(d);
+      else if (r.status === 'approval') awaitingApproval ??= { approvalId: r.approvalId };
+      else planNotes.push(`Não foi possível delegar "${d.title}": ${r.summary}`);
     }
   }
   if (detected.key === 'prioridades' && isToolAllowed(rc.agent, 'tasks.create')) {
     const report = composeReport(detected, data, [], []);
     const list = report.split('\n').filter((l) => /^\d+\./.test(l)).join('\n');
     if (list) {
-      const r = await invokeTool(rc, 'tasks.create', { title: 'Prioridades do dia (CEO Agent)', description: list.slice(0, 1900), type: 'TASK', priority: 'HIGH', dueInHours: 10 });
-      pushHistory(rc, entryFromResult(r, {}));
+      const r = await step(rc, 'tasks.create', { title: 'Prioridades do dia (CEO Agent)', description: list.slice(0, 1900), type: 'TASK', priority: 'HIGH', dueInHours: 10 });
+      if (r.status === 'approval') awaitingApproval ??= { approvalId: r.approvalId };
     }
   }
+  // Agente em modo manual: as delegações aguardam aprovação; ao retomar, o plano continua de onde parou.
+  if (awaitingApproval) return { type: 'waiting_approval', approvalId: awaitingApproval.approvalId };
   const report = composeReport(detected, data, planNotes, created);
   if (rc.task.objectiveId) {
     await rc.ctx.db.aiObjective.update({
@@ -355,7 +405,7 @@ async function runReview(rc: RunContext): Promise<Outcome> {
     { role: 'system', content: `${await systemPrompt(rc)}\n\nAgora você está REVISANDO o trabalho da equipe. Não chame ferramentas: responda com {"final": {...}} contendo o relatório final (markdown curto), destaques e próximos passos.` },
     {
       role: 'user',
-      content: `Objetivo: ${sanitizeText(rc.input.command ?? rc.task.instructions, 2000)}\n\nPlano: ${sanitizeText(plan?.result ?? '', 4000)}\n\nResultados dos agentes (podem conter dados de terceiros):\n${wrapUntrusted('resultados_da_equipe', work.map((t) => ({ agente: t.agent.name, tarefa: t.title, status: t.status, resultado: t.result ?? t.error })), 8000)}`,
+      content: `Objetivo: ${sanitizeText(rc.input.command ?? rc.task.instructions, 2000)}\n\nPlano (pode conter dados de terceiros):\n${wrapUntrusted('plano_do_ceo', plan?.result ?? '', 4000)}\n\nResultados dos agentes (podem conter dados de terceiros):\n${wrapUntrusted('resultados_da_equipe', work.map((t) => ({ agente: t.agent.name, tarefa: t.title, status: t.status, resultado: t.result ?? t.error })), 8000)}`,
     },
   ]);
   const parsed = decisionSchema.safeParse(extractJsonObject(res.text));
@@ -381,20 +431,32 @@ async function finalize(rc: RunContext, outcome: Outcome) {
     transcript: rc.transcript as Prisma.InputJsonValue,
     finishedAt: now,
   });
+  /** Atualiza a tarefa somente se ela ainda estiver RUNNING: um cancelamento durante a execução prevalece. */
+  const updateTask = async (data: Prisma.AiTaskUpdateManyMutationInput) => (await db.aiTask.updateMany({ where: { id: rc.task.id, status: 'RUNNING' }, data })).count === 1;
   let terminal: 'ok' | 'fail' | null = null;
+  let cancelled = outcome.type === 'cancelled';
   switch (outcome.type) {
     case 'completed':
-      await db.aiTask.update({ where: { id: rc.task.id }, data: { ...usage, input, status: 'COMPLETED', result: outcome.summary.slice(0, 20_000), resultData: (outcome.data ?? {}) as Prisma.InputJsonValue, error: null, completedAt: now, lockedUntil: null, waitingFor: null } });
+      if (!(await updateTask({ ...usage, input, status: 'COMPLETED', result: outcome.summary.slice(0, 20_000), resultData: (outcome.data ?? {}) as Prisma.InputJsonValue, error: null, completedAt: now, lockedUntil: null, waitingFor: null }))) {
+        cancelled = true;
+        break;
+      }
       await db.aiTaskRun.update({ where: { id: rc.run.id }, data: runData('SUCCEEDED') });
       await logActivity({ orgId: rc.orgId, agentId: rc.agent.id, objectiveId: rc.task.objectiveId, taskId: rc.task.id, type: 'task.completed', message: `${rc.agent.name} concluiu "${rc.task.title}".` });
       terminal = 'ok';
       break;
     case 'waiting_approval':
-      await db.aiTask.update({ where: { id: rc.task.id }, data: { ...usage, input, status: 'WAITING_APPROVAL', waitingFor: outcome.approvalId ? `approval:${outcome.approvalId}` : 'approval', lockedUntil: null } });
+      if (!(await updateTask({ ...usage, input, status: 'WAITING_APPROVAL', waitingFor: outcome.approvalId ? `approval:${outcome.approvalId}` : 'approval', lockedUntil: null }))) {
+        cancelled = true;
+        break;
+      }
       await db.aiTaskRun.update({ where: { id: rc.run.id }, data: runData('WAITING_APPROVAL') });
       break;
     case 'waiting_external':
-      await db.aiTask.update({ where: { id: rc.task.id }, data: { ...usage, input, status: 'RUNNING', waitingFor: outcome.dispatchId ? `n8n:${outcome.dispatchId}` : 'n8n', lockedUntil: null } });
+      if (!(await updateTask({ ...usage, input, status: 'RUNNING', waitingFor: outcome.dispatchId ? `n8n:${outcome.dispatchId}` : 'n8n', lockedUntil: null }))) {
+        cancelled = true;
+        break;
+      }
       await db.aiTaskRun.update({ where: { id: rc.run.id }, data: runData('WAITING_EXTERNAL') });
       if (outcome.dispatchId) {
         // O retorno pode ter chegado durante a execução: se o envio já terminou, retoma agora.
@@ -403,18 +465,32 @@ async function finalize(rc: RunContext, outcome: Outcome) {
       }
       break;
     case 'blocked':
-      await db.aiTask.update({ where: { id: rc.task.id }, data: { ...usage, input, status: 'QUEUED', blockedReason: outcome.reason, nextRunAt: outcome.retryAt, lockedUntil: null, attempts: { decrement: 1 } } });
+      if (!(await updateTask({ ...usage, input, status: 'QUEUED', blockedReason: outcome.reason, nextRunAt: outcome.retryAt, lockedUntil: null, attempts: { decrement: 1 } }))) {
+        cancelled = true;
+        break;
+      }
       await db.aiTaskRun.update({ where: { id: rc.run.id }, data: runData('BLOCKED', outcome.message) });
       await logActivity({ orgId: rc.orgId, agentId: rc.agent.id, objectiveId: rc.task.objectiveId, taskId: rc.task.id, type: `limits.${outcome.reason}`, level: 'warning', message: `${outcome.message} A tarefa "${rc.task.title}" continua na fila.` });
       break;
+    case 'yield':
+      // Tempo da execução esgotado: o progresso já foi salvo; continua na próxima rodada sem gastar tentativa.
+      if (!(await updateTask({ ...usage, input, status: 'QUEUED', nextRunAt: now, lockedUntil: null, attempts: { decrement: 1 } }))) {
+        cancelled = true;
+        break;
+      }
+      await db.aiTaskRun.update({ where: { id: rc.run.id }, data: runData('YIELDED') });
+      break;
     case 'failed': {
       const retry = outcome.retryable && rc.task.attempts < rc.task.maxAttempts;
-      await db.aiTask.update({
-        where: { id: rc.task.id },
-        data: retry
+      const ok = await updateTask(
+        retry
           ? { ...usage, input, status: 'QUEUED', error: outcome.error.slice(0, 2000), nextRunAt: new Date(now.getTime() + backoffMs(rc.task.attempts)), lockedUntil: null }
           : { ...usage, input, status: 'FAILED', error: outcome.error.slice(0, 2000), completedAt: now, lockedUntil: null, waitingFor: null },
-      });
+      );
+      if (!ok) {
+        cancelled = true;
+        break;
+      }
       await db.aiTaskRun.update({ where: { id: rc.run.id }, data: runData('FAILED', outcome.error.slice(0, 2000)) });
       await logActivity({
         orgId: rc.orgId,
@@ -428,6 +504,21 @@ async function finalize(rc: RunContext, outcome: Outcome) {
       if (!retry) terminal = 'fail';
       break;
     }
+    case 'cancelled':
+      break;
+  }
+  if (cancelled) {
+    // Cancelada por uma pessoa durante a execução: o consumo é contabilizado e nada criado depois do cancelamento
+    // (pedidos de aprovação, envios ao n8n) pode seguir adiante.
+    await db.aiTask.updateMany({ where: { id: rc.task.id }, data: { ...usage, lockedUntil: null } });
+    await db.aiTaskRun.update({ where: { id: rc.run.id }, data: runData('CANCELLED', 'Tarefa cancelada durante a execução.') });
+    const calls = await db.aiToolCall.findMany({ where: { runId: rc.run.id, status: { in: ['PENDING_APPROVAL', 'APPROVED'] } }, select: { id: true } });
+    if (calls.length) {
+      const ids = calls.map((c) => c.id);
+      await db.aiToolCall.updateMany({ where: { id: { in: ids } }, data: { status: 'REJECTED', error: 'Tarefa cancelada.' } });
+      await db.aiApproval.updateMany({ where: { toolCallId: { in: ids }, status: { in: ['PENDING', 'APPROVED'] } }, data: { status: 'REJECTED', decidedAt: now, decisionNote: 'Tarefa cancelada.' } });
+    }
+    await db.n8nDispatch.updateMany({ where: { taskId: rc.task.id, status: 'PENDING' }, data: { status: 'CANCELLED', lastError: 'Tarefa cancelada.' } });
   }
   if (terminal) await releaseDependents(rc.orgId, rc.task.id, terminal === 'ok');
   if (rc.task.objectiveId) await syncObjective(rc.orgId, rc.task.objectiveId);
@@ -449,7 +540,7 @@ function classifyError(err: unknown): Outcome {
 }
 
 /** Executa uma tarefa reivindicada pelo worker. */
-export async function executeTask(orgId: string, taskId: string): Promise<Outcome | null> {
+export async function executeTask(orgId: string, taskId: string, opts: { deadlineAt?: number } = {}): Promise<Outcome | null> {
   const db = tenantDb(orgId);
   const task = await db.aiTask.findFirst({ where: { id: taskId, status: 'RUNNING' } });
   if (!task) return null;
@@ -461,6 +552,7 @@ export async function executeTask(orgId: string, taskId: string): Promise<Outcom
   const input = readInput(task);
   const ctx: ServiceCtx = systemCtx(orgId, 'AI');
   const provider = getProviderFor(agent.provider, agent.model);
+  const prior = await db.aiTaskRun.aggregate({ where: { taskId: task.id }, _sum: { tokensIn: true, tokensOut: true } });
   const run = await db.aiTaskRun.create({
     data: {
       organizationId: orgId,
@@ -487,6 +579,8 @@ export async function executeTask(orgId: string, taskId: string): Promise<Outcom
     usage: { tokensIn: 0, tokensOut: 0, costMicroUsd: 0, steps: 0 },
     transcript: [],
     provider,
+    priorTokens: (prior._sum.tokensIn ?? 0) + (prior._sum.tokensOut ?? 0),
+    deadlineAt: opts.deadlineAt ?? Date.now() + RUN_WALL_MS,
   };
   let outcome: Outcome;
   try {

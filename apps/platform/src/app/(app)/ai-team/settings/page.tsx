@@ -70,6 +70,7 @@ export default async function AiTeamSettingsPage() {
     },
     briefing: { enabled: briefing.enabled, hour: briefing.hour, weekdays: [...briefing.weekdays], recipients: [...briefing.recipients], deliverViaN8n: briefing.deliverViaN8n },
     n8nEnabled: company.n8nEnabled,
+    canEnableN8n: ctx.org.isPlatformOwner || ctx.user.isPlatformAdmin,
     n8nWorkflows: readWorkflowPaths(company.n8nWorkflows),
     workflows,
     dispatcherPath: N8N_DISPATCHER_PATH,

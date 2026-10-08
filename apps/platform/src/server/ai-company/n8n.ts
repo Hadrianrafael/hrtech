@@ -101,11 +101,30 @@ async function workflowUrl(d: N8nDispatch, baseUrl: string) {
   const company = await systemDb.aiCompany.findUnique({ where: { organizationId: d.organizationId }, select: { n8nWorkflows: true } });
   const overrides = (company?.n8nWorkflows ?? {}) as Record<string, unknown>;
   const custom = overrides[d.workflow];
-  const path = typeof custom === 'string' && /^\/[\w\-/.]{1,200}$/.test(custom) ? custom : N8N_DISPATCHER_PATH;
+  const path = typeof custom === 'string' && /^\/webhook(-test)?(\/[A-Za-z0-9_-]+){1,4}$/.test(custom) ? custom : N8N_DISPATCHER_PATH;
   return `${baseUrl}${path}`;
 }
 
-export type SendOutcome = 'sent' | 'completed' | 'pending_credential' | 'retry' | 'failed' | 'dead' | 'skipped';
+export type SendOutcome = 'sent' | 'completed' | 'pending_credential' | 'held' | 'retry' | 'failed' | 'dead' | 'skipped';
+
+/** Envios só saem de empresas ativas, com a Equipe IA ligada, não pausada e com a integração com o n8n habilitada. */
+const SENDABLE_ORG = { status: 'ACTIVE' as const, aiCompany: { is: { enabled: true, paused: false, n8nEnabled: true } } };
+
+async function holdReason(orgId: string): Promise<string | null> {
+  const org = await systemDb.organization.findUnique({ where: { id: orgId }, select: { status: true, aiCompany: { select: { enabled: true, paused: true, n8nEnabled: true } } } });
+  if (!org || org.status !== 'ACTIVE') return 'Empresa inativa: envio retido.';
+  const c = org.aiCompany;
+  if (!c?.enabled) return 'Equipe IA desativada: envio retido.';
+  if (c.paused) return 'Equipe IA pausada: envio retido até ser retomada.';
+  if (!c.n8nEnabled) return 'Integração com o n8n desativada nesta empresa: envio retido até ser habilitada.';
+  return null;
+}
+
+/** Atualiza o envio somente se ele ainda estiver em SENDING (um retorno ou cancelamento pode ter chegado durante o envio). */
+async function settleSending(id: string, data: Prisma.N8nDispatchUpdateManyMutationInput) {
+  const r = await systemDb.n8nDispatch.updateMany({ where: { id, status: 'SENDING' }, data });
+  return r.count === 1;
+}
 
 /** Envia um dispatch (com reivindicação atômica: dois workers nunca enviam o mesmo registro ao mesmo tempo). */
 export async function sendDispatch(id: string, now = new Date()): Promise<SendOutcome> {
@@ -114,11 +133,13 @@ export async function sendDispatch(id: string, now = new Date()): Promise<SendOu
   const d = await systemDb.n8nDispatch.findUniqueOrThrow({ where: { id } });
   const cfg = n8nConfig();
   if (!cfg.configured) {
-    await systemDb.n8nDispatch.update({
-      where: { id },
-      data: { status: 'PENDING', lastError: PENDING_CREDENTIAL, nextAttemptAt: new Date(now.getTime() + CREDENTIAL_RECHECK_MS) },
-    });
+    await settleSending(id, { status: 'PENDING', lastError: PENDING_CREDENTIAL, nextAttemptAt: new Date(now.getTime() + CREDENTIAL_RECHECK_MS) });
     return 'pending_credential';
+  }
+  const held = await holdReason(d.organizationId);
+  if (held) {
+    await settleSending(id, { status: 'PENDING', lastError: held, nextAttemptAt: new Date(now.getTime() + CREDENTIAL_RECHECK_MS) });
+    return 'held';
   }
   const body = JSON.stringify({
     id: d.id,
@@ -166,7 +187,7 @@ export async function sendDispatch(id: string, now = new Date()): Promise<SendOu
   const attempts = d.attempts + 1;
   if (status >= 200 && status < 300) {
     const externalId = typeof responseJson?.executionId === 'string' || typeof responseJson?.executionId === 'number' ? String(responseJson.executionId) : null;
-    await systemDb.n8nDispatch.update({ where: { id }, data: { status: 'SENT', attempts, sentAt: now, responseStatus: status, lastError: null, externalId } });
+    if (!(await settleSending(id, { status: 'SENT', attempts, sentAt: now, responseStatus: status, lastError: null, externalId }))) return 'skipped';
     // Fluxos síncronos podem devolver o resultado na própria resposta.
     if (responseJson?.status === 'completed' || responseJson?.status === 'failed') {
       await applyDispatchResult(id, {
@@ -183,15 +204,12 @@ export async function sendDispatch(id: string, now = new Date()): Promise<SendOu
   const permanent = status >= 400 && status < 500 && ![408, 409, 425, 429].includes(status);
   if (permanent || attempts >= d.maxAttempts) {
     const finalStatus = permanent ? 'FAILED' : 'DEAD';
-    await systemDb.n8nDispatch.update({ where: { id }, data: { status: finalStatus, attempts, responseStatus: status || null, lastError: error } });
+    if (!(await settleSending(id, { status: finalStatus, attempts, responseStatus: status || null, lastError: error }))) return 'skipped';
     await logActivity({ orgId: d.organizationId, taskId: d.taskId, type: 'n8n.failed', level: 'error', message: `Envio ao n8n falhou${permanent ? '' : ` após ${attempts} tentativas`}: ${error}`, data: { dispatchId: id } });
     await resumeAfterDispatch(id);
     return permanent ? 'failed' : 'dead';
   }
-  await systemDb.n8nDispatch.update({
-    where: { id },
-    data: { status: 'PENDING', attempts, responseStatus: status || null, lastError: error, nextAttemptAt: new Date(now.getTime() + backoffMs(attempts)) },
-  });
+  if (!(await settleSending(id, { status: 'PENDING', attempts, responseStatus: status || null, lastError: error, nextAttemptAt: new Date(now.getTime() + backoffMs(attempts)) }))) return 'skipped';
   logger.warn('n8n.dispatch_retry', { id, attempts, error });
   return 'retry';
 }
@@ -203,7 +221,12 @@ export async function processDueDispatches(limit = 20, now = new Date(), orgId?:
   const stuck = await systemDb.n8nDispatch.findMany({ where: { ...scope, status: 'SENT', sentAt: { lt: new Date(now.getTime() - SENT_TIMEOUT_MS) } }, select: { id: true }, take: 50 });
   for (const s of stuck) await applyDispatchResult(s.id, { status: 'failed', error: 'O n8n não enviou o retorno em 24 horas.' });
 
-  const due = await systemDb.n8nDispatch.findMany({ where: { ...scope, status: 'PENDING', nextAttemptAt: { lte: now } }, orderBy: { nextAttemptAt: 'asc' }, take: limit, select: { id: true } });
+  const due = await systemDb.n8nDispatch.findMany({
+    where: { ...scope, status: 'PENDING', nextAttemptAt: { lte: now }, organization: SENDABLE_ORG },
+    orderBy: { nextAttemptAt: 'asc' },
+    take: limit,
+    select: { id: true },
+  });
   const outcomes: Record<string, number> = {};
   for (const d of due) {
     const r = await sendDispatch(d.id, now);

@@ -47,6 +47,8 @@ export interface SettingsData {
   limits: CompanyLimitsInput;
   briefing: BriefingInput;
   n8nEnabled: boolean;
+  /** A integração só pode ser ligada pela própria HR Tech ou por um administrador da plataforma. */
+  canEnableN8n: boolean;
   n8nWorkflows: Record<string, string>;
   workflows: WorkflowInfo[];
   dispatcherPath: string;
@@ -78,7 +80,7 @@ type WorkerSummary = Extract<Awaited<ReturnType<typeof runWorkerNowAction>>, { o
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const WEEKDAY_NAMES = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
-const PATH_RE = /^\/[\w\-/.]{1,200}$/;
+const PATH_RE = /^\/webhook(-test)?(\/[A-Za-z0-9_-]+){1,4}$/;
 
 type NumericLimit = Exclude<keyof CompanyLimitsInput, 'allowAutonomousExternal'>;
 
@@ -348,7 +350,17 @@ export function SettingsForm({ data }: { data: SettingsData }) {
         </Section>
 
         <Section icon={<PlugZap className="h-4 w-4" />} title="Integração com o n8n" description="Ações externas (prospecção, sequências, publicações, cobranças, envio do briefing) são executadas pelo n8n.">
-          <Checkbox label="Integração com o n8n ligada" checked={n8nEnabled} onChange={(e) => setN8nEnabled(e.target.checked)} />
+          <Checkbox
+            label="Integração com o n8n ligada"
+            checked={n8nEnabled}
+            disabled={!data.canEnableN8n && !data.n8nEnabled}
+            onChange={(e) => setN8nEnabled(e.target.checked)}
+          />
+          {!data.canEnableN8n && !data.n8nEnabled && (
+            <p className="text-xs text-fg-muted">
+              A integração é habilitada pela equipe HR Tech depois de configurar os fluxos e as credenciais (WhatsApp, e-mail, Google) desta empresa no n8n.
+            </p>
+          )}
           <div className="rounded-lg bg-muted/50 p-3 text-xs">
             <p className="font-medium">Entrada no n8n (dispatcher)</p>
             {data.n8n.dispatcherUrl ? (

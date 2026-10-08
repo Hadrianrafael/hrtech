@@ -5,7 +5,7 @@
  * retorno duplicado), comandos via n8n, memória e briefing.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { systemCtx } from '@/lib/auth/ctx';
+import { makeServiceCtx, systemCtx } from '@/lib/auth/ctx';
 import { systemDb, tenantDb, withTenant } from '@/lib/db';
 import { createContact } from '@/server/contacts';
 import { ensureAiCompany, setCompanyPaused, updateAgent, updateCompanySettings } from '@/server/ai-company/agents';
@@ -16,9 +16,10 @@ import { handleN8nCommand } from '@/server/ai-company/commands';
 import { executeTask } from '@/server/ai-company/engine';
 import { invokeTool, type InvokeContext } from '@/server/ai-company/invoke';
 import { createMemory, formatMemoriesForPrompt, saveAgentMemory, searchMemories } from '@/server/ai-company/memory';
-import { N8N_DISPATCHER_PATH, PENDING_CREDENTIAL, handleN8nCallback, processDueDispatches, sendDispatch, signBody, verifySignature } from '@/server/ai-company/n8n';
+import { N8N_DISPATCHER_PATH, PENDING_CREDENTIAL, applyDispatchResult, handleN8nCallback, processDueDispatches, sendDispatch, signBody, verifySignature } from '@/server/ai-company/n8n';
 import { cancelObjective, createObjective } from '@/server/ai-company/objectives';
 import { resolveLimits } from '@/server/ai-company/policy';
+import { cancelAiTask } from '@/server/ai-company/queries';
 import { SECURITY_PREAMBLE, UNTRUSTED_CLOSE, UNTRUSTED_OPEN } from '@/server/ai-company/security';
 import { createAiTask, delegateTask } from '@/server/ai-company/tasks';
 import { claimNextTask, expireApprovals, recoverStaleTasks, runAiWorker } from '@/server/ai-company/worker';
@@ -30,10 +31,12 @@ const ok = await dbReachable();
 const N8N_URL = 'http://n8n.teste.local';
 const N8N_SECRET = 'segredo-n8n-de-teste-0123456789';
 
-async function setupOrg(name: string) {
+/** Empresa de teste com a Equipe IA ativa. Por padrão com a integração n8n habilitada (como faria a equipe HR Tech). */
+async function setupOrg(name: string, opts: { n8n?: boolean } = {}) {
   const org = await createOrg(name);
   const admin = await createUser(`admin@${name.toLowerCase().replace(/\W+/g, '-')}.example`, org.id);
   await ensureAiCompany(org.id, { enable: true });
+  if (opts.n8n !== false) await tenantDb(org.id).aiCompany.updateMany({ data: { n8nEnabled: true } });
   return { orgId: org.id, adminId: admin.id, ctx: ctxFor(org.id, admin.id) };
 }
 
@@ -78,7 +81,7 @@ const json = (v: unknown) => JSON.stringify(v);
 /** Altera parte das configurações da Equipe IA (a tela envia o formulário completo). */
 async function patchSettings(
   ctx: ServiceCtx,
-  patch: { limits?: Record<string, unknown>; dailyBudgetCents?: number; n8nEnabled?: boolean; briefing?: Record<string, unknown> },
+  patch: { limits?: Record<string, unknown>; dailyBudgetCents?: number; n8nEnabled?: boolean; briefing?: Record<string, unknown>; n8nWorkflows?: Record<string, string> },
 ) {
   const c = await ctx.db.aiCompany.findFirstOrThrow({});
   const current = (c.limits ?? {}) as Record<string, unknown>;
@@ -89,7 +92,7 @@ async function patchSettings(
     limits: { ...resolveLimits(current), allowAutonomousExternal: current.allowAutonomousExternal === true, ...patch.limits },
     briefing: { ...readBriefingConfig(c), ...patch.briefing },
     n8nEnabled: patch.n8nEnabled ?? c.n8nEnabled,
-    n8nWorkflows: {},
+    n8nWorkflows: patch.n8nWorkflows ?? {},
   });
 }
 
@@ -679,13 +682,13 @@ describe.skipIf(!ok)('Equipe IA', () => {
     });
 
     it('comandos do n8n: assinatura, empresa com n8n ativado e idempotência', async () => {
-      const { orgId, ctx, adminId } = await setupOrg('Comandos');
+      const { orgId, adminId } = await setupOrg('Comandos', { n8n: false });
       process.env.N8N_WEBHOOK_SECRET = N8N_SECRET;
       const admin = await systemDb.user.findUniqueOrThrow({ where: { id: adminId } });
       const body = json({ eventId: 'cmd-0000001', organizationId: orgId, command: 'Quero 5 clientes este mês', requestedByEmail: admin.email });
       expect((await handleN8nCommand(body, signBody('errado', body))).status).toBe(401);
       expect((await handleN8nCommand(body, signBody(N8N_SECRET, body))).status).toBe(403); // n8n desativado na empresa
-      await patchSettings(ctx, { n8nEnabled: true });
+      await tenantDb(orgId).aiCompany.updateMany({ data: { n8nEnabled: true } }); // habilitada pela equipe HR Tech
       const body2 = body.replace('cmd-0000001', 'cmd-0000002');
       const r = await handleN8nCommand(body2, signBody(N8N_SECRET, body2));
       expect(r.status).toBe(202);
@@ -697,6 +700,201 @@ describe.skipIf(!ok)('Equipe IA', () => {
       const body3 = json({ eventId: 'cmd-0000003', organizationId: orgId, command: 'Analise meu pipeline', requestedByEmail: 'estranho@fora.example' });
       await handleN8nCommand(body3, signBody(N8N_SECRET, body3));
       expect((await tenantDb(orgId).aiObjective.findFirstOrThrow({ where: { command: 'Analise meu pipeline' } })).createdById).toBeNull();
+    });
+  });
+
+  describe('correções da revisão de segurança', () => {
+    const n8nOn = () => {
+      process.env.N8N_BASE_URL = N8N_URL;
+      process.env.N8N_WEBHOOK_SECRET = N8N_SECRET;
+    };
+
+    it('sem a integração habilitada, ferramentas do n8n ficam bloqueadas e envios na fila são retidos', async () => {
+      const { orgId } = await setupOrg('Sem N8n', { n8n: false });
+      const db = tenantDb(orgId);
+      const ic = await invokeContext(orgId, 'prospeccao');
+      const r = await invokeTool(ic, 'n8n.prospect_search', { segment: 'pousadas', quantity: 5 });
+      expect(r.status).toBe('blocked');
+      expect(r.summary).toMatch(/n8n está desativada/);
+      expect(await db.aiApproval.count({})).toBe(0);
+      n8nOn();
+      const fetchMock = vi.fn(async () => new Response('{}', { status: 202 }));
+      vi.stubGlobal('fetch', fetchMock);
+      const d = await db.n8nDispatch.create({ data: { organizationId: orgId, workflow: 'comercial', payload: {}, idempotencyKey: 'held-sem-n8n-1' } });
+      expect(await sendDispatch(d.id)).toBe('held');
+      expect(fetchMock).not.toHaveBeenCalled();
+      const held = await db.n8nDispatch.findFirstOrThrow({ where: { id: d.id } });
+      expect(held.status).toBe('PENDING');
+      expect(held.lastError).toMatch(/desativada/);
+      expect((await processDueDispatches(10, new Date(Date.now() + 3_600_000), orgId)).processed).toBe(0);
+    });
+
+    it('pausar a Equipe IA retém os envios ao n8n já enfileirados; ao retomar, eles saem', async () => {
+      const { orgId, ctx } = await setupOrg('Pausa N8n');
+      n8nOn();
+      const fetchMock = vi.fn(async () => new Response(json({ executionId: 'x' }), { status: 202 }));
+      vi.stubGlobal('fetch', fetchMock);
+      const d = await tenantDb(orgId).n8nDispatch.create({ data: { organizationId: orgId, workflow: 'marketing', payload: {}, idempotencyKey: 'held-pausa-1' } });
+      await setCompanyPaused(ctx, true);
+      expect(await sendDispatch(d.id)).toBe('held');
+      expect((await processDueDispatches(10, new Date(Date.now() + 3_600_000), orgId)).processed).toBe(0);
+      expect(fetchMock).not.toHaveBeenCalled();
+      await setCompanyPaused(ctx, false);
+      expect(await sendDispatch(d.id, new Date(Date.now() + 20 * 60_000))).toBe('sent');
+    });
+
+    it('a integração com o n8n só é habilitada pela HR Tech ou por administrador da plataforma; caminhos restritos a /webhook', async () => {
+      const { ctx, adminId } = await setupOrg('Cliente N8n', { n8n: false });
+      await expect(patchSettings(ctx, { n8nEnabled: true })).rejects.toThrow(/equipe HR Tech/);
+      await systemDb.user.update({ where: { id: adminId }, data: { isPlatformAdmin: true } });
+      await expect(patchSettings(ctx, { n8nEnabled: true })).resolves.toBeTruthy();
+      for (const bad of ['/webhook/../rest/workflows', '//evil.example/x', '/rest/workflows', '/webhook/a/../../b']) {
+        await expect(patchSettings(ctx, { n8nWorkflows: { prospeccao: bad } })).rejects.toThrow();
+      }
+      await expect(patchSettings(ctx, { n8nWorkflows: { prospeccao: '/webhook/minha-prospeccao' } })).resolves.toBeTruthy();
+    });
+
+    it('retorno do n8n que chega durante o envio não é sobrescrito nem reenviado', async () => {
+      const { orgId } = await setupOrg('Corrida N8n');
+      n8nOn();
+      const d = await tenantDb(orgId).n8nDispatch.create({ data: { organizationId: orgId, workflow: 'marketing', payload: {}, idempotencyKey: 'corrida-1' } });
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          await applyDispatchResult(d.id, { status: 'completed', result: { ok: true } });
+          return new Response('Gateway Timeout', { status: 504 });
+        }),
+      );
+      expect(await sendDispatch(d.id)).toBe('skipped');
+      expect((await tenantDb(orgId).n8nDispatch.findFirstOrThrow({ where: { id: d.id } })).status).toBe('COMPLETED');
+    });
+
+    it('cancelar durante a execução: a tarefa não volta à vida e nenhuma ação nova é pedida', async () => {
+      const { orgId, ctx } = await setupOrg('Cancela no Meio');
+      const db = tenantDb(orgId);
+      const c = await createContact(ctx, { name: 'Lead Cancelado', phone: '(54) 98888-7777', source: 'form' });
+      const sdr = await agentByKey(orgId, 'sdr');
+      const task = await createAiTask({ orgId, agentId: sdr.id, title: 'Mensagem', instructions: 'Falar com o lead', input: { mode: 'llm' } });
+      setAiProviderForTests({
+        name: 'mock',
+        model: 'mock-model',
+        chat: async () => {
+          await cancelAiTask(ctx, task.id); // a pessoa cancela enquanto o modelo pensa
+          return { text: json({ action: { tool: 'messages.send', args: { contactId: c.id, text: 'Olá! Podemos conversar?' } } }), tokensIn: 10, tokensOut: 5, model: 'mock-model' };
+        },
+      });
+      await drain(orgId);
+      const t = await db.aiTask.findFirstOrThrow({ where: { id: task.id } });
+      expect(t.status).toBe('CANCELLED');
+      expect(await db.aiToolCall.count({ where: { taskId: task.id } })).toBe(0);
+      expect(await db.aiApproval.count({ where: { taskId: task.id } })).toBe(0);
+      expect((await db.aiTaskRun.findFirstOrThrow({ where: { taskId: task.id } })).status).toBe('CANCELLED');
+    });
+
+    it('tarefas de objetivo cancelado não são reivindicadas pelo worker', async () => {
+      const { orgId, ctx } = await setupOrg('Objetivo Cancelado');
+      const objective = await createObjective(ctx, { command: 'Analise minha empresa hoje' });
+      await tenantDb(orgId).aiObjective.update({ where: { id: objective.id }, data: { status: 'CANCELLED' } });
+      expect(await claimNextTask(orgId)).toBeNull();
+    });
+
+    it('progresso salvo a cada passo e prazo por execução (continua depois sem gastar tentativa)', async () => {
+      const { orgId } = await setupOrg('Checkpoint');
+      const db = tenantDb(orgId);
+      const sdr = await agentByKey(orgId, 'sdr');
+      const task = await createAiTask({ orgId, agentId: sdr.id, title: 'Passos', instructions: 'x', input: { mode: 'llm' } });
+      let calls = 0;
+      let savedBeforeSecondCall = -1;
+      setAiProviderForTests({
+        name: 'mock',
+        model: 'mock-model',
+        chat: async () => {
+          calls++;
+          if (calls === 2) {
+            const t = await db.aiTask.findFirstOrThrow({ where: { id: task.id } });
+            savedBeforeSecondCall = ((t.input as { history?: unknown[] }).history ?? []).length;
+            const run = await db.aiTaskRun.findFirstOrThrow({ where: { taskId: task.id } });
+            expect(run.tokensIn).toBeGreaterThan(0); // consumo já gravado (conta no orçamento mesmo se a função cair)
+          }
+          return { text: calls === 1 ? json({ action: { tool: 'leads.search', args: { query: 'x' } } }) : json({ final: { summary: 'ok' } }), tokensIn: 10, tokensOut: 5, model: 'mock-model' };
+        },
+      });
+      await drain(orgId);
+      expect(savedBeforeSecondCall).toBe(1);
+      expect((await db.aiTask.findFirstOrThrow({ where: { id: task.id } })).status).toBe('COMPLETED');
+
+      const t2 = await createAiTask({ orgId, agentId: sdr.id, title: 'Sem tempo', instructions: 'x', input: { mode: 'llm' } });
+      expect((await claimNextTask(orgId))?.id).toBe(t2.id);
+      expect(await executeTask(orgId, t2.id, { deadlineAt: Date.now() - 1 })).toEqual({ type: 'yield' });
+      expect(await db.aiTask.findFirstOrThrow({ where: { id: t2.id } })).toMatchObject({ status: 'QUEUED', attempts: 0, lockedUntil: null });
+    });
+
+    it('nova tentativa de ação que falhou respeita a política atual (autonomia reduzida → aprovação)', async () => {
+      const { orgId, ctx } = await setupOrg('Retry Politica');
+      const db = tenantDb(orgId);
+      await db.aiCompany.updateMany({ data: { limits: { allowAutonomousExternal: true } } });
+      const sdr = await agentByKey(orgId, 'sdr');
+      await patchAgent(ctx, sdr.id, { autonomy: 'AUTONOMOUS' });
+      const lead = await createContact(ctx, { name: 'Lead Sem Canal', source: 'form' });
+      const ic = await invokeContext(orgId, 'sdr');
+      const args = { contactId: lead.id, text: 'Olá, tudo bem?' };
+      const first = await invokeTool(ic, 'messages.send', args);
+      expect(first.status).toBe('failed'); // sem canal
+      await patchAgent(ctx, sdr.id, { autonomy: 'SUPERVISED' });
+      const again = await invokeTool({ ...ic, agent: await agentByKey(orgId, 'sdr') }, 'messages.send', args);
+      expect(again).toMatchObject({ status: 'approval', toolCallId: first.toolCallId });
+      expect((await db.aiToolCall.findFirstOrThrow({ where: { id: first.toolCallId } })).status).toBe('PENDING_APPROVAL');
+    });
+
+    it('issue com credencial no texto exige aprovação mesmo com ações externas autônomas', async () => {
+      const { orgId, ctx } = await setupOrg('Issue Segredo');
+      const db = tenantDb(orgId);
+      await db.aiCompany.updateMany({ data: { limits: { allowAutonomousExternal: true } } });
+      const dev = await agentByKey(orgId, 'dev');
+      await patchAgent(ctx, dev.id, { autonomy: 'AUTONOMOUS' });
+      const ic = await invokeContext(orgId, 'dev');
+      const r = await invokeTool(ic, 'n8n.dev_issue', { title: 'Erro no login', body: 'A chave sk-ant-abcdefghijklmnopqrst apareceu no log.' });
+      expect(r.status).toBe('approval');
+      expect((await db.aiApproval.findFirstOrThrow({ where: { id: r.approvalId } })).categories).toContain('credencial');
+    });
+
+    it('CEO em modo manual: as delegações do playbook aguardam aprovação e o plano continua depois', async () => {
+      const { orgId, ctx } = await setupOrg('CEO Manual');
+      const db = tenantDb(orgId);
+      const ceo = await agentByKey(orgId, 'ceo');
+      await patchAgent(ctx, ceo.id, { autonomy: 'MANUAL' });
+      const objective = await createObjective(ctx, { command: 'Quero prospectar 3 pousadas em Gramado/RS' });
+      await drain(orgId);
+      const plan = await db.aiTask.findFirstOrThrow({ where: { objectiveId: objective.id, kind: 'plan' } });
+      expect(plan.status).toBe('WAITING_APPROVAL');
+      expect(await db.aiTask.count({ where: { objectiveId: objective.id, kind: 'work' } })).toBe(0);
+      for (let i = 0; i < 4; i++) {
+        const pending = await db.aiApproval.findMany({ where: { taskId: plan.id, status: 'PENDING' } });
+        if (!pending.length) break;
+        for (const a of pending) {
+          expect(a.tool).toBe('agents.delegate');
+          await decideApproval(ctx, a.id, { decision: 'approve' });
+        }
+        await runAiWorker({ orgId, maxTasks: 1, housekeeping: false });
+      }
+      expect((await db.aiTask.findFirstOrThrow({ where: { id: plan.id } })).status).toBe('COMPLETED');
+      const work = await db.aiTask.findMany({ where: { objectiveId: objective.id, kind: 'work' }, include: { agent: true } });
+      expect(work.map((w) => w.agent.key).sort()).toEqual(['prospeccao', 'sdr']);
+      expect(await db.aiToolCall.count({ where: { taskId: plan.id, tool: 'agents.delegate', status: 'EXECUTED' } })).toBe(2);
+    });
+
+    it('a mesma delegação repetida reaproveita a subtarefa', async () => {
+      const { orgId } = await setupOrg('Delega Uma Vez');
+      const ic = await invokeContext(orgId, 'ceo');
+      const a = await delegateTask(ic, { agentKey: 'sdr', title: 'Follow-ups', instructions: 'Fazer follow-ups' });
+      const b = await delegateTask(ic, { agentKey: 'sdr', title: 'Follow-ups', instructions: 'Fazer follow-ups' });
+      expect(b.id).toBe(a.id);
+    });
+
+    it('comandar a Equipe IA exige também ver todos os registros da empresa', async () => {
+      const { orgId, adminId } = await setupOrg('Perm Dados');
+      const ctx = makeServiceCtx(orgId, { userId: adminId, permissions: ['ai_team.view', 'ai_team.command'] });
+      await expect(createObjective(ctx, { command: 'Analise minha empresa hoje' })).rejects.toThrow();
     });
   });
 

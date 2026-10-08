@@ -31,7 +31,7 @@ export class AnthropicProvider implements AiProvider {
     readonly model: string,
     baseUrl?: string,
   ) {
-    this.client = new Anthropic({ apiKey, baseURL: baseUrl, maxRetries: 2, timeout: 120_000 });
+    this.client = new Anthropic({ apiKey, baseURL: baseUrl, maxRetries: 1, timeout: 50_000 }) // cabe na duração máxima das funções serverless;
   }
 
   async chat(messages: ChatMessage[], opts: ChatOptions = {}): Promise<ChatResult> {

@@ -24,7 +24,7 @@ export class GeminiProvider implements AiProvider {
         method: 'POST',
         headers: { 'x-goog-api-key': this.apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(90_000),
+        signal: AbortSignal.timeout(50_000),
       });
     } catch {
       throw new AiProviderError('Falha de conexão com o Gemini.', 'network', true);

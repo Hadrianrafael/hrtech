@@ -17,7 +17,8 @@ async function handler(req: NextRequest) {
   if (!secret) return NextResponse.json({ error: 'CRON_SECRET não configurado.' }, { status: 503 });
   if (!safeEqual(req.headers.get('authorization') ?? '', `Bearer ${secret}`)) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   try {
-    return NextResponse.json(await runAiWorker({ budgetMs: 45_000 }));
+    // Orçamento abaixo da duração máxima (60 s): cada execução tem prazo próprio e grava o progresso a cada passo.
+    return NextResponse.json(await runAiWorker({ budgetMs: 30_000 }));
   } catch (err) {
     return errorResponse(err);
   }

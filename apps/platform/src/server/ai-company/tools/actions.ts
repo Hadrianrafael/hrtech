@@ -130,10 +130,14 @@ export const agentsDelegate = defineTool({
     instructions: z.string().trim().min(5).max(4000),
     priority: z.coerce.number().int().min(1).max(9).default(5),
     afterPrevious: z.boolean().default(false),
+    // Roteiro opcional (playbooks do CEO): cada passo ainda passa pela allowlist e pela política do agente de destino.
+    playbook: z.string().trim().max(40).optional(),
+    steps: z.array(z.object({ tool: z.string().trim().min(1).max(80), args: z.record(z.unknown()).default({}) })).max(10).optional(),
   }),
-  describe: (a) => `Delegar para ${a.agentKey}: ${a.title}`,
+  describe: (a) => `Delegar para ${a.agentKey}: ${a.title}${a.steps?.length ? ` (roteiro com ${a.steps.length} passo(s))` : ''}`,
   async run(tc, a) {
-    const child = await delegateTask(tc, a);
+    const input = a.steps?.length ? { mode: 'playbook' as const, playbook: a.playbook, steps: a.steps } : { mode: 'llm' as const };
+    const child = await delegateTask(tc, { agentKey: a.agentKey, title: a.title, instructions: a.instructions, priority: a.priority, afterPrevious: a.afterPrevious, input });
     return { data: { taskId: child.id, agentKey: a.agentKey }, summary: `Tarefa delegada para ${a.agentKey}: ${a.title}.` };
   },
 });

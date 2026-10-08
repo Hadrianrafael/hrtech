@@ -22,7 +22,11 @@ export async function createObjective(
   input: z.input<typeof objectiveSchema>,
   opts: { source?: 'USER' | 'N8N' | 'SYSTEM'; createdById?: string | null } = {},
 ) {
-  if ((opts.source ?? 'USER') === 'USER') assertCan(ctx, 'ai_team.command');
+  if ((opts.source ?? 'USER') === 'USER') {
+    assertCan(ctx, 'ai_team.command');
+    // Os agentes leem os dados de toda a empresa em nome de quem pediu.
+    assertCan(ctx, 'records.view_all');
+  }
   const { command } = objectiveSchema.parse(input);
   const company = await ctx.db.aiCompany.findFirst({});
   if (!company?.enabled) throw new AppError('A Equipe IA não está ativada para esta empresa. Ative em Equipe IA → Configurações.');

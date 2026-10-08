@@ -55,5 +55,5 @@ export const SYSTEM_ROLES: { key: string; name: string; description: string; per
 ];
 
 export function isPermission(value: string): value is Permission {
-  return value in PERMISSIONS;
+  return Object.prototype.hasOwnProperty.call(PERMISSIONS, value);
 }

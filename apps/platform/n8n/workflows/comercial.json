@@ -22,15 +22,63 @@
     },
     {
       "parameters": {
-        "jsCode": "// Verifica a assinatura HMAC-SHA256 enviada pela HR Tech (cabeçalho X-HRTech-Signature: t=<unix>,v1=<hex>).\n// Requer no n8n: NODE_FUNCTION_ALLOW_BUILTIN=crypto e a variável HRTECH_WEBHOOK_SECRET (= N8N_WEBHOOK_SECRET da SaaS).\nconst crypto = require('crypto');\nconst secret = $env.HRTECH_WEBHOOK_SECRET;\nif (!secret) throw new Error('HRTECH_WEBHOOK_SECRET não configurado (PENDENTE DE CREDENCIAL).');\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hrtech-signature'] || '');\nlet raw;\ntry {\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  raw = buf.toString('utf8');\n} catch (e) {\n  raw = JSON.stringify(item.json.body);\n}\nconst parts = Object.fromEntries(signature.split(',').map((p) => { const i = p.indexOf('='); return [p.slice(0, i).trim(), p.slice(i + 1).trim()]; }));\nconst t = Number(parts.t);\nconst v1 = String(parts.v1 || '');\nif (!t || Math.abs(Date.now() / 1000 - t) > 300) throw new Error('Assinatura ausente ou expirada.');\nconst expected = crypto.createHmac('sha256', secret).update(`${t}.${raw}`).digest('hex');\nif (expected.length !== v1.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) throw new Error('Assinatura inválida.');\nconst body = JSON.parse(raw);\nreturn [{ json: { ...body, _raw: raw, _signature: signature } }];"
+        "jsCode": "// Verifica a assinatura HMAC-SHA256 enviada pela HR Tech (cabeçalho X-HRTech-Signature: t=<unix>,v1=<hex>).\n// Requer no n8n: NODE_FUNCTION_ALLOW_BUILTIN=crypto e a variável HRTECH_WEBHOOK_SECRET (= N8N_WEBHOOK_SECRET da SaaS).\nconst crypto = require('crypto');\nconst secret = $env.HRTECH_WEBHOOK_SECRET;\nif (!secret) throw new Error('HRTECH_WEBHOOK_SECRET não configurado (PENDENTE DE CREDENCIAL).');\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hrtech-signature'] || '');\nlet raw;\ntry {\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n  raw = buf.toString('utf8');\n} catch (e) {\n  raw = JSON.stringify(item.json.body);\n}\nconst parts = Object.fromEntries(signature.split(',').map((p) => { const i = p.indexOf('='); return [p.slice(0, i).trim(), p.slice(i + 1).trim()]; }));\nconst t = Number(parts.t);\nconst v1 = String(parts.v1 || '');\nif (!t || Math.abs(Date.now() / 1000 - t) > 300) throw new Error('Assinatura ausente ou expirada.');\nconst expected = crypto.createHmac('sha256', secret).update(`${t}.${raw}`).digest('hex');\nif (expected.length !== v1.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) throw new Error('Assinatura inválida.');\nconst body = JSON.parse(raw);\n// Idempotência: a HR Tech reenvia o mesmo envio (mesma idempotencyKey) quando não sabe se ele chegou (timeout, 5xx,\n// queda). Chaves já vistas nos últimos 7 dias são respondidas como duplicadas e a ação NÃO é repetida.\n// (Dados estáticos do fluxo: valem para fluxos ativos em uma instância; com várias instâncias/fila, use Redis/Postgres.)\nconst key = String(body.idempotencyKey || headers['x-hrtech-idempotency-key'] || '');\nconst store = $getWorkflowStaticData('global');\nconst now = Date.now();\nstore.seen = store.seen || {};\nfor (const [k, at] of Object.entries(store.seen)) if (now - at > 7 * 86400000) delete store.seen[k];\nconst keys = Object.keys(store.seen);\nif (keys.length > 5000) keys.sort((a, b) => store.seen[a] - store.seen[b]).slice(0, keys.length - 5000).forEach((k) => delete store.seen[k]);\nconst duplicate = !!(key && store.seen[key]);\nif (key && !duplicate) store.seen[key] = now;\nreturn [{ json: { ...body, _raw: raw, _signature: signature, _duplicate: duplicate } }];"
       },
       "id": "ae0ed337-6d5e-5510-8d03-394986993420",
       "name": "Verificar assinatura",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        420,
+        370,
         300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json._duplicate }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "78e27e0f-159b-5deb-9dfc-a3ed4dd72179",
+      "name": "Já recebido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        530,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ received: true, duplicate: true }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "e8571c39-0b35-54c2-be81-9721eb7d9bd2",
+      "name": "Responder duplicado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        480
       ]
     },
     {
@@ -46,7 +94,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        640,
+        700,
         300
       ]
     },
@@ -232,6 +280,24 @@
     },
     "Verificar assinatura": {
       "main": [
+        [
+          {
+            "node": "Já recebido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Já recebido?": {
+      "main": [
+        [
+          {
+            "node": "Responder duplicado",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Responder 202",

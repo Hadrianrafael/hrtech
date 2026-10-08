@@ -14,20 +14,37 @@ fazer é limitado por camadas determinísticas no servidor.
 3. **Validação de argumentos** — esquemas Zod com limites de tamanho/quantidade; IDs referenciados são verificados na
    própria empresa.
 4. **Aprovação humana** — política por risco e autonomia; categorias sensíveis sempre aprovadas; payload exato com hash
-   (o que é aprovado é exatamente o que executa); decisão atômica; expiração.
+   (o que é aprovado é exatamente o que executa; adulteração depois da aprovação bloqueia a ação de vez); decisão
+   atômica; expiração. A nova tentativa de uma ação que falhou passa de novo pela política vigente. A varredura do
+   texto que sai da empresa normaliza Unicode (dígitos de largura total, caracteres invisíveis, acentos) e reconhece
+   valores, moedas, percentuais, links, palavras de preço/desconto/pagamento/contrato em português, espanhol e inglês e
+   formatos comuns de chaves de API — na dúvida, vai para aprovação.
 5. **Idempotência** — a mesma ação na mesma tarefa nunca executa duas vezes (`AiToolCall` único por chave); envios ao
    n8n únicos por chave; retornos únicos por `eventId`.
-6. **Limites** — passos por execução, tokens por tarefa, profundidade de delegação, tarefas por objetivo/agente/dia,
-   detecção de loop, orçamento diário/mensal e cota de IA do plano, lease do worker com recuperação.
-7. **Auditoria** — `AiActivity` (linha do tempo), `AiToolCall` (entrada, saída, status, suspeita), `AiTaskRun` (consumo
+6. **Limites** — passos por execução, tokens por tarefa (somados de todas as execuções), profundidade de delegação,
+   tarefas por objetivo/agente/dia, detecção de loop, orçamento diário/mensal e cota de IA do plano, prazo por
+   execução, lease do worker com renovação e recuperação. O progresso (histórico, consumo) é gravado a cada passo:
+   uma execução interrompida não repete ações e o custo já gasto conta no orçamento.
+7. **Cancelamento** — cancelar uma tarefa ou objetivo prevalece sobre a execução em andamento: nada pedido depois do
+   cancelamento é aprovado, executado ou enviado ao n8n, e o worker não pega tarefas de objetivos cancelados.
+8. **Permissões** — os agentes trabalham com os dados de toda a empresa; por isso comandar ou ver a Equipe IA exige
+   também "Ver todos os registros" (papéis personalizados são validados).
+9. **Auditoria** — `AiActivity` (linha do tempo), `AiToolCall` (entrada, saída, status, suspeita), `AiTaskRun` (consumo
    e transcrição resumida) e `AuditLog` (configuração, aprovações, pausa).
+
+## n8n e credenciais de canais
+
+A integração com o n8n é habilitada pela equipe HR Tech (veja `docs/n8n`): os fluxos usam credenciais de canais da
+instância e não podem ser ligados por uma empresa cliente sozinha. Envios de empresas pausadas, desativadas, inativas
+ou sem a integração ficam retidos.
 
 ## Prompt injection
 
 Mensagens de WhatsApp, Instagram, e-mail e chat, documentos, sites, retornos do n8n e memórias escritas por agentes
 são **dados não confiáveis**:
 
-- entram no prompt **delimitados** (`<<<DADOS_NAO_CONFIAVEIS origem="...">>> … <<<FIM_DADOS>>>`), com o preâmbulo de
+- entram no prompt **delimitados** — inclusive argumentos, resumos e resultados de passos anteriores e o plano do CEO
+  na revisão (só campos estruturais, como nome da ferramenta e situação, ficam fora do bloco) — (`<<<DADOS_NAO_CONFIAVEIS origem="...">>> … <<<FIM_DADOS>>>`), com o preâmbulo de
   segurança no prompt de sistema dizendo que nada ali é instrução;
 - são **higienizados**: remoção de caracteres de controle/invisíveis (zero-width, bidi), neutralização de delimitadores,
   truncamento de textos e listas;

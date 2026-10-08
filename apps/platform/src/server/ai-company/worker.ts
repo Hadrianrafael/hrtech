@@ -9,11 +9,12 @@ import { withSystem, systemDb, tenantDb } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { logActivity } from './activity';
 import { scheduleDueBriefings } from './briefing';
-import { executeTask } from './engine';
+import { RUN_WALL_MS, executeTask } from './engine';
 import { processDueDispatches } from './n8n';
 import { syncObjective } from './objectives';
 
 const LEASE_MINUTES = 10;
+const MIN_RUN_MS = 8_000;
 
 /** Reivindica atomicamente a próxima tarefa executável (empresa ativa, Equipe IA ligada e não pausada, agente ativo). */
 export async function claimNextTask(orgId?: string): Promise<{ id: string; organizationId: string } | null> {
@@ -24,8 +25,10 @@ export async function claimNextTask(orgId?: string): Promise<{ id: string; organ
         JOIN "AiAgent" a ON a.id = t."agentId"
         JOIN "AiCompany" c ON c."organizationId" = t."organizationId"
         JOIN "Organization" o ON o.id = t."organizationId"
+        LEFT JOIN "AiObjective" ob ON ob.id = t."objectiveId"
         WHERE t.status = 'QUEUED' AND t."waitingFor" IS NULL AND t."nextRunAt" <= now()
           AND a.status = 'ACTIVE' AND c.enabled AND NOT c.paused AND o.status = 'ACTIVE'
+          AND (ob.id IS NULL OR ob.status <> 'CANCELLED')
           ${orgId ? Prisma.sql`AND t."organizationId" = ${orgId}` : Prisma.empty}
         ORDER BY t.priority DESC, t."nextRunAt" ASC
         LIMIT 1
@@ -99,14 +102,16 @@ export async function runAiWorker(opts: { orgId?: string; maxTasks?: number; bud
     }
   }
   const max = opts.maxTasks ?? 20;
+  const deadline = started + budget;
   while (summary.tasks < max) {
-    if (Date.now() - started > budget) {
+    // Só começa outra tarefa se ainda houver tempo para uma execução útil (cada uma tem prazo próprio).
+    if (deadline - Date.now() < MIN_RUN_MS) {
       summary.deferred = true;
       break;
     }
     const next = await claimNextTask(opts.orgId);
     if (!next) break;
-    const outcome = await executeTask(next.organizationId, next.id);
+    const outcome = await executeTask(next.organizationId, next.id, { deadlineAt: Math.min(deadline, Date.now() + RUN_WALL_MS) });
     summary.tasks++;
     const key = outcome?.type ?? 'skipped';
     summary.outcomes[key] = (summary.outcomes[key] ?? 0) + 1;

@@ -106,7 +106,8 @@ export async function runBriefingTask(rc: RunContext): Promise<Outcome> {
     db.opportunity.findMany({ where: { status: 'OPEN', stage: { key: 'proposal' } }, orderBy: { value: 'desc' }, take: 8, select: { title: true, value: true, stageChangedAt: true, contact: { select: { name: true } } } }),
     db.aiTask.count({ where: { status: 'FAILED', completedAt: { gte: since24h } } }),
     db.integration.findMany({ where: { lastErrorAt: { gte: since24h } }, select: { name: true, type: true, lastError: true } }),
-    db.webhookEvent.count({ where: { status: 'FAILED', receivedAt: { gte: since24h } } }),
+    // WebhookEvent não é escopado automaticamente (organizationId opcional): filtro explícito.
+    db.webhookEvent.count({ where: { organizationId: rc.orgId, status: 'FAILED', receivedAt: { gte: since24h } } }),
     db.opportunity.findMany({ where: { status: 'OPEN', updatedAt: { gte: new Date(Date.now() - 7 * 86_400_000) } }, orderBy: { value: 'desc' }, take: 5, select: { title: true, value: true, contact: { select: { name: true } }, stage: { select: { name: true } } } }),
   ]);
 
@@ -184,12 +185,19 @@ export async function runBriefingTask(rc: RunContext): Promise<Outcome> {
     update: { content, data: { newLeads, priorities, problems } as Prisma.InputJsonValue },
   });
   let delivery = 'disponível na Central do CEO';
-  if (cfg.deliverViaN8n && cfg.recipients.length) {
+  if (cfg.deliverViaN8n && cfg.recipients.length && !rc.company.n8nEnabled) {
+    delivery = 'envio pelo n8n não realizado: integração desativada nesta empresa';
+  } else if (cfg.deliverViaN8n && cfg.recipients.length) {
     const users = await systemDb.user.findMany({ where: { id: { in: cfg.recipients }, memberships: { some: { organizationId: rc.orgId, status: 'ACTIVE' } } }, select: { name: true, email: true } });
     if (users.length) {
       const d = await enqueueDispatch(rc.orgId, { workflow: 'briefing', payload: { day, content, recipients: users }, idempotencyKey: `briefing:${rc.orgId}:${day}:${briefing.id}`, taskId: null });
       const outcome = d.status === 'PENDING' ? await sendDispatch(d.id) : 'skipped';
-      delivery = outcome === 'pending_credential' ? 'envio pelo n8n PENDENTE DE CREDENCIAL' : `enviado ao n8n para ${users.length} destinatário(s)`;
+      delivery =
+        outcome === 'pending_credential'
+          ? 'envio pelo n8n PENDENTE DE CREDENCIAL'
+          : outcome === 'held'
+            ? 'envio pelo n8n retido (Equipe IA pausada ou integração desativada)'
+            : `enviado ao n8n para ${users.length} destinatário(s)`;
       await db.aiBriefing.update({ where: { id: briefing.id }, data: { delivery: { n8nDispatchId: d.id, status: outcome } as Prisma.InputJsonValue } });
     }
   }

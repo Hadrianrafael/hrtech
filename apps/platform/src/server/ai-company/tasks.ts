@@ -126,6 +126,9 @@ export async function delegateTask(
   const target = await db.aiAgent.findFirst({ where: { key: args.agentKey } });
   if (!target || target.status === 'DISABLED') throw new AppError(`Agente "${args.agentKey}" não está disponível.`);
   if (target.isCeo) throw new AppError('Tarefas não podem ser delegadas ao CEO Agent.');
+  // Mesma delegação repetida (ex.: execução retomada depois de interrupção): reaproveita a subtarefa existente.
+  const same = await db.aiTask.findFirst({ where: { parentTaskId: tc.task.id, agentId: target.id, title: args.title.slice(0, 200), status: { notIn: ['FAILED', 'CANCELLED'] } } });
+  if (same) return same;
   const siblings = await db.aiTask.count({ where: { parentTaskId: tc.task.id } });
   if (siblings >= limits.maxSubtasksPerTask) throw new LimitExceededError(`Limite de ${limits.maxSubtasksPerTask} subtarefas por tarefa atingido.`);
   let dependsOnTaskId: string | null = null;

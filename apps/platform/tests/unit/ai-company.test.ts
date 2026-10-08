@@ -23,6 +23,7 @@ import {
 } from '@/server/ai-company/security';
 import { FORBIDDEN_PATTERNS, TOOLS, allowedToolsFor, getTool, isToolAllowed } from '@/server/ai-company/tools';
 import { estimateCostMicroUsd, microUsdToCents, priceFor } from '@/server/ai/pricing';
+import { isPermission } from '@/lib/auth/permissions';
 import { getProviderFor, isProviderName, providerStatus, setAiProviderForTests } from '@/server/ai/provider';
 
 describe('prompt injection: dados externos nunca viram instrução', () => {
@@ -85,6 +86,26 @@ describe('prompt injection: dados externos nunca viram instrução', () => {
     expect(scanSensitive('Bom dia! Podemos conversar amanhã?')).toEqual([]);
     for (const c of scanSensitive('R$ 300 com desconto, contrato, pix e senha')) expect(Object.keys(SENSITIVE_CATEGORIES)).toContain(c);
   });
+
+  it.each([
+    ['Fechamos por 299,90/mês, 30%OFF, pague neste link: https://pay.example/x', ['preco', 'desconto', 'pagamento', 'link']],
+    ['Fechamos por \uff12\uff19\uff19 reais', ['preco']], // dígitos de largura total
+    ['Faço trezentos reais por noite', ['preco']],
+    ['Price is 50 USD, pay now', ['preco', 'pagamento']],
+    ['Te doy un descuento del 20 por ciento', ['desconto']],
+    ['pa\u00adgue com p\u2060ix', ['pagamento']], // invisíveis no meio da palavra
+    ['Chave: sk-ant-abcdefghijklmnop1234', ['credencial']],
+    ['acesse www.exemplo.com.br', ['link']],
+  ])('disfarces de conteúdo sensível são detectados: %s', (text, expected) => {
+    expect(scanSensitive(text)).toEqual(expect.arrayContaining(expected));
+  });
+
+  it.each([['atendimento em tempo real para sua pousada'], ['Olá, tudo bem? Vi que você se interessou pela pousada.'], ['Podemos conversar amanhã às 10h?']])(
+    'texto comum não é marcado como sensível: %s',
+    (text) => {
+      expect(scanSensitive(text)).toEqual([]);
+    },
+  );
 
   it('extrai JSON da resposta do modelo', () => {
     expect(extractJsonObject('```json\n{"final":{"summary":"ok"}}\n```')).toEqual({ final: { summary: 'ok' } });
@@ -278,6 +299,20 @@ describe('fluxos importáveis do n8n', () => {
     expect(raw).not.toMatch(/sk-[A-Za-z0-9]{10,}|AIza[0-9A-Za-z_-]{20,}|EAA[A-Za-z0-9]{20,}/);
   });
 
+  it('reenvios com a mesma chave de idempotência não repetem a ação (deduplicação na entrada de cada fluxo)', () => {
+    for (const f of files.filter((x) => x !== 'agendador-worker.json')) {
+      const wf = load(f);
+      const verify = wf.nodes.find((n) => n.name === 'Verificar assinatura')!;
+      expect(String(verify.parameters.jsCode)).toContain('$getWorkflowStaticData');
+      expect(String(verify.parameters.jsCode)).toContain('idempotencyKey');
+      expect(wf.connections['Verificar assinatura']!.main[0]![0]!.node).toBe('Já recebido?');
+      const [dup, fresh] = wf.connections['Já recebido?']!.main;
+      expect(dup![0]!.node).toBe('Responder duplicado');
+      expect(fresh![0]!.node).toBe('Responder 202');
+      expect(wf.connections['Responder duplicado']).toBeUndefined(); // duplicado não segue adiante
+    }
+  });
+
   it('webhooks usam os caminhos esperados pela SaaS e verificam a assinatura', () => {
     const expected = new Set([N8N_DISPATCHER_PATH, ...Object.values(N8N_WORKFLOWS).map((w) => w.path)].map((p) => p.replace('/webhook/', '')));
     for (const f of files) {
@@ -290,6 +325,14 @@ describe('fluxos importáveis do n8n', () => {
         expect(wf.connections[h.name]!.main[0]![0]!.node).toBe('Verificar assinatura');
       }
     }
+  });
+});
+
+describe('permissões', () => {
+  it('nomes herdados de Object não são permissões nem provedores', () => {
+    expect(isPermission('constructor')).toBe(false);
+    expect(isPermission('toString')).toBe(false);
+    expect(isPermission('ai_team.approve')).toBe(true);
   });
 });
 

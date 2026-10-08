@@ -22,6 +22,9 @@ const MAX_STRING = 600;
 
 /** Caracteres de controle e invisíveis (zero-width, bidi, separadores de linha Unicode) usados para esconder instruções. */
 const INVISIBLE_CHARS = new RegExp('[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f\\u200b-\\u200f\\u2028\\u2029\\u202a-\\u202e\\u2066-\\u2069\\ufeff]', 'g');
+/** Hífen suave, word joiner, separador mongol e similares (não cobertos acima). */
+const SOFT_INVISIBLE = new RegExp('[\\u00ad\\u034f\\u061c\\u115f\\u1160\\u17b4\\u17b5\\u180e\\u2060-\\u2064\\u206a-\\u206f\\u3164\\uffa0]', 'g');
+const DIACRITICS = new RegExp('[\\u0300-\\u036f]', 'g');
 const MAX_ARRAY = 40;
 const MAX_DEPTH = 6;
 
@@ -77,18 +80,49 @@ export function detectInjection(text: string): string[] {
   return INJECTION_PATTERNS.filter((p) => p.re.test(sample)).map((p) => p.id);
 }
 
+// Palavras-chave em português, espanhol e inglês (o texto é normalizado antes: sem acentos, minúsculo).
 const SENSITIVE_PATTERNS: { category: SensitiveCategory; re: RegExp }[] = [
-  { category: 'preco', re: /R\$\s?\d|\b\d+[.,]?\d*\s?(reais|mil reais)\b|\b(preço|preco|valor da mensalidade|tarifa|orçamento de|orcamento de|mensalidade de)\b/i },
-  { category: 'desconto', re: /\b(desconto|cupom|promoção|promocao|\d{1,2}\s?% (de )?(off|desconto)|gr[aá]tis por|isenção|isencao)\b/i },
-  { category: 'contrato', re: /\b(contrato|cláusula|clausula|multa rescis|fidelidade de)\b/i },
-  { category: 'pagamento', re: /\b(pagamento|pague|pagar|boleto|pix|cartão de crédito|cartao de credito|cobrança|cobranca|fatura|link de pagamento)\b/i },
-  { category: 'credencial', re: /\b(senha|password|api[_ -]?key|token de acesso|chave de api|secret)\b/i },
+  {
+    category: 'preco',
+    re: /(r\$|us\$|\$|€|£|\b(brl|usd|eur)\b)\s?\d|\d\s?(r\$|\$|€|£|(brl|usd|eur)\b)|\b\d+[.,]\d{2}\b|\b(reais|dolares?|euros?|centavos)\b|\b(preco|precos|valor(es)? (da|de|do)|tarifa|orcamento|mensalidade|diaria(s)? (de|por|a partir)|custa(m)?|cobramos|price|pricing|cost|precio|por mes|ao mes|por noite|por pessoa|por hospede)\b|\/mes\b/,
+  },
+  {
+    category: 'desconto',
+    re: /\d\s?%|\bpor ?cento\b|\b(desconto|descuento|discount|cupom|cupon|coupon|promocao|promo|off|gratis|free|isencao|abatimento|bonus|cashback|reembolso|refund|estorno)\b/,
+  },
+  { category: 'contrato', re: /\b(contrato|contract|clausula|multa|fidelidade|rescisao|termo de adesao|assinatura do termo)\b/ },
+  {
+    category: 'pagamento',
+    re: /\b(pagamento|pague|pagar|pago|paga|payment|pay|boleto|pix|cartao|credit card|tarjeta|cobranca|fatura|invoice|transferencia|deposito|chave pix|link de pagamento|checkout)\b/,
+  },
+  {
+    category: 'credencial',
+    re: /\b(senha|password|contrasena|api[_ -]?key|token|chave de api|secret|segredo|credencia(l|is))\b|\b(sk-[a-z0-9_-]{16,}|sk-ant-[a-z0-9_-]{10,}|akia[0-9a-z]{16}|ghp_[a-z0-9]{20,}|github_pat_[a-z0-9_]{20,}|xox[abp]-[a-z0-9-]{10,}|aiza[0-9a-z_-]{30,}|eaa[a-z0-9]{30,})|-----begin [a-z ]*private key/,
+  },
+  { category: 'link', re: /\bhttps?:\/\/|\bwww\.|\b[a-z0-9-]+\.(com|net|org|io|app|link|ly|me|br|co)(\.[a-z]{2})?(\/|\b)|\bbit\.ly\b|wa\.me/ },
 ];
 
-/** Classifica conteúdo que vai para fora (mensagens, publicações) em categorias sensíveis. */
+/** Normaliza para a varredura: formas Unicode compatíveis (NFKC: dígitos e letras de largura total etc.), sem invisíveis, sem acentos, minúsculo. */
+export function normalizeForScan(text: string): string {
+  return text
+    .normalize('NFKC')
+    .replace(INVISIBLE_CHARS, '')
+    .replace(SOFT_INVISIBLE, '')
+    .normalize('NFD')
+    .replace(DIACRITICS, '')
+    .replace(/\p{Nd}/gu, (d) => (d >= '0' && d <= '9' ? d : '0')) // dígitos de outros sistemas de escrita
+    .toLowerCase();
+}
+
+/**
+ * Classifica conteúdo que vai para fora (mensagens, publicações, issues) em categorias sensíveis. É conservador de
+ * propósito: na dúvida, a ação vai para aprovação humana (valores, percentuais, links e palavras de pagamento em
+ * português, espanhol e inglês, além de formatos comuns de chaves de API).
+ */
 export function scanSensitive(text: string): SensitiveCategory[] {
   if (!text) return [];
-  return [...new Set(SENSITIVE_PATTERNS.filter((p) => p.re.test(text)).map((p) => p.category))];
+  const t = normalizeForScan(text);
+  return [...new Set(SENSITIVE_PATTERNS.filter((p) => p.re.test(t)).map((p) => p.category))];
 }
 
 /** Extrai o primeiro objeto JSON de uma resposta de modelo (tolerante a ```json e texto ao redor). */

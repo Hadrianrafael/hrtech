@@ -44,6 +44,10 @@ gestores veem e enviam comandos; aprovar e configurar exigem as permissões espe
 | `financeiro` | Financeiro/Operações | `finance.overview`, `n8n.finance_charge` (sempre com aprovação) |
 | `cs` | Atendimento/CS | conversas aguardando, follow-ups, notas, `messages.send` (não duplica o chatbot em tempo real) |
 
+As ferramentas `n8n.*` só ficam disponíveis quando a integração com o n8n está habilitada para a empresa (veja
+`docs/n8n`). Mesmo nos roteiros determinísticos do CEO, a delegação passa pela ferramenta `agents.delegate`: com o CEO
+em modo manual, cada delegação aguarda aprovação.
+
 Cada agente tem **um provedor e um modelo** (OpenAI, Anthropic/Claude ou Google Gemini; "auto" usa o padrão do
 ambiente), **autonomia** (manual, supervisionado, autônomo), **allowlist de ferramentas** (subconjunto do teto do
 cargo), limites próprios e **prompt versionado** (cada alteração cria uma versão; rollback = ativar uma anterior).
@@ -74,7 +78,9 @@ modelo (o playbook entra como sugestão), lê dados pelas ferramentas, delega e 
 
 Estados das tarefas: `QUEUED`, `RUNNING`, `WAITING_APPROVAL`, `COMPLETED`, `FAILED`, `CANCELLED`. Uma tarefa em
 `RUNNING` com `waitingFor=n8n:<id>` aguarda o retorno do n8n; `waitingFor=task:<id>` aguarda a etapa anterior.
-Falhas temporárias voltam para a fila com backoff (1 min, 5 min, 15 min, 1 h…) até `maxAttempts`.
+Falhas temporárias voltam para a fila com backoff (1 min, 5 min, 15 min, 1 h…) até `maxAttempts`. Cada execução tem
+prazo próprio (~35 s, abaixo da duração máxima das funções serverless): ao esgotar, a tarefa volta para a fila sem
+gastar tentativa e continua de onde parou, porque histórico e consumo são gravados a cada passo.
 
 ## Aprovações
 

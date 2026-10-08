@@ -25,10 +25,22 @@ export function getTool(key: string): ToolDef | undefined {
   return Object.prototype.hasOwnProperty.call(TOOLS, key) ? TOOLS[key] : undefined;
 }
 
-/** Ferramentas que um agente pode usar agora: allowlist do agente ∩ teto do cargo ∩ ferramentas existentes. */
-export function allowedToolsFor(agent: { key: string; tools: string[] }): ToolDef[] {
+/** Motivo pelo qual a ferramenta está indisponível para a empresa (ou null). Ferramentas n8n exigem a integração habilitada. */
+export function toolUnavailableReason(key: string, company: { n8nEnabled: boolean } | null | undefined): string | null {
+  if (key.startsWith('n8n.') && !company?.n8nEnabled) return 'a integração com o n8n está desativada nesta empresa (Equipe IA → Configurações).';
+  return null;
+}
+
+/**
+ * Ferramentas que um agente pode usar agora: allowlist do agente ∩ teto do cargo ∩ ferramentas existentes
+ * (e, quando a empresa é informada, disponíveis para ela).
+ */
+export function allowedToolsFor(agent: { key: string; tools: string[] }, company?: { n8nEnabled: boolean } | null): ToolDef[] {
   const ceiling = isAgentKey(agent.key) ? new Set(ROLE_TOOLS[agent.key]) : new Set<string>();
-  return agent.tools.filter((k) => ceiling.has(k)).map((k) => getTool(k)).filter((t): t is ToolDef => !!t);
+  return agent.tools
+    .filter((k) => ceiling.has(k) && (company === undefined || !toolUnavailableReason(k, company)))
+    .map((k) => getTool(k))
+    .filter((t): t is ToolDef => !!t);
 }
 
 export function isToolAllowed(agent: { key: string; tools: string[] }, key: string) {
