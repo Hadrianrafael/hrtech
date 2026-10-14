@@ -36,8 +36,8 @@ export const privacy: LegalDocument = {
     {
       title: '5. Cookies and browser storage',
       paragraphs: [
-        'This website does not set its own tracking cookies; the only analytics cookies are those of Google Analytics, described below. It stores in your browser (local storage) only the language you chose and, where applicable, your decision about analytics cookies.',
-        'We use Google Analytics to measure audience in aggregate. For visitors whose time zone indicates Europe (European Economic Area, United Kingdom and Switzerland), analytics cookies are only enabled after consent; without it, Google Analytics runs without storing cookies. For all other visitors, Google Analytics may store analytics cookies (such as _ga) without asking first. You can change or withdraw your decision at any time with the “Cookie preferences” link in the footer. Google’s privacy policy applies to that processing.',
+        'This website does not set its own tracking cookies. It stores in your browser (local storage) only the language you chose and your decision about analytics cookies; this is functional data, not tracking.',
+        'We use Google Analytics to measure audience, but only if you accept, in every country. Until you accept, the Google Analytics script is not loaded and no analytics cookie is stored. If you decline, it is not loaded and we remove the analytics cookies the site can control (_ga, _ga_*, _gid and _gat*). You can accept, decline or change your decision at any time with the “Cookie preferences” link in the footer. If you accept, Google Analytics stores analytics cookies and processes usage data under Google’s privacy policy; we do not turn on advertising or personalization features. Data already sent to Google before you decline is covered by Google’s policy; to ask for deletion, write to {email}.',
       ],
     },
     {

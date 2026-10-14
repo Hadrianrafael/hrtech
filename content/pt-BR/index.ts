@@ -386,7 +386,7 @@ export const ptBR: Dictionary = {
     languagesTitle: 'Idiomas',
   },
   consent: {
-    text: 'Usamos cookies de análise (Google Analytics) para entender como o site é usado. Você aceita?',
+    text: 'Só ativamos o Google Analytics (cookies de análise) se você aceitar. Você pode mudar de ideia a qualquer momento.',
     accept: 'Aceitar',
     reject: 'Recusar',
     policy: 'Política de Privacidade',

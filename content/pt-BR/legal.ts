@@ -36,8 +36,8 @@ export const privacy: LegalDocument = {
     {
       title: '5. Cookies e armazenamento no navegador',
       paragraphs: [
-        'Este site não define cookies de rastreamento próprios; os únicos cookies de análise são os do Google Analytics, descritos abaixo. Guardamos no seu navegador (armazenamento local) apenas o idioma que você escolheu e, quando aplicável, a sua decisão sobre cookies de análise.',
-        'Usamos o Google Analytics para medir a audiência de forma agregada. Para visitantes cujo fuso horário indica a Europa (Espaço Econômico Europeu, Reino Unido e Suíça), os cookies de análise só são ativados depois do consentimento; sem ele, o Google Analytics funciona sem gravar cookies. Para os demais visitantes, o Google Analytics pode gravar cookies de análise (como o _ga) sem pedido prévio. Você pode mudar ou retirar sua decisão a qualquer momento pelo link “Preferências de cookies”, no rodapé. O tratamento desses dados segue a política de privacidade do Google.',
+        'Este site não define cookies de rastreamento próprios. Guardamos no seu navegador (armazenamento local) apenas o idioma que você escolheu e a sua decisão sobre cookies de análise; são dados funcionais, não de rastreamento.',
+        'Usamos o Google Analytics para medir a audiência, mas somente se você aceitar, em qualquer país. Antes do seu aceite, o script do Google Analytics não é carregado e nenhum cookie de análise é gravado. Se você recusar, ele não é carregado e removemos os cookies de análise que o site consegue controlar (_ga, _ga_*, _gid e _gat*). Você pode aceitar, recusar ou mudar a decisão a qualquer momento pelo link “Preferências de cookies”, no rodapé. Ao aceitar, o Google Analytics grava cookies de análise e trata dados de uso conforme a política de privacidade do Google; não ativamos recursos de publicidade nem de personalização. Dados já enviados ao Google antes de uma recusa seguem a política do Google; para pedir a exclusão, escreva para {email}.',
       ],
     },
     {

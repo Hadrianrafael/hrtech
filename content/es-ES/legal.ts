@@ -36,8 +36,8 @@ export const privacy: LegalDocument = {
     {
       title: '5. Cookies y almacenamiento en el navegador',
       paragraphs: [
-        'Este sitio no define cookies de seguimiento propias; las únicas cookies de analítica son las de Google Analytics, descritas a continuación. Guarda en tu navegador (almacenamiento local) únicamente el idioma que has elegido y, cuando corresponda, tu decisión sobre las cookies de analítica.',
-        'Utilizamos Google Analytics para medir la audiencia de forma agregada. Para los visitantes cuya zona horaria indica Europa (Espacio Económico Europeo, Reino Unido y Suiza), las cookies de analítica solo se activan con tu consentimiento; sin él, Google Analytics funciona sin guardar cookies. Para el resto de visitantes, Google Analytics puede guardar cookies de analítica (como _ga) sin consulta previa. Puedes cambiar o retirar tu decisión en cualquier momento con el enlace «Preferencias de cookies» del pie de página. A ese tratamiento le es aplicable la política de privacidad de Google.',
+        'Este sitio no define cookies de seguimiento propias. Guarda en tu navegador (almacenamiento local) únicamente el idioma que has elegido y tu decisión sobre las cookies de analítica; son datos funcionales, no de seguimiento.',
+        'Utilizamos Google Analytics para medir la audiencia, pero solo si lo aceptas, en cualquier país. Hasta que aceptes, el script de Google Analytics no se carga y no se guarda ninguna cookie de analítica. Si lo rechazas, no se carga y eliminamos las cookies de analítica que el sitio puede controlar (_ga, _ga_*, _gid y _gat*). Puedes aceptar, rechazar o cambiar tu decisión en cualquier momento con el enlace «Preferencias de cookies» del pie de página. Si aceptas, Google Analytics guarda cookies de analítica y trata datos de uso conforme a la política de privacidad de Google; no activamos funciones de publicidad ni de personalización. Los datos enviados a Google antes de un rechazo se rigen por la política de Google; para solicitar su supresión, escribe a {email}.',
       ],
     },
     {

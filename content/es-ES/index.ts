@@ -390,7 +390,7 @@ export const esES: Dictionary = {
     languagesTitle: 'Idiomas',
   },
   consent: {
-    text: 'Utilizamos cookies de analítica (Google Analytics) para entender cómo se usa el sitio. ¿Las aceptas?',
+    text: 'Solo activamos Google Analytics (cookies de analítica) si lo aceptas. Puedes cambiar de opinión en cualquier momento.',
     accept: 'Aceptar',
     reject: 'Rechazar',
     policy: 'Política de privacidad',
