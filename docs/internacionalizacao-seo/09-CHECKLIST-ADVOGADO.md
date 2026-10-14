@@ -57,3 +57,5 @@ Respostas curtas bastam; eu aplico no código e nos 3 idiomas.
 7. **Decisão sobre o formulário**: manter via WhatsApp/e-mail (sem servidor) ou contratar um serviço de recebimento (nesse caso, nome do prestador e política revisada).
 8. **Textos aprovados pelo advogado** (política e termos em pt-BR, en-US, es-ES) ou, se preferir publicar antes, **autorização por escrito** para publicar com A1, A2 e A4 em aberto, ciente do risco.
 9. **Acesso ao domínio**: confirmar que `https://hrtechsistemas.com.br` abre com HTTPS (meu ambiente não alcança o domínio) ou liberar o acesso.
+
+> Minuta completa dos textos atuais, com as pendências marcadas por seção, em `11-MINUTA-POLITICAS-PARA-REVISAO.md` (pronta para enviar ao advogado).
