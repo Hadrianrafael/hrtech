@@ -10,38 +10,56 @@ export const privacy: LegalDocument = {
   ],
   sections: [
     {
-      title: '1. Quais dados coletamos',
+      title: '1. Quem é o responsável',
+      paragraphs: [
+        'O controlador dos dados é a {company}, CNPJ {cnpj}, com sede em Suzano (SP), Brasil. O canal para dúvidas e solicitações sobre privacidade é {email}.',
+      ],
+    },
+    {
+      title: '2. Quais dados coletamos',
       paragraphs: [
         'Coletamos apenas os dados que você mesmo informa ao preencher o formulário de contato: nome, empresa (opcional), país, e-mail, WhatsApp ou telefone (opcional), tipo de serviço, orçamento estimado (opcional, quando disponível), idioma de atendimento e a descrição do projeto.',
       ],
     },
     {
-      title: '2. Como usamos os dados',
+      title: '3. Como usamos os dados',
       paragraphs: [
         'Usamos essas informações exclusivamente para responder ao seu contato e, se houver interesse mútuo, avançar em uma proposta comercial. Não vendemos, alugamos ou compartilhamos seus dados com terceiros para fins de marketing.',
       ],
     },
     {
-      title: '3. Envio por WhatsApp e e-mail',
+      title: '4. Envio por WhatsApp e e-mail',
       paragraphs: [
-        'Dependendo da configuração do formulário no momento do seu contato, os dados podem ser enviados diretamente para o WhatsApp ou o e-mail da HR Tech, abertos no seu próprio dispositivo. Nesse caso, o envio segue as políticas de privacidade do WhatsApp e do seu provedor de e-mail.',
+        'Dependendo da configuração do formulário no momento do seu contato, os dados podem ser enviados diretamente para o WhatsApp ou o e-mail da HR Tech, abertos no seu próprio dispositivo. Nesse caso, o envio segue as políticas de privacidade do WhatsApp (Meta) e do seu provedor de e-mail.',
       ],
     },
     {
-      title: '4. Cookies e armazenamento no navegador',
+      title: '5. Cookies e armazenamento no navegador',
       paragraphs: [
-        'Este site não utiliza cookies próprios de rastreamento. Guardamos no seu navegador (armazenamento local) apenas o idioma que você escolheu e, quando aplicável, a sua decisão sobre cookies de análise.',
-        'Usamos o Google Analytics para medir a audiência de forma agregada. Para visitantes do Espaço Econômico Europeu, do Reino Unido e da Suíça, os cookies de análise só são ativados depois do consentimento; sem ele, o Google Analytics funciona sem gravar cookies. O tratamento desses dados segue a política de privacidade do Google.',
+        'Este site não define cookies de rastreamento próprios; os únicos cookies de análise são os do Google Analytics, descritos abaixo. Guardamos no seu navegador (armazenamento local) apenas o idioma que você escolheu e, quando aplicável, a sua decisão sobre cookies de análise.',
+        'Usamos o Google Analytics para medir a audiência de forma agregada. Para visitantes cujo fuso horário indica a Europa (Espaço Econômico Europeu, Reino Unido e Suíça), os cookies de análise só são ativados depois do consentimento; sem ele, o Google Analytics funciona sem gravar cookies. Para os demais visitantes, o Google Analytics pode gravar cookies de análise (como o _ga) sem pedido prévio. Você pode mudar ou retirar sua decisão a qualquer momento pelo link “Preferências de cookies”, no rodapé. O tratamento desses dados segue a política de privacidade do Google.',
       ],
     },
     {
-      title: '5. Seus direitos',
+      title: '6. Prestadores e transferências internacionais',
       paragraphs: [
-        'Você pode solicitar a qualquer momento o acesso, a correção ou a exclusão dos dados que nos enviou, nos termos da Lei Geral de Proteção de Dados (LGPD), pelo e-mail {email}.',
+        'Para o funcionamento do site e do atendimento, podem tratar dados em nosso nome ou por conta própria: o Google (Google Analytics), a Meta (WhatsApp) e o provedor de e-mail utilizado pela HR Tech. Esses prestadores podem processar dados fora do seu país, inclusive nos Estados Unidos. Como a HR Tech está no Brasil, os dados que você nos envia são tratados no Brasil.',
       ],
     },
     {
-      title: '6. Contato',
+      title: '7. Por quanto tempo guardamos',
+      paragraphs: [
+        'Guardamos os dados enviados pelo formulário pelo tempo necessário para responder ao seu contato, conduzir uma eventual proposta e cumprir obrigações legais. Você pode pedir a exclusão antes disso, como indicado abaixo.',
+      ],
+    },
+    {
+      title: '8. Seus direitos',
+      paragraphs: [
+        'Você pode solicitar a qualquer momento a confirmação do tratamento, o acesso, a correção, a anonimização ou a exclusão dos dados que nos enviou, nos termos da Lei Geral de Proteção de Dados (LGPD), pelo e-mail {email}. Se você estiver na União Europeia, no Reino Unido ou nos Estados Unidos, também pode ter direitos previstos na legislação local (como o GDPR ou leis estaduais de privacidade). Você pode ainda reclamar à autoridade de proteção de dados do seu país; no Brasil, a ANPD.',
+      ],
+    },
+    {
+      title: '9. Contato',
       paragraphs: ['Dúvidas sobre esta política podem ser enviadas para {email}.'],
     },
   ],

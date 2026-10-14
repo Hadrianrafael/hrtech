@@ -253,11 +253,13 @@ export type Dictionary = {
     contactTitle: string;
     companyLinks: { about: string; process: string; technologies: string; faq: string; contact: string };
     rights: string;
+    /** Rótulo do CNPJ (identificação fiscal brasileira), explicado para leitores de outros países. */
+    companyId: string;
     location: string;
     privacy: string;
     terms: string;
     languagesTitle: string;
   };
-  consent: { text: string; accept: string; reject: string; policy: string };
+  consent: { text: string; accept: string; reject: string; policy: string; manage: string };
   notFound: { title: string; text: string; cta: string };
 };

@@ -7,6 +7,8 @@ import type { Locale } from '@/lib/i18n/config';
 import { browserSignals, isEuropeanTimeZone } from '@/lib/i18n/detect';
 import { pathFor } from '@/lib/i18n/routes';
 
+export const REOPEN_CONSENT_EVENT = 'hrtech:open-consent';
+
 type Props = { locale: Locale; text: { text: string; accept: string; reject: string; policy: string } };
 
 /** Pedido de consentimento para cookies de análise — exibido apenas a visitantes com fuso horário europeu. */
@@ -15,6 +17,10 @@ export function ConsentBanner({ locale, text }: Props) {
 
   useEffect(() => {
     setVisible(isEuropeanTimeZone(browserSignals().timeZone) && getConsent() === undefined);
+    // O link "Preferências de cookies" do rodapé reabre o aviso para qualquer visitante (retirar/alterar a decisão).
+    const reopen = () => setVisible(true);
+    window.addEventListener(REOPEN_CONSENT_EVENT, reopen);
+    return () => window.removeEventListener(REOPEN_CONSENT_EVENT, reopen);
   }, []);
 
   if (!visible) return null;

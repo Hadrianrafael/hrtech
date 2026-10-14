@@ -10,38 +10,56 @@ export const privacy: LegalDocument = {
   ],
   sections: [
     {
-      title: '1. What we collect',
+      title: '1. Who is responsible',
+      paragraphs: [
+        'The data controller is {company}, Brazilian company ID (CNPJ) {cnpj}, based in Suzano (São Paulo), Brazil. For privacy questions and requests, write to {email}.',
+      ],
+    },
+    {
+      title: '2. What we collect',
       paragraphs: [
         'We only collect what you enter in the contact form: your name, company (optional), country, email, WhatsApp or phone number (optional), type of service, estimated budget (optional, when offered), preferred language and a description of your project.',
       ],
     },
     {
-      title: '2. How we use it',
+      title: '3. How we use it',
       paragraphs: [
         'We use this information only to reply to your inquiry and, if there is mutual interest, to prepare a commercial proposal. We do not sell, rent or share your data with third parties for marketing.',
       ],
     },
     {
-      title: '3. Sending by WhatsApp and email',
+      title: '4. Sending by WhatsApp and email',
       paragraphs: [
-        'Depending on how the form is configured when you contact us, your details may be sent directly to HR Tech’s WhatsApp or email, opened on your own device. In that case, delivery is subject to the privacy policies of WhatsApp and your email provider.',
+        'Depending on how the form is configured when you contact us, your details may be sent directly to HR Tech’s WhatsApp or email, opened on your own device. In that case, delivery is subject to the privacy policies of WhatsApp (Meta) and your email provider.',
       ],
     },
     {
-      title: '4. Cookies and browser storage',
+      title: '5. Cookies and browser storage',
       paragraphs: [
-        'This website does not use first-party tracking cookies. It stores in your browser (local storage) only the language you chose and, where applicable, your decision about analytics cookies.',
-        'We use Google Analytics to measure audience in aggregate. For visitors in the European Economic Area, the United Kingdom and Switzerland, analytics cookies are only enabled after consent; without it, Google Analytics runs without storing cookies. Google’s privacy policy applies to that processing.',
+        'This website does not set its own tracking cookies; the only analytics cookies are those of Google Analytics, described below. It stores in your browser (local storage) only the language you chose and, where applicable, your decision about analytics cookies.',
+        'We use Google Analytics to measure audience in aggregate. For visitors whose time zone indicates Europe (European Economic Area, United Kingdom and Switzerland), analytics cookies are only enabled after consent; without it, Google Analytics runs without storing cookies. For all other visitors, Google Analytics may store analytics cookies (such as _ga) without asking first. You can change or withdraw your decision at any time with the “Cookie preferences” link in the footer. Google’s privacy policy applies to that processing.',
       ],
     },
     {
-      title: '5. Your rights',
+      title: '6. Service providers and international transfers',
       paragraphs: [
-        'You may ask at any time to access, correct or delete the data you sent us. Depending on where you live, laws such as Brazil’s LGPD, the EU/UK GDPR or US state privacy laws give you specific rights. Write to {email}.',
+        'To run the website and respond to you, the following may process data on our behalf or on their own account: Google (Google Analytics), Meta (WhatsApp) and the email provider used by HR Tech. These providers may process data outside your country, including in the United States. Because HR Tech is based in Brazil, the data you send us is processed in Brazil.',
       ],
     },
     {
-      title: '6. Contact',
+      title: '7. How long we keep it',
+      paragraphs: [
+        'We keep the data you send through the form for as long as needed to reply to you, handle any proposal and meet legal obligations. You can ask us to delete it sooner, as described below.',
+      ],
+    },
+    {
+      title: '8. Your rights',
+      paragraphs: [
+        'You may ask at any time to confirm whether we process your data, and to access, correct, delete or restrict the data you sent us, as provided by Brazil’s LGPD. Depending on where you live, laws such as the EU/UK GDPR or US state privacy laws also give you specific rights. Write to {email}. You may also complain to the data protection authority in your country (in Brazil, the ANPD; in Spain, the AEPD).',
+      ],
+    },
+    {
+      title: '9. Contact',
       paragraphs: ['Questions about this policy can be sent to {email}.'],
     },
   ],

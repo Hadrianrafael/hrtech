@@ -9,6 +9,7 @@ function fill(text: string): string {
   return text
     .replaceAll('{company}', siteConfig.legalName)
     .replaceAll('{site}', siteConfig.url.replace('https://', ''))
+    .replaceAll('{cnpj}', siteConfig.cnpj)
     .replaceAll('{email}', siteConfig.contact.email);
 }
 
