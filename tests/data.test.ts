@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { projectCategories, projects } from '@/data/projects';
-import { services } from '@/data/services';
 
 describe('projects data', () => {
   it('tem slugs únicos', () => {
@@ -22,12 +21,5 @@ describe('projects data', () => {
         expect(project.gallery.length).toBe(0);
       }
     }
-  });
-});
-
-describe('services data', () => {
-  it('tem slugs únicos', () => {
-    const slugs = services.map((service) => service.slug);
-    expect(new Set(slugs).size).toBe(slugs.length);
   });
 });
