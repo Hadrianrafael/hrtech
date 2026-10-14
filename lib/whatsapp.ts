@@ -1,7 +1,7 @@
 import { siteConfig } from '@/config/site';
 
-/** Monta um link wa.me com mensagem pré-preenchida. */
-export function whatsappLink(message: string = siteConfig.contact.whatsappMessage, number: string = siteConfig.contact.whatsappNumber): string {
+/** Monta um link wa.me com mensagem pré-preenchida (no idioma da página). */
+export function whatsappLink(message: string, number: string = siteConfig.contact.whatsappNumber): string {
   const digits = number.replace(/\D/g, '');
   const text = message.trim() ? `?text=${encodeURIComponent(message.trim())}` : '';
   return `https://wa.me/${digits}${text}`;

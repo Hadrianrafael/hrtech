@@ -1,13 +1,16 @@
 import type { MetadataRoute } from 'next';
 import { siteConfig } from '@/config/site';
+import { getDictionary } from '@/content';
 
 export const dynamic = 'force-static';
 
 export default function manifest(): MetadataRoute.Manifest {
+  const dict = getDictionary('pt-BR');
   return {
-    name: siteConfig.title,
+    name: dict.meta.siteTitle,
     short_name: siteConfig.shortName,
-    description: siteConfig.description,
+    description: dict.meta.siteDescription,
+    lang: 'pt-BR',
     start_url: '/',
     display: 'standalone',
     background_color: '#060910',

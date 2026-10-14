@@ -16,6 +16,10 @@ Os dois projetos são independentes (dependências, lockfile e CI próprios: `CI
 Veja também [`REFERENCIAS.md`](./REFERENCIAS.md) — os três sites usados como referência de
 qualidade de design antes da reconstrução.
 
+## Idiomas e SEO internacional
+
+O site está em **português (raiz `/`)**, **inglês (`/en-us/`)** e **espanhol (`/es-es/`)**. Textos em `content/<idioma>/`, rotas em `lib/i18n/routes.ts`. Veja [`docs/internacionalizacao-seo/`](./docs/internacionalizacao-seo) (auditoria, arquitetura, SEO/IA, conversão e validação). `pnpm check` agora também roda `pnpm verify` (valida o HTML gerado).
+
 ## Tecnologias
 
 - **Next.js 15** (App Router) com **exportação estática** (`output: 'export'`)
@@ -90,21 +94,22 @@ próprio), defina a variável `NEXT_PUBLIC_BASE_PATH=/repositorio` antes do buil
 ## Estrutura do projeto
 
 ```
-app/                  Rotas (App Router) — cada pasta é uma página
-  page.tsx              Home (todas as seções de uma página só)
-  solucoes/              Listagem e página dinâmica de cada solução (/solucoes/[slug])
-  privacidade/, termos/  Páginas institucionais
-  sitemap.ts, robots.ts, manifest.ts   Gerados a partir de config/ e data/
+app/                  Rotas (App Router) — um layout raiz por idioma
+  (pt)/, en-us/, es-es/  Layout (`<html lang>`) e rota `[[...slug]]` de cada idioma
+  sitemap.ts, robots.ts, manifest.ts   Sitemap multilíngue, robots e manifest
+content/<idioma>/      Todos os textos (tipados em content/types.ts)
+lib/i18n/              Idiomas, rotas localizadas, detecção de idioma
+components/pages/      Páginas (Home, soluções, segmentos, legais)
 components/
   sections/            Seções da Home (Hero, Services, About, Founder, Stack...)
   layout/              Header, Footer, botão do WhatsApp, breadcrumbs
   ui/                   Botão, Section, Reveal (scroll), Tag, Logo etc. (design system)
   icons/                Ícones de linha próprios + logos de marca (Simple Icons)
-data/                  Conteúdo do site, separado da interface
-  services.ts             As 7 soluções (Sites, Sistemas, SaaS, IA...)
+data/                  Dados que não dependem do idioma
+  catalog.ts              Ícones, numeração e tecnologias por solução/segmento
   projects.ts             Estrutura de dados do portfólio — mantida para o futuro (ver abaixo),
                            não está conectada a nenhuma página no momento
-  technologies.ts, process.ts, segments.ts, company.ts
+  technologies.ts
 config/site.ts         Configuração central: nome, contato, WhatsApp, redes sociais, menu
 lib/                   Funções auxiliares (WhatsApp, SEO, validação do formulário, etc.)
 public/                Imagens, ícones, favicon
@@ -125,21 +130,20 @@ componentes de card/case — peça ajuda quando for a hora.
 
 ## Como cadastrar/editar uma solução
 
-Edite `data/services.ts` da mesma forma — cada objeto do array `services` vira automaticamente
-um card na Home e uma página em `/solucoes/<slug>/`.
+Os textos ficam em `content/<idioma>/services.ts` (e `industries.ts` para segmentos); ícone e tecnologias em `data/catalog.ts`; o slug de cada idioma em `lib/i18n/routes.ts`. Novas soluções exigem o mesmo id nos três idiomas (o TypeScript avisa).
 
 ## Como alterar
 
 | O quê | Onde |
 |---|---|
-| WhatsApp (número e mensagem padrão) | `config/site.ts` → `contact.whatsappNumber` / `whatsappMessage` |
+| WhatsApp (número; mensagem por idioma) | `config/site.ts` → `contact.whatsappNumber`; `content/<idioma>/index.ts` → `whatsapp` |
 | E-mail de contato | `config/site.ts` → `contact.email` |
 | Redes sociais (LinkedIn, Instagram) | `config/site.ts` → `social` |
 | Itens do menu | `config/site.ts` → `mainNav` |
-| Textos institucionais (Sobre, valores, fundador) | `data/company.ts` |
+| Textos (Sobre, valores, fundador, FAQ, formulário) | `content/<idioma>/index.ts` |
 | Tecnologias exibidas | `data/technologies.ts` |
-| Etapas do processo de trabalho | `data/process.ts` |
-| Segmentos de mercado | `data/segments.ts` |
+| Etapas do processo de trabalho | `content/<idioma>/index.ts` → `process` |
+| Segmentos de mercado | `content/<idioma>/industries.ts` |
 | Cores, tipografia, tokens visuais | `app/globals.css` (variáveis `:root`) e `tailwind.config.ts` |
 | Foto do fundador | `public/images/founder.webp` (troque o arquivo mantendo o mesmo nome) |
 
