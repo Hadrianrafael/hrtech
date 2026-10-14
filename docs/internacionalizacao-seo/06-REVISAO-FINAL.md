@@ -4,6 +4,8 @@
 
 ## 1. GitHub Pages — publicação concorrente (requer decisão do dono)
 
+> Detalhes, configuração exata e sequência segura: ver [`07-PAGES-E-TRIAGEM-JURIDICA.md`](./07-PAGES-E-TRIAGEM-JURIDICA.md), que também separa as pendências jurídicas entre *impedem a publicação* e *podem vir depois*.
+
 Não foi possível ler *Settings → Pages* (a API de Pages não é acessível nesta sessão). A evidência está nos logs do repositório:
 
 - A cada push na `main` rodam **dois** processos de publicação: `Deploy to GitHub Pages` (workflow do Next.js, correto) e `pages build and deployment` (workflow dinâmico **do próprio GitHub**, build Jekyll da raiz do repositório). Verificado nos 4 últimos pushes (25/09 e 07/10).
