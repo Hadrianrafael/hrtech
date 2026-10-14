@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aiSourceFrom, analyticsBootstrap } from '@/lib/analytics';
+import { aiSourceFrom, analyticsCookieNames, cookieDomains, isAnalyticsCookie } from '@/lib/analytics';
 
 describe('aiSourceFrom', () => {
   it('identifica o ChatGPT pelo utm_source que ele acrescenta aos links', () => {
@@ -22,31 +22,20 @@ describe('aiSourceFrom', () => {
   });
 });
 
-describe('analyticsBootstrap', () => {
-  it('é JavaScript válido e define o consentimento padrão antes de configurar o GA', () => {
-    expect(() => new Function(analyticsBootstrap)).not.toThrow();
-    expect(analyticsBootstrap.indexOf("'consent','default'")).toBeLessThan(analyticsBootstrap.indexOf("'config'"));
-    expect(analyticsBootstrap).toContain("ad_storage:'denied'");
+describe('cookies de análise', () => {
+  it('reconhece apenas os cookies do Google Analytics', () => {
+    for (const name of ['_ga', '_ga_B9NPFJ0FP5', '_gid', '_gat', '_gat_gtag_G_B9NPFJ0FP5']) expect(isAnalyticsCookie(name)).toBe(true);
+    for (const name of ['session', 'hrtech', '_gaming', 'ga', '_fbp']) expect(isAnalyticsCookie(name)).toBe(false);
   });
 
-  it('nega a análise por padrão para fusos europeus e respeita a decisão guardada', () => {
-    const run = (tz: string, stored: string) => {
-      const calls: unknown[][] = [];
-      const store: Record<string, string> = stored ? { 'hrtech:consent': stored } : {};
-      const fakeWindow: Record<string, unknown> = { dataLayer: [] };
-      const fn = new Function('window', 'localStorage', 'Intl', 'dataLayer', `${analyticsBootstrap}; return window.dataLayer;`);
-      const layer = fn(
-        fakeWindow,
-        { getItem: (key: string) => store[key] ?? null },
-        { DateTimeFormat: () => ({ resolvedOptions: () => ({ timeZone: tz }) }) },
-        fakeWindow.dataLayer,
-      ) as unknown[];
-      for (const entry of layer) calls.push(Array.from(entry as ArrayLike<unknown>));
-      return calls.find((call) => call[0] === 'consent' && call[1] === 'default')?.[2] as { analytics_storage: string };
-    };
-    expect(run('Europe/Madrid', '').analytics_storage).toBe('denied');
-    expect(run('America/Sao_Paulo', '').analytics_storage).toBe('granted');
-    expect(run('Europe/Madrid', 'granted').analytics_storage).toBe('granted');
-    expect(run('America/Sao_Paulo', 'denied').analytics_storage).toBe('denied');
+  it('extrai de document.cookie somente os de análise, preservando os demais', () => {
+    expect(analyticsCookieNames('a=1; _ga=GA1.1.2; theme=dark; _ga_B9NPFJ0FP5=GS1; _gid=x')).toEqual(['_ga', '_ga_B9NPFJ0FP5', '_gid']);
+    expect(analyticsCookieNames('')).toEqual([]);
+  });
+
+  it('lista o host e os domínios-pai onde o cookie pode ter sido gravado', () => {
+    expect(cookieDomains('www.hrtechsistemas.com.br')).toEqual(['www.hrtechsistemas.com.br', 'hrtechsistemas.com.br', 'com.br']);
+    expect(cookieDomains('hrtechsistemas.com.br')).toEqual(['hrtechsistemas.com.br', 'com.br']);
+    expect(cookieDomains('localhost')).toEqual(['localhost']);
   });
 });

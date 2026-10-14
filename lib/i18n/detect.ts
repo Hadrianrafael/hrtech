@@ -55,11 +55,6 @@ export function detectLocale({ languages, timeZone }: DetectionInput): Locale {
   return fromLanguages[0] ?? fromCountry ?? fallbackLocale;
 }
 
-/** Fusos da Europa: a análise de audiência só grava cookies após consentimento (RGPD). */
-export function isEuropeanTimeZone(timeZone: string | undefined): boolean {
-  return Boolean(timeZone && /^(Europe\/|Atlantic\/(Canary|Madeira|Azores|Faroe|Reykjavik)|Africa\/Ceuta)/.test(timeZone));
-}
-
 /** Lê os sinais do navegador atual. Só chamar no cliente. */
 export function browserSignals(): DetectionInput {
   const languages = navigator.languages?.length ? navigator.languages : [navigator.language].filter(Boolean);

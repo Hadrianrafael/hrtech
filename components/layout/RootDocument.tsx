@@ -3,8 +3,6 @@ import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { ReactNode } from 'react';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { siteConfig } from '@/config/site';
-import { analyticsBootstrap } from '@/lib/analytics';
 import type { Locale } from '@/lib/i18n/config';
 import { organizationSchema } from '@/lib/seo';
 import { SiteShell } from './SiteShell';
@@ -26,12 +24,6 @@ export function RootDocument({ locale, children }: { locale: Locale; children: R
       <head>
         <script dangerouslySetInnerHTML={{ __html: revealBootstrap }} />
         <JsonLd data={organizationSchema(locale)} />
-        {siteConfig.googleAnalyticsId && (
-          <>
-            <script dangerouslySetInnerHTML={{ __html: analyticsBootstrap }} />
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${siteConfig.googleAnalyticsId}`} />
-          </>
-        )}
       </head>
       <body>
         <SiteShell locale={locale}>{children}</SiteShell>

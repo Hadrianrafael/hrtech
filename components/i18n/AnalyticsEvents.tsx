@@ -1,28 +1,32 @@
 'use client';
 
 import { useEffect } from 'react';
-import { aiSourceFrom, track } from '@/lib/analytics';
+import { CONSENT_GRANTED_EVENT, aiSourceFrom, getConsent, track } from '@/lib/analytics';
 
 /**
- * Eventos de medição e navegação por âncora:
- * - `ai_referral`: visita vinda de um assistente de IA (uma vez por sessão do navegador);
- * - cliques em elementos com `data-track="<evento>"` (ex.: `whatsapp_click`);
- * - cliques em links `#âncora`: desligam o adiamento de renderização das seções (`content-visibility`)
- *   para que a rolagem caia exatamente na seção (as alturas estimadas das seções puladas seriam imprecisas).
+ * Eventos de medição (só funcionam com consentimento — `track` ignora a chamada sem ele):
+ * - `ai_referral`: visita vinda de um assistente de IA (uma vez por sessão do navegador). Se o aceite vier
+ *   depois da chegada, é registrado nesse momento;
+ * - cliques em elementos com `data-track="<evento>"` (ex.: `whatsapp_click`).
+ * Também trata a navegação por âncora: cliques em links `#âncora` desligam o adiamento de renderização
+ * das seções (`content-visibility`) para a rolagem cair exatamente na seção.
  */
 export function AnalyticsEvents() {
   useEffect(() => {
-    const source = aiSourceFrom(document.referrer, window.location.search);
-    if (source) {
-      let alreadySent = false;
+    const reportAiReferral = () => {
+      if (getConsent() !== 'granted') return;
+      const source = aiSourceFrom(document.referrer, window.location.search);
+      if (!source) return;
       try {
-        alreadySent = window.sessionStorage.getItem('hrtech:ai-referral') === source;
-        if (!alreadySent) window.sessionStorage.setItem('hrtech:ai-referral', source);
+        if (window.sessionStorage.getItem('hrtech:ai-referral') === source) return;
+        window.sessionStorage.setItem('hrtech:ai-referral', source);
       } catch {
         // sem armazenamento: registra mesmo assim
       }
-      if (!alreadySent) track('ai_referral', { ai_source: source, landing_path: window.location.pathname });
-    }
+      track('ai_referral', { ai_source: source, landing_path: window.location.pathname });
+    };
+    reportAiReferral();
+    window.addEventListener(CONSENT_GRANTED_EVENT, reportAiReferral);
 
     const onAnchorClick = (event: MouseEvent) => {
       const link = event.target instanceof Element ? event.target.closest('a[href*="#"]') : null;
@@ -37,6 +41,7 @@ export function AnalyticsEvents() {
     };
     document.addEventListener('click', onClick);
     return () => {
+      window.removeEventListener(CONSENT_GRANTED_EVENT, reportAiReferral);
       document.removeEventListener('click', onClick);
       document.removeEventListener('click', onAnchorClick, true);
     };

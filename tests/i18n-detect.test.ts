@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countryFromTimeZone, detectLocale, isEuropeanTimeZone, localeFromLanguageTag } from '@/lib/i18n/detect';
+import { countryFromTimeZone, detectLocale, localeFromLanguageTag } from '@/lib/i18n/detect';
 
 describe('detecção de idioma', () => {
   it('reconhece o idioma pela etiqueta do navegador', () => {
@@ -42,10 +42,4 @@ describe('detecção de idioma', () => {
     expect(detectLocale({ languages: [] })).toBe('en-US');
   });
 
-  it('identifica fusos europeus (consentimento de cookies)', () => {
-    expect(isEuropeanTimeZone('Europe/Madrid')).toBe(true);
-    expect(isEuropeanTimeZone('Atlantic/Canary')).toBe(true);
-    expect(isEuropeanTimeZone('America/New_York')).toBe(false);
-    expect(isEuropeanTimeZone(undefined)).toBe(false);
-  });
 });
