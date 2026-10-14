@@ -10,7 +10,7 @@
 - **robots.txt**: tudo liberado; grupos explícitos para Googlebot, Bingbot, OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User, PerplexityBot, Perplexity-User. Rastreadores de *treinamento* (GPTBot, ClaudeBot, Google-Extended…) seguem a regra `*` (permitidos); para bloqueá-los, ver comentário em `app/robots.ts`.
 - **Sitemap** multilíngue sem `lastmod` (não há data confiável por página).
 - **Renderização**: HTML estático completo, legível sem JavaScript (testado).
-- **Medição** (GA4 + Consent Mode v2): eventos `generate_lead` (formulário), `whatsapp_click`, `email_click`, `language_change` e `ai_referral` (visitas vindas de ChatGPT, Perplexity, Gemini, Claude, Copilot…, por `utm_source`/referrer). Para visitantes com fuso europeu o GA só grava cookies após consentimento. No GA4, marque `generate_lead` como evento-chave.
+- **Medição** (GA4, carregado somente após o aceite do visitante): eventos `generate_lead` (formulário), `whatsapp_click`, `email_click`, `language_change` e `ai_referral` (visitas vindas de ChatGPT, Perplexity, Gemini, Claude, Copilot…, por `utm_source`/referrer). Em **qualquer país**, antes do aceite o script do Google não é carregado e nenhum evento é registrado (detalhes em `08-CONSENTIMENTO-DE-COOKIES.md`). No GA4, marque `generate_lead` como evento-chave.
 
 ## `llms.txt` — padrão ou experimento?
 

@@ -5,7 +5,8 @@
 | `pnpm lint` / `typecheck` | sem erros |
 | `pnpm test` (Vitest) | 9 arquivos, 59 testes: rotas, detecção, hreflang, sitemap, robots, JSON-LD, conteúdo (3 idiomas com a mesma estrutura; sem afirmações proibidas), formulário, WhatsApp, analytics, preços |
 | `pnpm verify` (`scripts/verify-build.mjs`) | 51 páginas (17 × 3): `lang`, título/descrição únicos, canonical, hreflang recíproco, 1 `<h1>`, JSON-LD válido, FAQ visível, `alt`, links internos e âncoras, sitemap, robots, llms.txt — 0 erros |
-| Navegador (Chromium/Playwright), 49 checagens | detecção por idioma+fuso (EUA/Espanha/Brasil), sem redirecionamento, preferência manual, seletor mantém a página, formulário EN com mensagem em inglês, consentimento (Consent Mode inicia "denied" na Europa), `ai_referral`, sem JavaScript (conteúdo + hreflang no HTML), âncoras, mobile 390 px sem rolagem horizontal, sem erros de console |
+| Navegador (Chromium/Playwright), 49 checagens | detecção por idioma+fuso (EUA/Espanha/Brasil), sem redirecionamento, preferência manual, seletor mantém a página, formulário EN com mensagem em inglês, `ai_referral`, sem JavaScript (conteúdo + hreflang no HTML), âncoras, mobile 390 px sem rolagem horizontal, sem erros de console |
+| Consentimento (Chromium, 137 checagens: 3 idiomas × desktop 1280 e mobile 390 × fusos America/Sao_Paulo, America/New_York, Europe/Madrid, Asia/Tokyo) | primeira visita sem nenhuma requisição ao Google; recusar remove `_ga`/`_ga_*`/`_gid`/`_gat*` e preserva outros cookies; alterar a escolha pelo rodapé; aceite lembrado; `localStorage` bloqueado sem erro — detalhes em `08-CONSENTIMENTO-DE-COOKIES.md` |
 | Acessibilidade (axe-core, WCAG 2.0/2.1 A+AA + boas práticas) | 0 violações em 36 combinações (3 idiomas × 6 páginas × desktop/mobile) |
 | Lighthouse (mediana de 3, mesmo ambiente) | `main` original: Perf 93–94 · novo: PT 90, EN 92, ES 93; Acessibilidade 100, SEO 100, Boas práticas 96, CLS 0 |
 

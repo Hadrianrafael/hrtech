@@ -45,7 +45,7 @@ Corrigido:
 2. **Prazo de guarda** está genérico ("o tempo necessário"); definir prazo concreto.
 3. **Quem é o controlador:** o CNPJ é um CCMEI em nome de Hadrian Rafael Silva de Oliveira; confirmar como o titular deve ser identificado.
 4. **Transferências internacionais:** mecanismo aplicável (decisão de adequação, cláusulas-padrão) para dados de residentes da UE/Reino Unido tratados no Brasil e pelo Google nos EUA; avaliar necessidade de **representante na UE/Reino Unido** (GDPR art. 27).
-5. **Consentimento de cookies:** o aviso aparece pelo **fuso horário** (aproximação, falha com VPN ou visitantes europeus em outro fuso); o Consent Mode "denied" ainda envia pings sem cookies ao Google (avaliar se basta); cookies já gravados não são apagados ao recusar depois.
+5. **Consentimento de cookies:** *resolvido tecnicamente* (consentimento prévio em todos os países, recusa apaga os cookies controláveis); permanece a validação jurídica do texto. Ver `08-CONSENTIMENTO-DE-COOKIES.md`.
 6. **Termos de uso:** sem lei aplicável, foro, limitação de responsabilidade; aceite por navegação (*browsewrap*) é frágil; "prevalece a versão em português" pode ser questionado por clientes estrangeiros.
 7. **EUA:** confirmar se leis estaduais de privacidade (ex.: CCPA) se aplicam e se a declaração "não vendemos nem compartilhamos dados" é suficiente.
 8. **Segmento advocacia:** referências a regras de publicidade (Provimento 205/2021 da OAB; Estatuto Geral e Código Deontológico espanhóis) devem ser conferidas por advogados desses países.

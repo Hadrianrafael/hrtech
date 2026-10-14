@@ -81,7 +81,7 @@ deployments do GitHub.
 | Imagem de compartilhamento | `og.png` só em português |
 | Portfólio | Retirado do ar em 25/09/2026 (PR #3); `data/projects.ts` mantido sem uso |
 | Medição | GA4 sem eventos de conversão nem identificação de visitas vindas de assistentes de IA |
-| Privacidade | GA4 carrega sem consentimento; obrigatório para visitantes da União Europeia (Espanha) |
+| Privacidade | GA4 carregava sem consentimento (estado original, já corrigido: ver `08-CONSENTIMENTO-DE-COOKIES.md`) |
 
 Desempenho medido pelo autor anterior (README): Lighthouse Performance 93, Accessibility 100,
 Best Practices 100, SEO 100.
@@ -92,10 +92,10 @@ Best Practices 100, SEO 100.
    idioma de cada mercado.
 2. `hreflang` recíproco, canonical por idioma, sitemap multilíngue e `<html lang>` correto no HTML estático.
 3. Seletor de idioma, sugestão automática (idioma do navegador + fuso horário como indicador aproximado de
-   país) e preferência manual que prevalece, **sem redirecionar robôs**.
+   país, usado só para sugerir o idioma, nunca para decidir cookies) e preferência manual que prevalece, **sem redirecionar robôs**.
 4. Páginas por segmento: hotelaria e pousadas, energia solar, clínicas veterinárias, escritórios de advocacia,
    construção civil e reformas.
 5. FAQ útil na Home, nas soluções e nos segmentos; dados estruturados correspondentes.
 6. Formulário com país, tipo de serviço e idioma de atendimento; mensagens de WhatsApp por idioma.
-7. Medição: eventos de lead, troca de idioma e visitas vindas de assistentes de IA; Consent Mode v2 para a UE.
+7. Medição: eventos de lead, troca de idioma e visitas vindas de assistentes de IA; GA4 só após consentimento explícito, em qualquer país.
 8. Correções: sitemap sem páginas `noindex`, `lastmod` estável, títulos descritivos, `og.png` por idioma.
