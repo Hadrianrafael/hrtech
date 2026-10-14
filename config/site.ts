@@ -1,8 +1,9 @@
 /**
- * Configuração central do site.
+ * Configuração central do site (dados que não dependem do idioma).
  *
  * Tudo que muda com frequência (contatos, redes sociais, WhatsApp, domínio)
  * fica aqui — nenhum componente deve ter esses valores escritos direto no JSX.
+ * Os textos de cada idioma ficam em `content/<idioma>/`.
  * Campos vazios ('') são simplesmente ocultados na interface.
  */
 export const siteConfig = {
@@ -11,33 +12,17 @@ export const siteConfig = {
   legalName: 'HR Tech Sistemas',
   cnpj: '68.438.436/0001-09', // CCMEI — HADRIAN RAFAEL SILVA DE OLIVEIRA
   url: 'https://hrtechsistemas.com.br',
-  locale: 'pt_BR',
-  title: 'HR Tech Sistemas | Sites, Sistemas, SaaS e Inteligência Artificial',
-  description:
-    'A HR Tech Sistemas desenvolve sites, sistemas web, plataformas SaaS, automações e soluções com Inteligência Artificial para empresas que querem crescer com tecnologia.',
-  keywords: [
-    'desenvolvimento de sites',
-    'desenvolvimento de sistemas',
-    'software house',
-    'SaaS',
-    'sistemas web personalizados',
-    'inteligência artificial para empresas',
-    'chatbot WhatsApp',
-    'automação de processos',
-    'e-commerce',
-    'Azure',
-    'AWS',
-  ],
   city: 'Suzano', // Endereço comercial do CCMEI
   region: 'SP',
   country: 'BR',
+  /** Países atendidos (remotamente). Não implica escritório local. */
+  areaServed: ['BR', 'US', 'ES'],
 
   contact: {
     email: 'contato@hrtechsistemas.com.br',
     /** Número no formato internacional, só dígitos (55 + DDD + número). */
     whatsappNumber: '5511932441699',
-    whatsappDisplay: '(11) 93244-1699',
-    whatsappMessage: 'Olá! Conheci a HR Tech pelo site e gostaria de conversar sobre um projeto.',
+    whatsappDisplay: '+55 (11) 93244-1699',
   },
 
   /**
@@ -54,18 +39,9 @@ export const siteConfig = {
     instagram: 'https://www.instagram.com/hr_desenvolvimento/',
   },
 
+  founder: { name: 'Hadrian Rafael Silva de Oliveira', shortName: 'Hadrian Rafael', photo: '/images/founder.webp' },
+
   /** ID de mensuração do Google Analytics (GA4), formato "G-XXXXXXXXXX". Vazio desativa o script. */
   googleAnalyticsId: 'G-B9NPFJ0FP5',
+  googleSiteVerification: 'A4QBLq7zDow9yYiYTCHeKTYR8SlVe0F8zmZBV8mtpB0',
 } as const;
-
-export type NavItem = { label: string; href: string };
-
-export const mainNav: NavItem[] = [
-  { label: 'Início', href: '/#inicio' },
-  { label: 'Soluções', href: '/#solucoes' },
-  { label: 'Sobre', href: '/#sobre' },
-  { label: 'Tecnologias', href: '/#tecnologias' },
-  { label: 'Contato', href: '/#contato' },
-];
-
-export const primaryCta: NavItem = { label: 'Iniciar projeto', href: '/#contato' };

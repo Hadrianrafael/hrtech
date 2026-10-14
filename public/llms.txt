@@ -1,0 +1,48 @@
+# HR Tech Sistemas
+
+> HR Tech Sistemas is a software development company based in Suzano (São Paulo), Brazil. It builds websites, custom software, SaaS platforms, AI chatbots and business process automation for companies in Brazil and, working remotely, for clients in the United States and Spain. The website is available in Brazilian Portuguese, US English and European Spanish.
+
+Facts that can be verified on the site: founder and developer Hadrian Rafael Silva de Oliveira; contact via contato@hrtechsistemas.com.br and WhatsApp +55 11 93244-1699; remote work with communication in Portuguese, English and Spanish. HR Tech has no office outside Brazil. This file is an experimental convenience for AI tools; it is not a standard that search engines or AI assistants are required to follow.
+
+## English (en-US)
+
+- [Home](https://hrtechsistemas.com.br/en-us/): overview, services, industries, process and FAQ
+- [Services](https://hrtechsistemas.com.br/en-us/services/): all service pages
+- [Website development](https://hrtechsistemas.com.br/en-us/services/web-development/): business websites, landing pages, multilingual sites, maintenance
+- [Custom software](https://hrtechsistemas.com.br/en-us/services/custom-software/): custom web applications, CRM, dashboards, integrations
+- [SaaS development](https://hrtechsistemas.com.br/en-us/services/saas-development/): multi-tenant SaaS platforms from MVP to production
+- [AI chatbots and agents](https://hrtechsistemas.com.br/en-us/services/ai-chatbots/): AI assistants for websites and WhatsApp with human handoff
+- [Business automation](https://hrtechsistemas.com.br/en-us/services/business-automation/): workflow automation and system integrations
+- [E-commerce development](https://hrtechsistemas.com.br/en-us/services/ecommerce-development/): Shopify and custom online stores
+- [Cloud infrastructure](https://hrtechsistemas.com.br/en-us/services/cloud-infrastructure/): Azure and AWS deployments, CI/CD
+- [Industries](https://hrtechsistemas.com.br/en-us/industries/): hotels and inns, solar energy, veterinary clinics, law firms, construction and remodeling
+
+## Español (es-ES)
+
+- [Inicio](https://hrtechsistemas.com.br/es-es/): resumen, servicios, sectores, proceso y preguntas frecuentes
+- [Servicios](https://hrtechsistemas.com.br/es-es/servicios/): todas las páginas de servicio
+- [Desarrollo web](https://hrtechsistemas.com.br/es-es/servicios/desarrollo-web/)
+- [Software a medida](https://hrtechsistemas.com.br/es-es/servicios/software-a-medida/)
+- [Desarrollo SaaS](https://hrtechsistemas.com.br/es-es/servicios/desarrollo-saas/)
+- [Chatbots con inteligencia artificial](https://hrtechsistemas.com.br/es-es/servicios/chatbots-inteligencia-artificial/)
+- [Automatización de procesos](https://hrtechsistemas.com.br/es-es/servicios/automatizacion-de-procesos/)
+- [Tiendas online](https://hrtechsistemas.com.br/es-es/servicios/tiendas-online/)
+- [Cloud e infraestructura](https://hrtechsistemas.com.br/es-es/servicios/cloud-infraestructura/)
+- [Sectores](https://hrtechsistemas.com.br/es-es/sectores/)
+
+## Português (pt-BR)
+
+- [Início](https://hrtechsistemas.com.br/): visão geral, soluções, segmentos, processo e perguntas frequentes
+- [Soluções](https://hrtechsistemas.com.br/solucoes/): todas as páginas de solução
+- [Sites](https://hrtechsistemas.com.br/solucoes/sites/)
+- [Sistemas](https://hrtechsistemas.com.br/solucoes/sistemas/)
+- [SaaS](https://hrtechsistemas.com.br/solucoes/saas/)
+- [Inteligência Artificial](https://hrtechsistemas.com.br/solucoes/inteligencia-artificial/)
+- [Automações](https://hrtechsistemas.com.br/solucoes/automacoes/)
+- [E-commerce](https://hrtechsistemas.com.br/solucoes/e-commerce/)
+- [Cloud e infraestrutura](https://hrtechsistemas.com.br/solucoes/cloud-infraestrutura/)
+- [Segmentos](https://hrtechsistemas.com.br/segmentos/)
+
+## Optional
+
+- [Sitemap](https://hrtechsistemas.com.br/sitemap.xml)
