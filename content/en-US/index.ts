@@ -77,7 +77,7 @@ export const enUS: Dictionary = {
     description:
       'From your public web presence to your internal operations: we build the technology your business needs, with the same engineering standard in every project.',
     customTitle: 'Custom project',
-    customText: 'Your need does not fit a category? Tell us the challenge and we will design the solution with you.',
+    customText: 'Does your project not fit a standard category? Tell us the challenge and we will design the solution with you.',
     customCta: 'Talk about your project',
   },
   industriesSection: {
@@ -141,7 +141,7 @@ export const enUS: Dictionary = {
       { title: 'Frontend', text: 'Fast, accessible and responsive interfaces.' },
       { title: 'Backend', text: 'Well-organized APIs and business logic.' },
       { title: 'Cloud', text: 'Cloud infrastructure for web applications.' },
-      { title: 'Database', text: 'Consistent, secure and performant data.' },
+      { title: 'Database', text: 'Consistent, secure and fast data.' },
       { title: 'DevOps', text: 'Version control, testing and automated deployment.' },
       { title: 'Artificial Intelligence', text: 'Language models applied to your business.' },
       { title: 'Automation', text: 'Workflows that run on their own, with monitoring.' },
@@ -187,7 +187,7 @@ export const enUS: Dictionary = {
       },
       {
         title: 'Growth',
-        text: 'We watch real usage and build the next improvements.',
+        text: 'We monitor real-world usage and ship the next improvements.',
         details: ['Support and maintenance', 'New features', 'Continuous improvement'],
       },
     ],
@@ -383,6 +383,7 @@ export const enUS: Dictionary = {
       contact: 'Contact',
     },
     rights: 'All rights reserved.',
+    companyId: 'Brazilian company ID (CNPJ)',
     location: 'Suzano (São Paulo), Brazil',
     privacy: 'Privacy Policy',
     terms: 'Terms of Use',
@@ -393,6 +394,7 @@ export const enUS: Dictionary = {
     accept: 'Accept',
     reject: 'Decline',
     policy: 'Privacy Policy',
+    manage: 'Cookie preferences',
   },
   notFound: {
     title: 'Page not found',

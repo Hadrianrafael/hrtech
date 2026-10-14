@@ -317,7 +317,7 @@ export const industries: Record<IndustryId, IndustryContent> = {
     heading: 'Technology for construction and remodeling',
     summary: 'Websites with a project portfolio, organized quote requests, job tracking and photo progress reports for clients.',
     intro:
-      'In construction and remodeling, trust comes from work done well and a client who stays informed. We build websites, software and automations that help you win quotes, run jobs in an orderly way and keep clients updated.',
+      'In construction and remodeling, trust comes from work done well and a client who stays informed. We build websites, software and automations that help you win more jobs, run projects in an orderly way and keep clients updated.',
     challenges: [
       {
         title: 'Quote requests without enough detail',

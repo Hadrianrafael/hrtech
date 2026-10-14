@@ -166,7 +166,7 @@ export const industries: Record<IndustryId, IndustryContent> = {
     heading: 'Tecnología para clínicas veterinarias',
     summary: 'Cita online, recordatorios de vacunas y revisiones, web profesional y respuestas automáticas a las dudas frecuentes.',
     intro:
-      'Una clínica veterinaria gestiona a la vez una agenda llena, tutores preocupados y muchos mensajes. Desarrollamos webs, software y automatizaciones que ordenan la agenda, recuerdan a los tutores las vacunas y revisiones y liberan a tu equipo para cuidar de los animales.',
+      'Una clínica veterinaria gestiona a la vez una agenda llena, propietarios preocupados y muchos mensajes. Desarrollamos webs, software y automatizaciones que ordenan la agenda, recuerdan a los propietarios las vacunas y revisiones y liberan a tu equipo para cuidar de los animales.',
     challenges: [
       {
         title: 'Teléfono y WhatsApp saturados',
@@ -174,7 +174,7 @@ export const industries: Record<IndustryId, IndustryContent> = {
       },
       {
         title: 'Vacunas y revisiones olvidadas',
-        text: 'Sin recordatorios, el tutor se olvida de la fecha de la vacuna o de la revisión y la clínica pierde el seguimiento del paciente.',
+        text: 'Sin recordatorios, el propietario se olvida de la fecha de la vacuna o de la revisión y la clínica pierde el seguimiento del paciente.',
       },
       {
         title: 'Agenda y fichas dispersas',
@@ -195,7 +195,7 @@ export const industries: Record<IndustryId, IndustryContent> = {
       {
         service: 'automation',
         title: 'Recordatorios automáticos',
-        text: 'Avisos de vacunas, desparasitación y revisiones por WhatsApp o correo, enviados solo a los tutores que han aceptado ser contactados.',
+        text: 'Avisos de vacunas, desparasitación y revisiones por WhatsApp o correo, enviados solo a los propietarios que han aceptado ser contactados.',
       },
       {
         service: 'ai',
@@ -206,7 +206,7 @@ export const industries: Record<IndustryId, IndustryContent> = {
     features: [
       'Cita online por tipo de servicio',
       'Recordatorios de vacunas y revisiones',
-      'Ficha de tutores y mascotas',
+      'Ficha de propietarios y mascotas',
       'Páginas de servicios y especialidades',
       'Botón de WhatsApp y mapa de ubicación',
       'Panel con las citas del día',
@@ -217,14 +217,14 @@ export const industries: Record<IndustryId, IndustryContent> = {
     },
     faq: [
       {
-        question: '¿Pueden los tutores pedir cita desde la web?',
+        question: '¿Pueden los propietarios pedir cita desde la web?',
         answer:
           'Sí. La cita online sigue las reglas de la clínica (tipos de consulta, duración, profesionales y horarios disponibles) y tu equipo ve cada reserva en el panel.',
       },
       {
         question: '¿Cómo funcionan los recordatorios de vacunas?',
         answer:
-          'A partir de la fecha registrada, el sistema envía recordatorios por WhatsApp o correo antes del vencimiento, solo a los tutores que han dado su consentimiento.',
+          'A partir de la fecha registrada, el sistema envía recordatorios por WhatsApp o correo antes del vencimiento, solo a los propietarios que han dado su consentimiento.',
       },
       {
         question: '¿Puede el chatbot orientar en caso de urgencia?',
@@ -341,7 +341,7 @@ export const industries: Record<IndustryId, IndustryContent> = {
       {
         service: 'software',
         title: 'Control de obra',
-        text: 'Cronograma, fases, compras, materiales y costes por obra, con acceso desde el móvil para el equipo en obra.',
+        text: 'Planificación, fases, compras, materiales y costes por obra, con acceso desde el móvil para el equipo en obra.',
       },
       {
         service: 'automation',
@@ -357,7 +357,7 @@ export const industries: Record<IndustryId, IndustryContent> = {
     features: [
       'Galería de obras por tipo de trabajo',
       'Formulario de presupuesto detallado',
-      'Cronograma y fases por obra',
+      'Planificación y fases por obra',
       'Control de compras y materiales',
       'Informes con fotos para el cliente',
       'Acceso desde el móvil para el equipo en obra',
@@ -375,7 +375,7 @@ export const industries: Record<IndustryId, IndustryContent> = {
       {
         question: '¿Desarrolláis software para el control de obras?',
         answer:
-          'Sí. Se diseña a partir de cómo trabaja tu empresa: fases, cronograma, compras, equipo y costes por obra, con acceso desde el móvil.',
+          'Sí. Se diseña a partir de cómo trabaja tu empresa: fases, planificación, compras, equipo y costes por obra, con acceso desde el móvil.',
       },
       {
         question: '¿Puede el cliente seguir la obra?',

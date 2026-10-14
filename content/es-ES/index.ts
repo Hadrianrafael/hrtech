@@ -324,7 +324,7 @@ export const esES: Dictionary = {
     whatsapp: 'WhatsApp',
   },
   servicesPage: {
-    metaTitle: 'Desarrollo web, software a medida, SaaS y chatbots IA',
+    metaTitle: 'Desarrollo web, software a medida y chatbots con IA',
     metaDescription:
       'Desarrollo web, software a medida, plataformas SaaS, chatbots con inteligencia artificial, automatización de procesos, tiendas online e infraestructura cloud con HR Tech Sistemas.',
     eyebrow: 'Servicios',
@@ -383,6 +383,7 @@ export const esES: Dictionary = {
       contact: 'Contacto',
     },
     rights: 'Todos los derechos reservados.',
+    companyId: 'Identificación fiscal brasileña (CNPJ)',
     location: 'Suzano (São Paulo), Brasil',
     privacy: 'Política de privacidad',
     terms: 'Términos de uso',
@@ -393,6 +394,7 @@ export const esES: Dictionary = {
     accept: 'Aceptar',
     reject: 'Rechazar',
     policy: 'Política de privacidad',
+    manage: 'Preferencias de cookies',
   },
   notFound: {
     title: 'Página no encontrada',

@@ -38,7 +38,7 @@ export const services: Record<ServiceId, ServiceContent> = {
       {
         question: 'Do you build websites for small businesses?',
         answer:
-          'Yes. We build everything from focused landing pages and compact business sites to larger websites with many pages and integrations, always scoped to your goals and budget stage.',
+          'Yes. We build everything from focused landing pages and compact business sites to larger websites with many pages and integrations, always scoped to your goals and budget.',
       },
       {
         question: 'Can my website be in more than one language?',

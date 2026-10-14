@@ -221,7 +221,7 @@ export const ptBR: Dictionary = {
       {
         question: 'Vocês atendem empresas fora do Brasil?',
         answer:
-          'Sim. A HR Tech fica em Suzano (SP), Brasil, e trabalha de forma remota. Atendemos empresas brasileiras e estamos preparados para projetos nos Estados Unidos e na Espanha, com comunicação em português, inglês ou espanhol.',
+          'Sim. A HR Tech fica em Suzano (SP), Brasil, e trabalha de forma remota. Atendemos empresas brasileiras e estamos preparados para projetos nos Estados Unidos e na Espanha, com comunicação em português, inglês ou espanhol. Não temos escritório fora do Brasil.',
       },
       {
         question: 'O site sai otimizado para o Google?',
@@ -379,6 +379,7 @@ export const ptBR: Dictionary = {
       contact: 'Contato',
     },
     rights: 'Todos os direitos reservados.',
+    companyId: 'CNPJ',
     location: 'Suzano (SP), Brasil',
     privacy: 'Política de Privacidade',
     terms: 'Termos de Uso',
@@ -389,6 +390,7 @@ export const ptBR: Dictionary = {
     accept: 'Aceitar',
     reject: 'Recusar',
     policy: 'Política de Privacidade',
+    manage: 'Preferências de cookies',
   },
   notFound: {
     title: 'Página não encontrada',

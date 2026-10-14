@@ -96,6 +96,7 @@ describe('conteúdo por idioma', () => {
   });
 
   it('declara que não há escritório fora do Brasil nas versões internacionais', () => {
+    expect(JSON.stringify(getDictionary('pt-BR').faqSection.items)).toContain('Não temos escritório fora do Brasil');
     expect(JSON.stringify(getDictionary('en-US').faqSection.items)).toContain('do not have a local office outside Brazil');
     expect(JSON.stringify(getDictionary('es-ES').faqSection.items)).toContain('No tenemos oficina en España');
   });

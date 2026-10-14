@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BrandIcon } from '@/components/icons/BrandIcon';
 import { Icon } from '@/components/icons/Icon';
+import { ConsentSettingsLink } from '@/components/i18n/ConsentSettingsLink';
 import { LanguageSwitcher, type LanguageOption } from '@/components/i18n/LanguageSwitcher';
 import { Logo } from '@/components/ui/Logo';
 import { siteConfig } from '@/config/site';
@@ -116,7 +117,11 @@ export function Footer({ locale, languages }: { locale: Locale; languages: Langu
         <div className="mt-6 flex flex-col gap-4 text-xs text-subtle sm:flex-row sm:items-center sm:justify-between">
           <p>
             © <CurrentYear /> {siteConfig.legalName}. {footer.rights}
-            {siteConfig.cnpj && <span className="ml-1">CNPJ {siteConfig.cnpj}.</span>}
+            {siteConfig.cnpj && (
+              <span className="ml-1">
+                {footer.companyId} {siteConfig.cnpj}.
+              </span>
+            )}
           </p>
           <ul className="flex gap-5">
             <li>
@@ -128,6 +133,9 @@ export function Footer({ locale, languages }: { locale: Locale; languages: Langu
               <Link href={pathFor(locale, { key: 'terms' })} className="transition-colors hover:text-fg">
                 {footer.terms}
               </Link>
+            </li>
+            <li>
+              <ConsentSettingsLink label={dict.consent.manage} />
             </li>
           </ul>
         </div>
