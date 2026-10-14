@@ -299,6 +299,7 @@ export const esES: Dictionary = {
     noteWhatsApp:
       'Al solicitarlo, abrimos WhatsApp con tu mensaje listo para enviar. Tus datos se utilizan solo para responder a esta consulta.',
     noteEndpoint: 'Tus datos se utilizan solo para responder a esta consulta.',
+    privacyLink: 'Política de privacidad',
     sendError: 'No hemos podido enviarlo ahora. Prueba por WhatsApp o por correo.',
     sent: {
       endpointTitle: '¡Mensaje enviado!',

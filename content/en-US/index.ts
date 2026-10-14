@@ -299,6 +299,7 @@ export const enUS: Dictionary = {
     noteWhatsApp:
       'When you submit, we open WhatsApp with your message ready to send. Your details are used only to reply to this inquiry.',
     noteEndpoint: 'Your details are used only to reply to this inquiry.',
+    privacyLink: 'Privacy Policy',
     sendError: 'We could not send it right now. Please try WhatsApp or email.',
     sent: {
       endpointTitle: 'Message sent!',

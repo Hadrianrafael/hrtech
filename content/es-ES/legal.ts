@@ -30,7 +30,7 @@ export const privacy: LegalDocument = {
     {
       title: '4. Envío por WhatsApp y correo electrónico',
       paragraphs: [
-        'Según la configuración del formulario en el momento de tu contacto, los datos pueden enviarse directamente al WhatsApp o al correo de HR Tech, que se abren en tu propio dispositivo. En ese caso, el envío se rige por las políticas de privacidad de WhatsApp (Meta) y de tu proveedor de correo.',
+        'Este sitio no recibe ni guarda lo que escribes en el formulario: monta el mensaje y abre WhatsApp o tu aplicación de correo en tu propio dispositivo. Los datos solo llegan a HR Tech cuando tú mismo envías el mensaje, y ese envío se rige por las políticas de privacidad de WhatsApp (Meta) y de tu proveedor de correo.',
       ],
     },
     {
@@ -43,7 +43,7 @@ export const privacy: LegalDocument = {
     {
       title: '6. Proveedores y transferencias internacionales',
       paragraphs: [
-        'Para el funcionamiento del sitio y la atención, pueden tratar datos por cuenta nuestra o por cuenta propia: Google (Google Analytics), Meta (WhatsApp) y el proveedor de correo que utiliza HR Tech. Estos proveedores pueden tratar datos fuera de tu país, incluidos los Estados Unidos. Como HR Tech tiene su sede en Brasil, los datos que nos envías se tratan en Brasil, un país fuera del Espacio Económico Europeo.',
+        'Para el funcionamiento del sitio y la atención, pueden tratar datos por cuenta nuestra o por cuenta propia: GitHub (alojamiento del sitio en GitHub Pages, que puede registrar datos técnicos de acceso, como la dirección IP), Google (Google Analytics, solo si lo aceptas), Meta (WhatsApp) y el proveedor de correo que utiliza HR Tech. Estos proveedores pueden tratar datos fuera de tu país, incluidos los Estados Unidos. Como HR Tech tiene su sede en Brasil, los datos que nos envías se tratan en Brasil, un país fuera del Espacio Económico Europeo.',
       ],
     },
     {

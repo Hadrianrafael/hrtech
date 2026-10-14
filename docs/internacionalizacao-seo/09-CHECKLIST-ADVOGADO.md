@@ -43,3 +43,17 @@ Decisões do advogado:
 5. Revisão editorial por falantes nativos EN/ES (não jurídica).
 
 Saída esperada: textos aprovados por idioma, para substituir os de `legal.ts` e atualizar a data "Última atualização".
+
+## O que preciso de você (para concluir e publicar)
+
+Respostas curtas bastam; eu aplico no código e nos 3 idiomas.
+
+1. **Nome a exibir como responsável** (rodapé, políticas, dados estruturados): razão social exata e/ou nome fantasia, e se o nome do titular deve aparecer. Hoje: "HR Tech Sistemas".
+2. **Confirmação do CNPJ** `68.438.436/0001-09` e da cidade (Suzano/SP) como dados públicos a manter.
+3. **Canal oficial de privacidade**: manter `contato@hrtechsistemas.com.br`? Existe encarregado (DPO)? Nome e contato, se houver.
+4. **Destino real dos dados do formulário**: em qual caixa de e-mail/WhatsApp/planilha/CRM eles ficam, quem acessa, e por quanto tempo vocês os mantêm hoje na prática (fato, não recomendação).
+5. **Retenção do Google Analytics**: valor configurado no painel do GA4 (Administrador > Coleta de dados > Retenção).
+6. **Provedor de e-mail** usado pela empresa (nome), para constar como prestador.
+7. **Decisão sobre o formulário**: manter via WhatsApp/e-mail (sem servidor) ou contratar um serviço de recebimento (nesse caso, nome do prestador e política revisada).
+8. **Textos aprovados pelo advogado** (política e termos em pt-BR, en-US, es-ES) ou, se preferir publicar antes, **autorização por escrito** para publicar com A1, A2 e A4 em aberto, ciente do risco.
+9. **Acesso ao domínio**: confirmar que `https://hrtechsistemas.com.br` abre com HTTPS (meu ambiente não alcança o domínio) ou liberar o acesso.

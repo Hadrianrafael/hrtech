@@ -83,3 +83,11 @@ describe('formatContactMessage', () => {
     }
   });
 });
+
+describe('envio do formulário e política de privacidade', () => {
+  it('sem endpoint externo configurado: o site não envia dados a terceiros por conta própria', async () => {
+    const { siteConfig } = await import('@/config/site');
+    // Se um endpoint for configurado, a política (seção 4 e 6) precisa nomear o prestador antes de publicar.
+    expect(siteConfig.contactFormEndpoint).toBe('');
+  });
+});

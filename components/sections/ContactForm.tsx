@@ -3,6 +3,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import { BrandIcon } from '@/components/icons/BrandIcon';
 import { Icon } from '@/components/icons/Icon';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { siteConfig } from '@/config/site';
 import { contactCountries, serviceTypeIds, type ContactFormText } from '@/content/types';
@@ -10,6 +11,7 @@ import { track } from '@/lib/analytics';
 import { cn } from '@/lib/cn';
 import { emptyContact, formatContactMessage, validateContact, type ContactErrors, type ContactPayload } from '@/lib/contact';
 import { locales, type Locale } from '@/lib/i18n/config';
+import { pathFor } from '@/lib/i18n/routes';
 import { mailtoLink, whatsappLink } from '@/lib/whatsapp';
 
 type Status =
@@ -270,7 +272,11 @@ export function ContactForm({ locale, text }: { locale: Locale; text: ContactFor
           {text.sendByEmail}
         </Button>
       </div>
-      <p className="mt-4 text-xs leading-relaxed text-subtle">{hasEndpoint ? text.noteEndpoint : text.noteWhatsApp}</p>
+      <p className="mt-4 text-xs leading-relaxed text-subtle">{hasEndpoint ? text.noteEndpoint : text.noteWhatsApp}{' '}
+        <Link href={pathFor(locale, { key: 'privacy' })} className="underline underline-offset-2 hover:text-fg">
+          {text.privacyLink}
+        </Link>
+      </p>
     </form>
   );
 }

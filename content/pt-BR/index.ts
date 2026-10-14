@@ -295,6 +295,7 @@ export const ptBR: Dictionary = {
     noteWhatsApp:
       'Ao solicitar, abrimos o WhatsApp com a sua mensagem pronta para envio. Seus dados são usados apenas para responder a este contato.',
     noteEndpoint: 'Seus dados são usados apenas para responder a este contato.',
+    privacyLink: 'Política de Privacidade',
     sendError: 'Não foi possível enviar agora. Tente pelo WhatsApp ou e-mail.',
     sent: {
       endpointTitle: 'Mensagem enviada!',

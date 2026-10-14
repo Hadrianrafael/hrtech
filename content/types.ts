@@ -92,6 +92,8 @@ export type ContactFormText = {
   sending: string;
   sendByEmail: string;
   noteWhatsApp: string;
+  /** Texto do link para a política de privacidade, exibido junto ao aviso do formulário. */
+  privacyLink: string;
   noteEndpoint: string;
   sendError: string;
   sent: {
