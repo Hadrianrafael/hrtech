@@ -1,62 +1,62 @@
-export const projectTypes = [
-  'Site',
-  'Sistema',
-  'SaaS',
-  'Automação',
-  'Inteligência Artificial',
-  'E-commerce',
-  'Outro',
-] as const;
-
-export const budgetRanges = [
-  'Ainda não sei',
-  'Até R$ 5 mil',
-  'R$ 5 mil a R$ 15 mil',
-  'R$ 15 mil a R$ 50 mil',
-  'Acima de R$ 50 mil',
-] as const;
+import type { ContactCountry, ContactFormText, ServiceTypeId } from '@/content/types';
+import type { Locale } from '@/lib/i18n/config';
 
 export type ContactPayload = {
   name: string;
   company: string;
+  country: ContactCountry | '';
   email: string;
-  whatsapp: string;
-  projectType: string;
+  phone: string;
+  serviceType: ServiceTypeId | '';
   budget: string;
+  language: Locale | '';
   message: string;
 };
 
-export type ContactErrors = Partial<Record<keyof ContactPayload, string>>;
+export type ContactErrors = Partial<Record<keyof ContactFormText['errors'], true>>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+export function emptyContact(language: Locale): ContactPayload {
+  return { name: '', company: '', country: '', email: '', phone: '', serviceType: '', budget: '', language, message: '' };
+}
+
+/** Telefone é opcional; quando informado, aceita de 8 a 15 dígitos (limite do padrão E.164). */
 export function validateContact(data: ContactPayload): ContactErrors {
   const errors: ContactErrors = {};
-  if (data.name.trim().length < 2) errors.name = 'Informe seu nome.';
-  if (!EMAIL_RE.test(data.email.trim())) errors.email = 'Informe um e-mail válido.';
-  const phoneDigits = data.whatsapp.replace(/\D/g, '');
-  if (data.whatsapp.trim() && (phoneDigits.length < 10 || phoneDigits.length > 13)) {
-    errors.whatsapp = 'Informe um WhatsApp com DDD.';
-  }
-  if (!data.projectType) errors.projectType = 'Selecione o tipo de projeto.';
-  if (data.message.trim().length < 10) errors.message = 'Conte um pouco mais sobre o projeto.';
+  if (data.name.trim().length < 2) errors.name = true;
+  if (!EMAIL_RE.test(data.email.trim())) errors.email = true;
+  const phoneDigits = data.phone.replace(/\D/g, '');
+  if (data.phone.trim() && (phoneDigits.length < 8 || phoneDigits.length > 15)) errors.phone = true;
+  if (!data.country) errors.country = true;
+  if (!data.serviceType) errors.serviceType = true;
+  if (!data.language) errors.language = true;
+  if (data.message.trim().length < 10) errors.message = true;
   return errors;
 }
 
-/** Texto usado quando o contato é enviado por WhatsApp ou e-mail. */
-export function formatContactMessage(data: ContactPayload): string {
+/**
+ * Texto enviado por WhatsApp ou e-mail. Os rótulos seguem o idioma do visitante;
+ * a linha "Idioma de atendimento" deixa claro em que idioma responder.
+ */
+export function formatContactMessage(data: ContactPayload, text: ContactFormText): string {
   const optional = (label: string, value: string) => (value.trim() ? [`${label}: ${value.trim()}`] : []);
+  const country = data.country ? text.countries[data.country] : '';
+  const service = data.serviceType ? text.serviceTypes[data.serviceType] : '';
+  const language = data.language ? text.languages[data.language] : '';
   return [
-    'Olá, HR Tech! Gostaria de solicitar um orçamento.',
+    text.message.greeting,
     '',
-    `Nome: ${data.name.trim()}`,
-    ...optional('Empresa', data.company),
-    `E-mail: ${data.email.trim()}`,
-    ...optional('WhatsApp', data.whatsapp),
-    `Tipo de projeto: ${data.projectType}`,
-    ...optional('Orçamento estimado', data.budget),
+    `${text.labels.name}: ${data.name.trim()}`,
+    ...optional(text.labels.company, data.company),
+    `${text.labels.country}: ${country}`,
+    `${text.labels.email}: ${data.email.trim()}`,
+    ...optional(text.labels.phone, data.phone),
+    `${text.labels.serviceType}: ${service}`,
+    ...optional(text.labels.budget, data.budget),
+    `${text.labels.language}: ${language}`,
     '',
-    'Mensagem:',
+    `${text.message.heading}:`,
     data.message.trim(),
   ].join('\n');
 }
