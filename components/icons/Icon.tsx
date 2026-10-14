@@ -166,6 +166,28 @@ const paths = {
     </>
   ),
   send: <path d="M21 3 3 10.5l7 2.5M21 3l-7.5 18-3.5-8M21 3 10 13" />,
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+    </>
+  ),
+  paw: (
+    <>
+      <path d="M12 12.5c-2.6 0-5 2.6-5 5 0 1.6 1.2 2.5 2.6 2.5 1 0 1.6-.5 2.4-.5s1.4.5 2.4.5c1.4 0 2.6-.9 2.6-2.5 0-2.4-2.4-5-5-5Z" />
+      <ellipse cx="7" cy="9.5" rx="1.8" ry="2.3" />
+      <ellipse cx="17" cy="9.5" rx="1.8" ry="2.3" />
+      <ellipse cx="10" cy="5.5" rx="1.7" ry="2.2" />
+      <ellipse cx="14" cy="5.5" rx="1.7" ry="2.2" />
+    </>
+  ),
+  chevronDown: <path d="m6 9 6 6 6-6" />,
+  question: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.8M12 17.2v.1" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof paths;

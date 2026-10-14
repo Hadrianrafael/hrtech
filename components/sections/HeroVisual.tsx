@@ -1,4 +1,5 @@
 import { Icon } from '@/components/icons/Icon';
+import type { Dictionary } from '@/content/types';
 
 /**
  * Composição ilustrativa do Hero: um painel de sistema, um card de deploy,
@@ -8,7 +9,7 @@ import { Icon } from '@/components/icons/Icon';
  */
 const bars = [38, 52, 44, 63, 58, 72, 66, 84, 78, 92, 86, 100];
 
-export function HeroVisual() {
+export function HeroVisual({ text }: { text: Dictionary['hero']['visual'] }) {
   return (
     <div className="relative mx-auto w-full max-w-[640px] [perspective:1800px]" aria-hidden="true">
       {/* brilho de fundo */}
@@ -43,7 +44,7 @@ export function HeroVisual() {
                 </div>
                 <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1">
                   <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-emerald-400" />
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-emerald-300">online</span>
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-emerald-300">{text.online}</span>
                 </div>
               </div>
 
@@ -110,8 +111,8 @@ export function HeroVisual() {
               <Icon name="check" size={15} strokeWidth={2} />
             </span>
             <div>
-              <p className="text-[12px] font-medium text-fg">Deploy concluído</p>
-              <p className="font-mono text-[10px] text-subtle">main → produção</p>
+              <p className="text-[12px] font-medium text-fg">{text.deployTitle}</p>
+              <p className="font-mono text-[10px] text-subtle">{text.deployText}</p>
             </div>
           </div>
           <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
@@ -125,25 +126,25 @@ export function HeroVisual() {
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand/20 text-brand-soft">
               <Icon name="sparkles" size={15} />
             </span>
-            <p className="text-[12px] font-medium text-fg">Assistente IA</p>
+            <p className="text-[12px] font-medium text-fg">{text.assistant}</p>
             <span className="ml-auto h-1.5 w-1.5 animate-pulse-dot rounded-full bg-brand-soft" />
           </div>
           <p className="mt-2.5 rounded-lg rounded-tl-sm bg-white/[0.05] px-2.5 py-2 text-[11.5px] leading-snug text-muted">
-            Horário confirmado para quinta às 14h. Enviei o lembrete no WhatsApp.
+            {text.assistantMessage}
           </p>
         </div>
 
         {/* Card: código */}
         <div className="absolute -bottom-8 right-4 hidden w-64 rounded-xl border border-line/[0.12] bg-[#0a0f1a]/95 p-3.5 font-mono text-[10.5px] leading-relaxed shadow-2xl backdrop-blur md:block lg:-right-6">
           <p>
-            <span className="text-accent">export async function</span> <span className="text-brand-soft">agendar</span>
-            <span className="text-subtle">(dados) {'{'}</span>
+            <span className="text-accent">export async function</span> <span className="text-brand-soft">{text.code.fn}</span>
+            <span className="text-subtle">({text.code.arg}) {'{'}</span>
           </p>
           <p className="pl-3 text-subtle">
-            <span className="text-accent">await</span> <span className="text-fg/80">agenda.reservar</span>(dados)
+            <span className="text-accent">await</span> <span className="text-fg/80">{text.code.call}</span>({text.code.arg})
           </p>
           <p className="pl-3 text-subtle">
-            <span className="text-accent">return</span> <span className="text-emerald-300">{"'confirmado'"}</span>
+            <span className="text-accent">return</span> <span className="text-emerald-300">{`'${text.code.result}'`}</span>
           </p>
           <p className="text-subtle">{'}'}</p>
         </div>

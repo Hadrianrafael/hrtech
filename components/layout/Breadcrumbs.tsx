@@ -4,10 +4,10 @@ import { breadcrumbSchema } from '@/lib/seo';
 
 export type Crumb = { name: string; path: string };
 
-export function Breadcrumbs({ items }: { items: Crumb[] }) {
+export function Breadcrumbs({ items, label }: { items: Crumb[]; label: string }) {
   return (
     <>
-      <nav aria-label="Você está em" className="font-mono text-[11px] uppercase tracking-[0.14em]">
+      <nav aria-label={label} className="font-mono text-[11px] uppercase tracking-[0.14em]">
         <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-subtle">
           {items.map((item, index) => {
             const last = index === items.length - 1;

@@ -89,6 +89,18 @@
     background-size: 56px 56px;
   }
 
+  /* Seções abaixo da dobra: o navegador só calcula estilo/layout/pintura quando elas se aproximam
+     da tela (melhora LCP e TBT). O conteúdo continua no DOM — rastreável, selecionável e acessível. */
+  .defer-render {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 720px;
+  }
+
+  /* Navegação por âncora (#contato…): renderiza tudo para a rolagem cair exatamente na seção. */
+  .no-defer .defer-render {
+    content-visibility: visible;
+  }
+
   .hairline {
     background: linear-gradient(90deg, transparent, rgb(var(--line) / 0.12), transparent);
     height: 1px;
