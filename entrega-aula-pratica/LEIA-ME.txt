@@ -1,0 +1,20 @@
+ENTREGA - AULA PRATICA - Algoritmos e Programacao Estruturada (U4 S3)
+
+Conteudo
+  Relatorio_Aula_Pratica_Algoritmos_U4S3.docx / .pdf   relatorio (9 paginas)
+  codigos/atividade1_maioridade.por                    Atividade 1
+  codigos/atividade2_potenciacao.por                   Atividade 2
+  capturas/                                            9 capturas reais (codigo + saida)
+  capturas_recortes/                                   recortes do painel Saida (Atividade 2)
+
+PENDENCIAS PARA VOCE (campos em amarelo na capa/referencias)
+  1. Nome, RA, polo, professor(a) e cidade na capa.
+  2. Titulo/ano do roteiro oficial e data de acesso na lista de referencias.
+  3. Conferir o relatorio contra o roteiro oficial (o PDF do roteiro nao foi
+     disponibilizado ao Claude; a conferencia contra ele NAO foi feita).
+  4. As execucoes foram feitas numa copia local do build publico do Portugol
+     Webstudio (o site hospedado estava bloqueado). Se possivel, repita ao menos
+     uma execucao em https://dgadelha.github.io/Portugol-Webstudio/ e, se quiser,
+     troque as capturas. Se refizer, ajuste a "Observacao metodologica" (secao 3).
+  5. A validacao de entradas <= 0 na Atividade 2 e um extra; remova se o roteiro
+     pedir a versao minima.
