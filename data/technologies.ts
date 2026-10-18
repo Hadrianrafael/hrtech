@@ -3,20 +3,19 @@ import type { TechIconKey } from '@/components/icons/tech-icons';
 export type Technology = { name: string; icon?: TechIconKey };
 
 export type TechGroup = {
-  title: string;
-  description: string;
+  /** Identificador estável; o título e a descrição vêm de `dictionary.stack.groups` (mesma ordem). */
+  id: string;
   items: Technology[];
 };
 
 /**
- * Stack exibida na seção "Tecnologias que utilizamos".
+ * Stack exibida na seção de tecnologias (nomes de produtos; os textos do grupo são localizados).
  * Todas aparecem em projetos do portfólio ou fazem parte da atuação da HR Tech.
  * `icon` é opcional: sem ele, o item mostra um monograma neutro.
  */
 export const techGroups: TechGroup[] = [
   {
-    title: 'Frontend',
-    description: 'Interfaces rápidas, acessíveis e responsivas.',
+    id: 'frontend',
     items: [
       { name: 'Next.js', icon: 'nextjs' },
       { name: 'React', icon: 'react' },
@@ -27,8 +26,7 @@ export const techGroups: TechGroup[] = [
     ],
   },
   {
-    title: 'Backend',
-    description: 'APIs e regras de negócio bem organizadas.',
+    id: 'backend',
     items: [
       { name: 'Node.js', icon: 'node' },
       { name: 'NestJS', icon: 'nestjs' },
@@ -39,8 +37,7 @@ export const techGroups: TechGroup[] = [
     ],
   },
   {
-    title: 'Cloud',
-    description: 'Infraestrutura na nuvem para aplicações web.',
+    id: 'cloud',
     items: [
       { name: 'Microsoft Azure' },
       { name: 'AWS' },
@@ -49,8 +46,7 @@ export const techGroups: TechGroup[] = [
     ],
   },
   {
-    title: 'Database',
-    description: 'Dados consistentes, seguros e performáticos.',
+    id: 'database',
     items: [
       { name: 'PostgreSQL', icon: 'postgresql' },
       { name: 'SQL' },
@@ -59,8 +55,7 @@ export const techGroups: TechGroup[] = [
     ],
   },
   {
-    title: 'DevOps',
-    description: 'Versionamento, testes e deploy automatizado.',
+    id: 'devops',
     items: [
       { name: 'Git', icon: 'git' },
       { name: 'GitHub', icon: 'github' },
@@ -69,8 +64,7 @@ export const techGroups: TechGroup[] = [
     ],
   },
   {
-    title: 'Artificial Intelligence',
-    description: 'Modelos de linguagem aplicados ao negócio.',
+    id: 'ai',
     items: [
       { name: 'Claude (Anthropic)', icon: 'anthropic' },
       { name: 'OpenAI' },
@@ -79,8 +73,7 @@ export const techGroups: TechGroup[] = [
     ],
   },
   {
-    title: 'Automação',
-    description: 'Rotinas que trabalham sozinhas, com monitoramento.',
+    id: 'automation',
     items: [
       { name: 'BullMQ' },
       { name: 'Rotinas agendadas' },
@@ -89,8 +82,7 @@ export const techGroups: TechGroup[] = [
     ],
   },
   {
-    title: 'Integrações',
-    description: 'Conexão com as ferramentas que o negócio já usa.',
+    id: 'integrations',
     items: [
       { name: 'WhatsApp Cloud API', icon: 'whatsapp' },
       { name: 'Stripe', icon: 'stripe' },

@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   output: 'export',
   trailingSlash: true,
   reactStrictMode: true,
+  // 404 único com os três idiomas (o site não tem um layout raiz comum: cada idioma tem o seu).
+  experimental: { globalNotFound: true },
   poweredByHeader: false,
   basePath: basePath || undefined,
   assetPrefix: basePath || undefined,
