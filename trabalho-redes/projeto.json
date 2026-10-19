@@ -1,0 +1,716 @@
+{
+ "depts": {
+  "SW-ENG": {
+   "nome": "Engenharia",
+   "sw": "SW-ENG",
+   "modo": "estático",
+   "bloco27": "192.168.10.0/27",
+   "vlans": [
+    {
+     "id": 11,
+     "rede": "192.168.10.0/28",
+     "hosts": [
+      {
+       "porta": 1,
+       "papel": "PC",
+       "ip": "192.168.10.1",
+       "origem": "estático"
+      },
+      {
+       "porta": 2,
+       "papel": "PC",
+       "ip": "192.168.10.2",
+       "origem": "estático"
+      },
+      {
+       "porta": 3,
+       "papel": "PC",
+       "ip": "192.168.10.3",
+       "origem": "estático"
+      },
+      {
+       "porta": 4,
+       "papel": "PC",
+       "ip": "192.168.10.4",
+       "origem": "estático"
+      },
+      {
+       "porta": 5,
+       "papel": "PC",
+       "ip": "192.168.10.5",
+       "origem": "estático"
+      },
+      {
+       "porta": 6,
+       "papel": "PC",
+       "ip": "192.168.10.6",
+       "origem": "estático"
+      },
+      {
+       "porta": 7,
+       "papel": "PC",
+       "ip": "192.168.10.7",
+       "origem": "estático"
+      },
+      {
+       "porta": 8,
+       "papel": "PC",
+       "ip": "192.168.10.8",
+       "origem": "estático"
+      },
+      {
+       "porta": 9,
+       "papel": "PC",
+       "ip": "192.168.10.9",
+       "origem": "estático"
+      },
+      {
+       "porta": 10,
+       "papel": "PC",
+       "ip": "192.168.10.10",
+       "origem": "estático"
+      },
+      {
+       "porta": 11,
+       "papel": "Impressora",
+       "ip": "192.168.10.11",
+       "origem": "estático"
+      },
+      {
+       "porta": 12,
+       "papel": "Servidor",
+       "ip": "192.168.10.12",
+       "origem": "estático"
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "rede": "192.168.10.16/28",
+     "hosts": [
+      {
+       "porta": 13,
+       "papel": "PC",
+       "ip": "192.168.10.17",
+       "origem": "estático"
+      },
+      {
+       "porta": 14,
+       "papel": "PC",
+       "ip": "192.168.10.18",
+       "origem": "estático"
+      },
+      {
+       "porta": 15,
+       "papel": "PC",
+       "ip": "192.168.10.19",
+       "origem": "estático"
+      },
+      {
+       "porta": 16,
+       "papel": "PC",
+       "ip": "192.168.10.20",
+       "origem": "estático"
+      },
+      {
+       "porta": 17,
+       "papel": "PC",
+       "ip": "192.168.10.21",
+       "origem": "estático"
+      },
+      {
+       "porta": 18,
+       "papel": "PC",
+       "ip": "192.168.10.22",
+       "origem": "estático"
+      },
+      {
+       "porta": 19,
+       "papel": "PC",
+       "ip": "192.168.10.23",
+       "origem": "estático"
+      },
+      {
+       "porta": 20,
+       "papel": "PC",
+       "ip": "192.168.10.24",
+       "origem": "estático"
+      },
+      {
+       "porta": 21,
+       "papel": "PC",
+       "ip": "192.168.10.25",
+       "origem": "estático"
+      },
+      {
+       "porta": 22,
+       "papel": "PC",
+       "ip": "192.168.10.26",
+       "origem": "estático"
+      },
+      {
+       "porta": 23,
+       "papel": "Impressora",
+       "ip": "192.168.10.27",
+       "origem": "estático"
+      },
+      {
+       "porta": 24,
+       "papel": "Servidor",
+       "ip": "192.168.10.28",
+       "origem": "estático"
+      }
+     ]
+    }
+   ]
+  },
+  "SW-COMP": {
+   "nome": "Compras",
+   "sw": "SW-COMP",
+   "modo": "DHCP",
+   "bloco27": "192.168.10.32/27",
+   "vlans": [
+    {
+     "id": 21,
+     "rede": "192.168.10.32/28",
+     "hosts": [
+      {
+       "porta": 1,
+       "papel": "PC",
+       "ip": "192.168.10.33",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 2,
+       "papel": "PC",
+       "ip": "192.168.10.34",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 3,
+       "papel": "PC",
+       "ip": "192.168.10.35",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 4,
+       "papel": "PC",
+       "ip": "192.168.10.36",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 5,
+       "papel": "PC",
+       "ip": "192.168.10.37",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 6,
+       "papel": "PC",
+       "ip": "192.168.10.38",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 7,
+       "papel": "PC",
+       "ip": "192.168.10.39",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 8,
+       "papel": "PC",
+       "ip": "192.168.10.40",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 9,
+       "papel": "PC",
+       "ip": "192.168.10.41",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 10,
+       "papel": "PC",
+       "ip": "192.168.10.42",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 11,
+       "papel": "Impressora",
+       "ip": "192.168.10.43",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 12,
+       "papel": "Servidor",
+       "ip": "192.168.10.44",
+       "origem": "estático"
+      }
+     ],
+     "pool": {
+      "inicio": "192.168.10.33",
+      "max": 11,
+      "servidor": "192.168.10.44"
+     }
+    },
+    {
+     "id": 22,
+     "rede": "192.168.10.48/28",
+     "hosts": [
+      {
+       "porta": 13,
+       "papel": "PC",
+       "ip": "192.168.10.49",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 14,
+       "papel": "PC",
+       "ip": "192.168.10.50",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 15,
+       "papel": "PC",
+       "ip": "192.168.10.51",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 16,
+       "papel": "PC",
+       "ip": "192.168.10.52",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 17,
+       "papel": "PC",
+       "ip": "192.168.10.53",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 18,
+       "papel": "PC",
+       "ip": "192.168.10.54",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 19,
+       "papel": "PC",
+       "ip": "192.168.10.55",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 20,
+       "papel": "PC",
+       "ip": "192.168.10.56",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 21,
+       "papel": "PC",
+       "ip": "192.168.10.57",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 22,
+       "papel": "PC",
+       "ip": "192.168.10.58",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 23,
+       "papel": "Impressora",
+       "ip": "192.168.10.59",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 24,
+       "papel": "Servidor",
+       "ip": "192.168.10.60",
+       "origem": "estático"
+      }
+     ],
+     "pool": {
+      "inicio": "192.168.10.49",
+      "max": 11,
+      "servidor": "192.168.10.60"
+     }
+    }
+   ]
+  },
+  "SW-TI": {
+   "nome": "TI Interno",
+   "sw": "SW-TI",
+   "modo": "estático",
+   "bloco27": "192.168.10.64/27",
+   "vlans": [
+    {
+     "id": 31,
+     "rede": "192.168.10.64/28",
+     "hosts": [
+      {
+       "porta": 1,
+       "papel": "PC",
+       "ip": "192.168.10.65",
+       "origem": "estático"
+      },
+      {
+       "porta": 2,
+       "papel": "PC",
+       "ip": "192.168.10.66",
+       "origem": "estático"
+      },
+      {
+       "porta": 3,
+       "papel": "PC",
+       "ip": "192.168.10.67",
+       "origem": "estático"
+      },
+      {
+       "porta": 4,
+       "papel": "PC",
+       "ip": "192.168.10.68",
+       "origem": "estático"
+      },
+      {
+       "porta": 5,
+       "papel": "PC",
+       "ip": "192.168.10.69",
+       "origem": "estático"
+      },
+      {
+       "porta": 6,
+       "papel": "PC",
+       "ip": "192.168.10.70",
+       "origem": "estático"
+      },
+      {
+       "porta": 7,
+       "papel": "PC",
+       "ip": "192.168.10.71",
+       "origem": "estático"
+      },
+      {
+       "porta": 8,
+       "papel": "PC",
+       "ip": "192.168.10.72",
+       "origem": "estático"
+      },
+      {
+       "porta": 9,
+       "papel": "PC",
+       "ip": "192.168.10.73",
+       "origem": "estático"
+      },
+      {
+       "porta": 10,
+       "papel": "PC",
+       "ip": "192.168.10.74",
+       "origem": "estático"
+      },
+      {
+       "porta": 11,
+       "papel": "Impressora",
+       "ip": "192.168.10.75",
+       "origem": "estático"
+      },
+      {
+       "porta": 12,
+       "papel": "Servidor",
+       "ip": "192.168.10.76",
+       "origem": "estático"
+      }
+     ]
+    },
+    {
+     "id": 32,
+     "rede": "192.168.10.80/28",
+     "hosts": [
+      {
+       "porta": 13,
+       "papel": "PC",
+       "ip": "192.168.10.81",
+       "origem": "estático"
+      },
+      {
+       "porta": 14,
+       "papel": "PC",
+       "ip": "192.168.10.82",
+       "origem": "estático"
+      },
+      {
+       "porta": 15,
+       "papel": "PC",
+       "ip": "192.168.10.83",
+       "origem": "estático"
+      },
+      {
+       "porta": 16,
+       "papel": "PC",
+       "ip": "192.168.10.84",
+       "origem": "estático"
+      },
+      {
+       "porta": 17,
+       "papel": "PC",
+       "ip": "192.168.10.85",
+       "origem": "estático"
+      },
+      {
+       "porta": 18,
+       "papel": "PC",
+       "ip": "192.168.10.86",
+       "origem": "estático"
+      },
+      {
+       "porta": 19,
+       "papel": "PC",
+       "ip": "192.168.10.87",
+       "origem": "estático"
+      },
+      {
+       "porta": 20,
+       "papel": "PC",
+       "ip": "192.168.10.88",
+       "origem": "estático"
+      },
+      {
+       "porta": 21,
+       "papel": "PC",
+       "ip": "192.168.10.89",
+       "origem": "estático"
+      },
+      {
+       "porta": 22,
+       "papel": "PC",
+       "ip": "192.168.10.90",
+       "origem": "estático"
+      },
+      {
+       "porta": 23,
+       "papel": "Impressora",
+       "ip": "192.168.10.91",
+       "origem": "estático"
+      },
+      {
+       "porta": 24,
+       "papel": "Servidor",
+       "ip": "192.168.10.92",
+       "origem": "estático"
+      }
+     ]
+    }
+   ]
+  },
+  "SW-INFRA": {
+   "nome": "Infraestrutura",
+   "sw": "SW-INFRA",
+   "modo": "DHCP",
+   "bloco27": "192.168.10.96/27",
+   "vlans": [
+    {
+     "id": 41,
+     "rede": "192.168.10.96/28",
+     "hosts": [
+      {
+       "porta": 1,
+       "papel": "PC",
+       "ip": "192.168.10.97",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 2,
+       "papel": "PC",
+       "ip": "192.168.10.98",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 3,
+       "papel": "PC",
+       "ip": "192.168.10.99",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 4,
+       "papel": "PC",
+       "ip": "192.168.10.100",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 5,
+       "papel": "PC",
+       "ip": "192.168.10.101",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 6,
+       "papel": "PC",
+       "ip": "192.168.10.102",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 7,
+       "papel": "PC",
+       "ip": "192.168.10.103",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 8,
+       "papel": "PC",
+       "ip": "192.168.10.104",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 9,
+       "papel": "PC",
+       "ip": "192.168.10.105",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 10,
+       "papel": "PC",
+       "ip": "192.168.10.106",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 11,
+       "papel": "Impressora",
+       "ip": "192.168.10.107",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 12,
+       "papel": "Servidor",
+       "ip": "192.168.10.108",
+       "origem": "estático"
+      }
+     ],
+     "pool": {
+      "inicio": "192.168.10.97",
+      "max": 11,
+      "servidor": "192.168.10.108"
+     }
+    },
+    {
+     "id": 42,
+     "rede": "192.168.10.112/28",
+     "hosts": [
+      {
+       "porta": 13,
+       "papel": "PC",
+       "ip": "192.168.10.113",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 14,
+       "papel": "PC",
+       "ip": "192.168.10.114",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 15,
+       "papel": "PC",
+       "ip": "192.168.10.115",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 16,
+       "papel": "PC",
+       "ip": "192.168.10.116",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 17,
+       "papel": "PC",
+       "ip": "192.168.10.117",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 18,
+       "papel": "PC",
+       "ip": "192.168.10.118",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 19,
+       "papel": "PC",
+       "ip": "192.168.10.119",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 20,
+       "papel": "PC",
+       "ip": "192.168.10.120",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 21,
+       "papel": "PC",
+       "ip": "192.168.10.121",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 22,
+       "papel": "PC",
+       "ip": "192.168.10.122",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 23,
+       "papel": "Impressora",
+       "ip": "192.168.10.123",
+       "origem": "DHCP"
+      },
+      {
+       "porta": 24,
+       "papel": "Servidor",
+       "ip": "192.168.10.124",
+       "origem": "estático"
+      }
+     ],
+     "pool": {
+      "inicio": "192.168.10.113",
+      "max": 11,
+      "servidor": "192.168.10.124"
+     }
+    }
+   ]
+  }
+ },
+ "links": [
+  [
+   "SW-ENG",
+   "Gi0/1",
+   "SW-COMP",
+   "Gi0/1"
+  ],
+  [
+   "SW-COMP",
+   "Gi0/2",
+   "SW-TI",
+   "Gi0/1"
+  ],
+  [
+   "SW-TI",
+   "Gi0/2",
+   "SW-INFRA",
+   "Gi0/1"
+  ]
+ ],
+ "uplinks": {
+  "SW-ENG": [
+   "Gi0/1"
+  ],
+  "SW-COMP": [
+   "Gi0/1",
+   "Gi0/2"
+  ],
+  "SW-TI": [
+   "Gi0/1",
+   "Gi0/2"
+  ],
+  "SW-INFRA": [
+   "Gi0/1"
+  ]
+ }
+}
