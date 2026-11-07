@@ -1,13 +1,16 @@
 import Link from 'next/link';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { breadcrumbSchema } from '@/lib/seo';
+import { localeFromPathname } from '@/lib/i18n';
 
 export type Crumb = { name: string; path: string };
 
 export function Breadcrumbs({ items }: { items: Crumb[] }) {
+  const locale = localeFromPathname(items[0]?.path ?? '/');
+  const label = locale === 'pt-BR' ? 'Você está em' : locale === 'es' ? 'Usted está en' : 'You are here';
   return (
     <>
-      <nav aria-label="Você está em" className="font-mono text-[11px] uppercase tracking-[0.14em]">
+      <nav aria-label={label} className="font-mono text-[11px] uppercase tracking-[0.14em]">
         <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-subtle">
           {items.map((item, index) => {
             const last = index === items.length - 1;

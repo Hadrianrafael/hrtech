@@ -4,26 +4,31 @@ import { Reveal } from '@/components/ui/Reveal';
 import { Section } from '@/components/ui/Section';
 import { siteConfig } from '@/config/site';
 import { whatsappLink } from '@/lib/whatsapp';
+import { defaultLocale, getUi, whatsappGreeting, type Locale } from '@/lib/i18n';
 import { ContactForm } from './ContactForm';
 
 const channels = [
   {
     label: 'WhatsApp',
     value: siteConfig.contact.whatsappDisplay,
-    href: whatsappLink(),
     external: true,
     icon: <BrandIcon name="whatsapp" size={19} />,
   },
   {
     label: 'E-mail',
     value: siteConfig.contact.email,
-    href: `mailto:${siteConfig.contact.email}`,
     external: false,
     icon: <Icon name="mail" size={19} />,
   },
 ];
 
-export function Contact() {
+export function Contact({ locale = defaultLocale }: { locale?: Locale }) {
+  const copy = {
+    'en-US': { first: 'Have an idea?', second: 'Let’s turn it into technology.', text: 'Tell us what you need. We will reply with the next steps and, when it makes sense, arrange a conversation to understand the project in detail.', time: 'Takes less than 2 minutes.' },
+    'pt-BR': { first: 'Tem uma ideia?', second: 'Vamos transformá-la em tecnologia.', text: 'Conte o que você precisa. Respondemos com os próximos passos e, se fizer sentido, marcamos uma conversa para entender o projeto em detalhe.', time: 'Leva menos de 2 minutos.' },
+    es: { first: '¿Tiene una idea?', second: 'Convirtámosla en tecnología.', text: 'Cuéntenos qué necesita. Le responderemos con los próximos pasos y, si corresponde, programaremos una conversación para conocer el proyecto en detalle.', time: 'Tarda menos de 2 minutos.' },
+  }[locale];
+  const channelHrefs = [whatsappLink(whatsappGreeting(locale)), `mailto:${siteConfig.contact.email}`];
   return (
     <Section id="contato" aria-labelledby="contato-title" className="overflow-hidden">
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[40rem] bg-[radial-gradient(50%_60%_at_50%_100%,rgb(var(--brand)/0.16),transparent)]" />
@@ -32,22 +37,21 @@ export function Contact() {
           <Reveal>
             <p className="eyebrow">
               <span className="h-px w-6 bg-brand-soft/60" aria-hidden="true" />
-              Contato
+              {getUi(locale).contact}
             </p>
             <h2 id="contato-title" className="mt-5 text-[2.2rem] font-semibold leading-[1.05] tracking-tightest text-fg sm:text-5xl">
-              Tem uma ideia? <span className="text-gradient">Vamos transformá-la em tecnologia.</span>
+              {copy.first} <span className="text-gradient">{copy.second}</span>
             </h2>
             <p className="mt-6 text-base leading-relaxed text-muted sm:text-lg">
-              Conte o que você precisa. Respondemos com os próximos passos e, se fizer sentido, marcamos uma conversa para
-              entender o projeto em detalhe.
+              {copy.text}
             </p>
           </Reveal>
 
           <Reveal className="mt-10 space-y-3" delay={80}>
-            {channels.map((channel) => (
+            {channels.map((channel, index) => (
               <a
                 key={channel.label}
-                href={channel.href}
+                href={channelHrefs[index]}
                 {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 className="card card-hover group flex items-center gap-4 p-4"
               >
@@ -64,10 +68,10 @@ export function Contact() {
 
         <Reveal className="lg:col-span-7" delay={120}>
           <div className="card relative p-5 sm:p-8 lg:p-10">
-            <h3 className="text-lg font-semibold text-fg">Solicitar orçamento</h3>
-            <p className="mt-1 text-sm text-muted">Leva menos de 2 minutos.</p>
+            <h3 className="text-lg font-semibold text-fg">{getUi(locale).requestQuote}</h3>
+            <p className="mt-1 text-sm text-muted">{copy.time}</p>
             <div className="mt-7">
-              <ContactForm />
+              <ContactForm locale={locale} />
             </div>
           </div>
         </Reveal>

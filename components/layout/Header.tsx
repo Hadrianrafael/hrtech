@@ -6,13 +6,25 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/icons/Icon';
 import { ButtonLink } from '@/components/ui/Button';
 import { Logo } from '@/components/ui/Logo';
-import { mainNav, primaryCta } from '@/config/site';
 import { cn } from '@/lib/cn';
+import { getUi, localeConfig, localeFromPathname } from '@/lib/i18n';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const locale = localeFromPathname(pathname);
+  const ui = getUi(locale);
+  const home = localeConfig[locale].prefix || '/';
+  const anchor = (id: string) => `${localeConfig[locale].prefix || ''}/#${id}`;
+  const nav = [
+    { label: ui.home, href: anchor('inicio') },
+    { label: ui.solutions, href: anchor('solucoes') },
+    { label: ui.about, href: anchor('sobre') },
+    { label: ui.technologies, href: anchor('tecnologias') },
+    { label: ui.contact, href: anchor('contato') },
+  ];
   const toggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -57,13 +69,13 @@ export function Header() {
         )}
       >
         <div className="container flex h-[var(--header-h)] items-center justify-between gap-6">
-          <Link href="/" className="shrink-0 rounded-md" aria-label="HR Tech Sistemas — página inicial">
+          <Link href={home} className="shrink-0 rounded-md" aria-label={`HR Tech Sistemas — ${ui.home}`}>
             <Logo />
           </Link>
 
-          <nav aria-label="Navegação principal" className="hidden lg:block">
+          <nav aria-label={ui.mainNav} className="hidden lg:block">
             <ul className="flex items-center gap-1">
-              {mainNav.map((item) => (
+              {nav.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="rounded-full px-3.5 py-2 text-sm text-muted transition-colors hover:bg-white/[0.04] hover:text-fg">
                     {item.label}
@@ -74,8 +86,9 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <ButtonLink href={primaryCta.href} size="sm" className="hidden sm:inline-flex">
-              {primaryCta.label}
+            <div className="hidden lg:block"><LanguageSwitcher /></div>
+            <ButtonLink href={anchor('contato')} size="sm" className="hidden sm:inline-flex">
+              {ui.startProject}
               <Icon name="arrowRight" size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
             </ButtonLink>
             <button
@@ -84,7 +97,7 @@ export function Header() {
               className="grid h-10 w-10 place-items-center rounded-full border border-line/[0.1] text-fg transition-colors hover:bg-white/[0.05] lg:hidden"
               aria-expanded={open}
               aria-controls="mobile-menu"
-              aria-label={open ? 'Fechar menu' : 'Abrir menu'}
+              aria-label={open ? ui.closeMenu : ui.openMenu}
               onClick={() => setOpen((value) => !value)}
             >
               <Icon name={open ? 'close' : 'menu'} size={19} />
@@ -101,9 +114,9 @@ export function Header() {
         )}
         aria-hidden={!open}
       >
-        <nav aria-label="Navegação principal (celular)" className="container flex min-h-full flex-col pb-10 pt-6">
+        <nav aria-label={ui.mobileNav} className="container flex min-h-full flex-col pb-10 pt-6">
           <ul className="flex flex-col">
-            {mainNav.map((item, index) => (
+            {nav.map((item, index) => (
               <li
                 key={item.href}
                 className={cn('border-b border-line/[0.07] transition-[opacity,transform] duration-500', open ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0')}
@@ -121,8 +134,9 @@ export function Header() {
               </li>
             ))}
           </ul>
-          <ButtonLink href={primaryCta.href} size="lg" className="mt-8 w-full" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)}>
-            {primaryCta.label}
+          <LanguageSwitcher mobile onNavigate={() => setOpen(false)} />
+          <ButtonLink href={anchor('contato')} size="lg" className="mt-4 w-full" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)}>
+            {ui.startProject}
             <Icon name="arrowRight" size={16} />
           </ButtonLink>
         </nav>

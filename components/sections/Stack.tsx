@@ -2,16 +2,23 @@ import { Reveal } from '@/components/ui/Reveal';
 import { Section } from '@/components/ui/Section';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { TechBadge } from '@/components/ui/TechBadge';
-import { techGroups } from '@/data/technologies';
+import { getTechGroups } from '@/data/section-translations';
+import { defaultLocale, type Locale } from '@/lib/i18n';
 
-export function Stack() {
+export function Stack({ locale = defaultLocale }: { locale?: Locale }) {
+  const techGroups = getTechGroups(locale);
+  const copy = {
+    'en-US': ['Technology', 'Technologies we use', 'Established tools selected for each project’s performance, security and ease of evolution.'],
+    'pt-BR': ['Stack', 'Tecnologias que utilizamos', 'Ferramentas consolidadas no mercado, escolhidas pelo que cada projeto precisa — desempenho, segurança e facilidade de evolução.'],
+    es: ['Tecnología', 'Tecnologías que utilizamos', 'Herramientas consolidadas, elegidas según las necesidades de rendimiento, seguridad y evolución de cada proyecto.'],
+  }[locale];
   return (
     <Section id="tecnologias" aria-labelledby="tecnologias-title" className="border-y border-line/[0.06] bg-surface/30">
       <SectionHeading
         id="tecnologias-title"
-        eyebrow="Stack"
-        title="Tecnologias que utilizamos"
-        description="Ferramentas consolidadas no mercado, escolhidas pelo que cada projeto precisa — desempenho, segurança e facilidade de evolução."
+        eyebrow={copy[0]!}
+        title={copy[1]!}
+        description={copy[2]!}
       />
       <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {techGroups.map((group, index) => (
