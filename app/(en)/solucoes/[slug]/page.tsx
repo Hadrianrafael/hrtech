@@ -8,6 +8,8 @@ import { ButtonLink } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
 import { siteConfig } from '@/config/site';
 import { getService, services } from '@/data/services';
+import { translatedService } from '@/data/service-translations';
+import { defaultLocale, getUi, localeConfig, type Locale } from '@/lib/i18n';
 import { absoluteUrl } from '@/lib/paths';
 import { buildMetadata, organizationId } from '@/lib/seo';
 
@@ -19,19 +21,23 @@ export function generateStaticParams(): Params[] {
   return services.map((service) => ({ slug: service.slug }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<Params> }) {
+export async function generateMetadata({ params, locale = defaultLocale }: { params: Promise<Params>; locale?: Locale }) {
   const { slug } = await params;
-  const service = getService(slug);
-  if (!service) return {};
-  return buildMetadata({ title: service.title, description: service.summary, path: `/solucoes/${service.slug}/` });
+  const baseService = getService(slug);
+  if (!baseService) return {};
+  const service = translatedService(baseService, locale);
+  return buildMetadata({ title: service.title, description: service.summary, path: `${localeConfig[locale].prefix}/solucoes/${service.slug}/`, locale });
 }
 
-export default async function ServicePage({ params }: { params: Promise<Params> }) {
+export default async function ServicePage({ params, locale = defaultLocale }: { params: Promise<Params>; locale?: Locale }) {
   const { slug } = await params;
-  const service = getService(slug);
-  if (!service) notFound();
+  const baseService = getService(slug);
+  if (!baseService) notFound();
+  const service = translatedService(baseService, locale);
+  const ui = getUi(locale);
+  const prefix = localeConfig[locale].prefix;
 
-  const path = `/solucoes/${service.slug}/`;
+  const path = `${prefix}/solucoes/${service.slug}/`;
   const otherServices = services.filter((item) => item.slug !== service.slug);
 
   return (
@@ -49,8 +55,8 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
       />
       <PageHeader
         breadcrumbs={[
-          { name: 'Início', path: '/' },
-          { name: 'Soluções', path: '/#solucoes' },
+          { name: ui.home, path: `${prefix}/` },
+          { name: ui.solutions, path: `${prefix}/#solucoes` },
           { name: service.title, path },
         ]}
         eyebrow={
@@ -58,15 +64,15 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
             <span className="grid h-11 w-11 place-items-center rounded-xl border border-line/[0.1] bg-brand/10 text-brand-soft">
               <Icon name={service.icon} size={21} />
             </span>
-            <span className="font-mono text-xs uppercase tracking-[0.18em] text-subtle">Solução {service.number}</span>
+            <span className="font-mono text-xs uppercase tracking-[0.18em] text-subtle">{ui.solutions} {service.number}</span>
           </span>
         }
         title={service.title}
         description={service.intro}
       >
         <div className="hero-in mt-8 flex flex-wrap gap-3">
-          <ButtonLink href="/#contato" size="lg">
-            Solicitar orçamento
+          <ButtonLink href={`${prefix}/#contato`} size="lg">
+            {ui.requestQuote}
             <Icon name="arrowRight" size={16} />
           </ButtonLink>
         </div>
@@ -77,7 +83,7 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-14">
             <div className="lg:col-span-7">
               <Reveal>
-                <h2 className="text-xl font-semibold tracking-tight text-fg">O que está incluído</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-fg">{locale === 'pt-BR' ? 'O que está incluído' : locale === 'es' ? 'Qué incluye' : 'What is included'}</h2>
                 <ul className="mt-6 grid gap-3 sm:grid-cols-2">
                   {service.capabilities.map((item) => (
                     <li key={item} className="flex items-start gap-3 rounded-xl border border-line/[0.07] bg-surface/50 px-4 py-3 text-sm text-fg/90">
@@ -89,7 +95,7 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
               </Reveal>
 
               <Reveal className="mt-14" delay={80}>
-                <h2 className="text-xl font-semibold tracking-tight text-fg">Como entregamos</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-fg">{locale === 'pt-BR' ? 'Como entregamos' : locale === 'es' ? 'Cómo entregamos' : 'How we deliver'}</h2>
                 <div className="mt-6 divide-y divide-line/[0.07] border-t border-line/[0.07]">
                   {service.approach.map((item) => (
                     <div key={item.title} className="flex flex-col gap-1.5 py-5 sm:flex-row sm:gap-10">
@@ -103,7 +109,7 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
 
             <div className="lg:col-span-5">
               <Reveal delay={120} className="card sticky top-24 p-6 sm:p-7">
-                <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">Tecnologias</h2>
+                <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">{ui.technologies}</h2>
                 <ul className="mt-4 flex flex-wrap gap-2">
                   {service.technologies.map((tech) => (
                     <li key={tech} className="rounded-lg border border-line/[0.1] bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-muted">
@@ -112,9 +118,9 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
                   ))}
                 </ul>
                 <div className="mt-7 border-t border-line/[0.08] pt-6">
-                  <p className="text-sm leading-relaxed text-muted">Quer conversar sobre um projeto de {service.title.toLowerCase()}?</p>
-                  <ButtonLink href="/#contato" className="mt-4 w-full">
-                    Falar com a HR Tech
+                  <p className="text-sm leading-relaxed text-muted">{locale === 'pt-BR' ? `Quer conversar sobre um projeto de ${service.title.toLowerCase()}?` : locale === 'es' ? `¿Quiere hablar sobre un proyecto de ${service.title.toLowerCase()}?` : `Want to discuss a ${service.title.toLowerCase()} project?`}</p>
+                  <ButtonLink href={`${prefix}/#contato`} className="mt-4 w-full">
+                    {locale === 'pt-BR' ? 'Falar com a HR Tech' : locale === 'es' ? 'Hablar con HR Tech' : 'Talk to HR Tech'}
                     <Icon name="arrowRight" size={15} />
                   </ButtonLink>
                 </div>
@@ -126,13 +132,13 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
 
       <section className="py-16">
         <div className="container">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">Outras soluções</h2>
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">{ui.otherSolutions}</h2>
           <ul className="mt-5 flex flex-wrap gap-2">
             {otherServices.map((item) => (
               <li key={item.slug}>
-                <Link href={`/solucoes/${item.slug}/`} className="inline-flex items-center gap-2 rounded-full border border-line/[0.1] px-4 py-2 text-sm text-muted transition-colors hover:border-line/[0.25] hover:text-fg">
+                <Link href={`${prefix}/solucoes/${item.slug}/`} className="inline-flex items-center gap-2 rounded-full border border-line/[0.1] px-4 py-2 text-sm text-muted transition-colors hover:border-line/[0.25] hover:text-fg">
                   <Icon name={item.icon} size={15} />
-                  {item.title}
+                  {translatedService(item, locale).title}
                 </Link>
               </li>
             ))}
@@ -140,7 +146,7 @@ export default async function ServicePage({ params }: { params: Promise<Params> 
         </div>
       </section>
 
-      <CtaBand />
+      <CtaBand locale={locale} />
     </>
   );
 }

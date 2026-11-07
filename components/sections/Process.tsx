@@ -1,16 +1,23 @@
 import { Reveal } from '@/components/ui/Reveal';
 import { Section } from '@/components/ui/Section';
 import { SectionHeading } from '@/components/ui/SectionHeading';
-import { processSteps } from '@/data/process';
+import { getProcessSteps } from '@/data/section-translations';
+import { defaultLocale, type Locale } from '@/lib/i18n';
 
-export function Process() {
+export function Process({ locale = defaultLocale }: { locale?: Locale }) {
+  const processSteps = getProcessSteps(locale);
+  const copy = {
+    'en-US': ['Process', 'How we turn an idea into a product', 'A clear process with defined stages and your involvement in every delivery.'],
+    'pt-BR': ['Processo', 'Como transformamos uma ideia em produto', 'Um processo claro, com etapas definidas e você acompanhando cada entrega.'],
+    es: ['Proceso', 'Cómo convertimos una idea en producto', 'Un proceso claro, con etapas definidas y su participación en cada entrega.'],
+  }[locale];
   return (
     <Section id="processo" aria-labelledby="processo-title">
       <SectionHeading
         id="processo-title"
-        eyebrow="Processo"
-        title="Como transformamos uma ideia em produto"
-        description="Um processo claro, com etapas definidas e você acompanhando cada entrega."
+        eyebrow={copy[0]!}
+        title={copy[1]!}
+        description={copy[2]!}
       />
       <ol className="relative mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {processSteps.map((step, index) => (

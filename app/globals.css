@@ -13,10 +13,10 @@
   --subtle: 128 140 160;
   /* Identidade oficial da HR Tech: laranja como cor principal (mesmo
      degradê da logo), com vermelho usado apenas como toque de destaque. */
-  --brand: 249 115 22;
-  --brand-strong: 194 65 12;
+  --brand: 255 106 0;
+  --brand-strong: 204 75 0;
   --brand-soft: 253 186 116;
-  --accent: 239 68 68;
+  --accent: 229 57 53;
   --header-h: 68px;
 }
 

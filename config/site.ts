@@ -11,10 +11,10 @@ export const siteConfig = {
   legalName: 'HR Tech Sistemas',
   cnpj: '68.438.436/0001-09', // CCMEI — HADRIAN RAFAEL SILVA DE OLIVEIRA
   url: 'https://hrtechsistemas.com.br',
-  locale: 'pt_BR',
-  title: 'HR Tech Sistemas | Sites, Sistemas, SaaS e Inteligência Artificial',
+  locale: 'en_US',
+  title: 'HR Tech Sistemas | Websites, Business Systems, SaaS and AI',
   description:
-    'A HR Tech Sistemas desenvolve sites, sistemas web, plataformas SaaS, automações e soluções com Inteligência Artificial para empresas que querem crescer com tecnologia.',
+    'HR Tech Sistemas develops websites, business systems, SaaS platforms, automation and Artificial Intelligence solutions for companies ready to grow through technology.',
   keywords: [
     'desenvolvimento de sites',
     'desenvolvimento de sistemas',
@@ -57,15 +57,3 @@ export const siteConfig = {
   /** ID de mensuração do Google Analytics (GA4), formato "G-XXXXXXXXXX". Vazio desativa o script. */
   googleAnalyticsId: 'G-B9NPFJ0FP5',
 } as const;
-
-export type NavItem = { label: string; href: string };
-
-export const mainNav: NavItem[] = [
-  { label: 'Início', href: '/#inicio' },
-  { label: 'Soluções', href: '/#solucoes' },
-  { label: 'Sobre', href: '/#sobre' },
-  { label: 'Tecnologias', href: '/#tecnologias' },
-  { label: 'Contato', href: '/#contato' },
-];
-
-export const primaryCta: NavItem = { label: 'Iniciar projeto', href: '/#contato' };

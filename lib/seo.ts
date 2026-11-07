@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { siteConfig } from '@/config/site';
 import { services } from '@/data/services';
 import { absoluteUrl } from './paths';
+import { defaultLocale, getUi, localeConfig, locales, localizedPath, type Locale } from './i18n';
+import { translatedService } from '@/data/service-translations';
 
 type PageSeo = {
   title?: string;
@@ -9,21 +11,28 @@ type PageSeo = {
   path: string;
   image?: string;
   noIndex?: boolean;
+  locale?: Locale;
 };
 
 const defaultOgImage = '/og.png';
 
 /** Metadata padronizada por página (title, canonical, Open Graph e Twitter/X). */
-export function buildMetadata({ title, description = siteConfig.description, path, image = defaultOgImage, noIndex }: PageSeo): Metadata {
+export function buildMetadata({ title, description = siteConfig.description, path, image = defaultOgImage, noIndex, locale = defaultLocale }: PageSeo): Metadata {
   const url = absoluteUrl(siteConfig.url, path);
   const fullTitle = title ? `${title} | ${siteConfig.name}` : siteConfig.title;
   return {
     title: title ? { absolute: fullTitle } : { absolute: siteConfig.title },
     description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      languages: {
+        ...Object.fromEntries(locales.map((item) => [item, absoluteUrl(siteConfig.url, localizedPath(path, item))])),
+        'x-default': absoluteUrl(siteConfig.url, localizedPath(path, defaultLocale)),
+      },
+    },
     openGraph: {
       type: 'website',
-      locale: siteConfig.locale,
+      locale: localeConfig[locale].openGraph,
       url,
       siteName: siteConfig.name,
       title: fullTitle,
@@ -42,7 +51,7 @@ export function buildMetadata({ title, description = siteConfig.description, pat
 
 const organizationId = `${siteConfig.url}/#organization`;
 
-export function organizationSchema() {
+export function organizationSchema(locale: Locale = defaultLocale) {
   const sameAs = Object.values(siteConfig.social).filter(Boolean);
   const address = {
     '@type': 'PostalAddress',
@@ -61,24 +70,24 @@ export function organizationSchema() {
         url: siteConfig.url,
         logo: absoluteUrl(siteConfig.url, '/icon-512.png'),
         image: absoluteUrl(siteConfig.url, defaultOgImage),
-        description: siteConfig.description,
+        description: getUi(locale).footerDescription,
         email: siteConfig.contact.email,
         telephone: `+${siteConfig.contact.whatsappNumber}`,
         address,
-        areaServed: { '@type': 'Country', name: 'Brasil' },
-        founder: { '@type': 'Person', name: 'Hadrian Rafael Silva de Oliveira', jobTitle: 'Fundador & Desenvolvedor' },
+        areaServed: { '@type': 'Country', name: 'Brazil' },
+        founder: { '@type': 'Person', name: 'Hadrian Rafael Silva de Oliveira' },
         sameAs,
-        knowsAbout: ['Desenvolvimento de sites', 'Desenvolvimento de sistemas', 'SaaS', 'Inteligência Artificial', 'Automação de processos', 'Cloud computing'],
+        knowsAbout: ['Website development', 'Business systems', 'SaaS', 'Artificial Intelligence', 'Automation', 'Cloud computing'],
         hasOfferCatalog: {
           '@type': 'OfferCatalog',
-          name: 'Soluções HR Tech',
+          name: locale === 'pt-BR' ? 'Soluções HR Tech' : locale === 'es' ? 'Soluciones HR Tech' : 'HR Tech Solutions',
           itemListElement: services.map((service) => ({
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: service.title,
-              description: service.summary,
-              url: absoluteUrl(siteConfig.url, `/solucoes/${service.slug}/`),
+              name: translatedService(service, locale).title,
+              description: translatedService(service, locale).summary,
+              url: absoluteUrl(siteConfig.url, `${localeConfig[locale].prefix}/solucoes/${service.slug}/`),
             },
           })),
         },
@@ -88,7 +97,7 @@ export function organizationSchema() {
         '@id': `${siteConfig.url}/#website`,
         url: siteConfig.url,
         name: siteConfig.name,
-        inLanguage: 'pt-BR',
+        inLanguage: localeConfig[locale].htmlLang,
         publisher: { '@id': organizationId },
       },
     ],

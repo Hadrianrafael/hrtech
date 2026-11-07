@@ -91,9 +91,9 @@ próprio), defina a variável `NEXT_PUBLIC_BASE_PATH=/repositorio` antes do buil
 
 ```
 app/                  Rotas (App Router) — cada pasta é uma página
-  page.tsx              Home (todas as seções de uma página só)
-  solucoes/              Listagem e página dinâmica de cada solução (/solucoes/[slug])
-  privacidade/, termos/  Páginas institucionais
+  (en)/                 Inglês padrão: /, /solucoes/, /privacidade/, /termos/
+  (pt)/pt-br/            Versões em português sob /pt-br/
+  (es)/es/              Versões em espanhol sob /es/
   sitemap.ts, robots.ts, manifest.ts   Gerados a partir de config/ e data/
 components/
   sections/            Seções da Home (Hero, Services, About, Founder, Stack...)
@@ -105,7 +105,7 @@ data/                  Conteúdo do site, separado da interface
   projects.ts             Estrutura de dados do portfólio — mantida para o futuro (ver abaixo),
                            não está conectada a nenhuma página no momento
   technologies.ts, process.ts, segments.ts, company.ts
-config/site.ts         Configuração central: nome, contato, WhatsApp, redes sociais, menu
+config/site.ts         Configuração central: nome, contato, WhatsApp e redes sociais
 lib/                   Funções auxiliares (WhatsApp, SEO, validação do formulário, etc.)
 public/                Imagens, ícones, favicon
 tests/                 Testes unitários (Vitest)
@@ -135,13 +135,23 @@ um card na Home e uma página em `/solucoes/<slug>/`.
 | WhatsApp (número e mensagem padrão) | `config/site.ts` → `contact.whatsappNumber` / `whatsappMessage` |
 | E-mail de contato | `config/site.ts` → `contact.email` |
 | Redes sociais (LinkedIn, Instagram) | `config/site.ts` → `social` |
-| Itens do menu | `config/site.ts` → `mainNav` |
-| Textos institucionais (Sobre, valores, fundador) | `data/company.ts` |
+| Itens do menu e nomes acessíveis | `lib/i18n.ts` → `uiMessages` e `components/layout/Header.tsx` |
+| Textos institucionais (Sobre, valores, fundador) | `data/company.ts` e `data/company-translations.ts` |
+| Textos das soluções | `data/services.ts` e `data/service-translations.ts` |
 | Tecnologias exibidas | `data/technologies.ts` |
 | Etapas do processo de trabalho | `data/process.ts` |
 | Segmentos de mercado | `data/segments.ts` |
 | Cores, tipografia, tokens visuais | `app/globals.css` (variáveis `:root`) e `tailwind.config.ts` |
 | Foto do fundador | `public/images/founder.webp` (troque o arquivo mantendo o mesmo nome) |
+
+### Idiomas e rotas
+
+O inglês americano (`en-US`) está na raiz e é o padrão quando não há preferência salva.
+Português (`pt-BR`) e espanhol (`es`) têm páginas estáticas próprias em `/pt-br/` e `/es/`,
+inclusive para as sete soluções e páginas legais. O seletor salva `hrtech-locale` no navegador;
+ao voltar à raiz, um script pequeno direciona para a versão salva. Sem armazenamento local, todas
+as rotas continuam acessíveis diretamente. O sitemap e os metadados incluem URLs canônicas e
+alternativas por idioma. As rotas têm barra final para funcionar no GitHub Pages.
 
 ### Configurar o formulário de contato
 
@@ -153,14 +163,11 @@ a enviar por lá automaticamente, com um botão de fallback por e-mail sempre di
 
 ## Testes e verificação visual
 
-Antes de qualquer publicação, este projeto foi verificado com:
-
-- `pnpm check` — lint, TypeScript, testes unitários e build de produção, **todos limpos**.
-- Verificação manual em Chromium headless nos breakpoints 375px, 390px, 430px, tablet (820px),
-  desktop (1440px) e no menu mobile.
-- Checagem de links internos em todas as páginas geradas (0 links quebrados).
-- [Lighthouse](https://developer.chrome.com/docs/lighthouse/) no build de produção:
-  **Performance 93 · Accessibility 100 · Best Practices 100 · SEO 100**.
+Antes de publicar, execute `pnpm check` e confira as páginas geradas em `out/`, incluindo
+links internos, metadados, formulários e navegação nos três idiomas. Verifique o layout em
+celular e desktop. Execute uma nova auditoria [Lighthouse](https://developer.chrome.com/docs/lighthouse/)
+para obter métricas da versão que será publicada; resultados anteriores não descrevem
+necessariamente alterações futuras.
 
 ## Licença de conteúdo
 

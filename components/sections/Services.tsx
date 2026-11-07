@@ -4,26 +4,37 @@ import { Reveal } from '@/components/ui/Reveal';
 import { Section } from '@/components/ui/Section';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { services } from '@/data/services';
+import { translatedService } from '@/data/service-translations';
+import { defaultLocale, getUi, localeConfig, type Locale } from '@/lib/i18n';
 
-export function Services() {
+export function Services({ locale = defaultLocale }: { locale?: Locale }) {
+  const ui = getUi(locale);
+  const prefix = localeConfig[locale].prefix;
+  const copy = {
+    'en-US': { title: 'Solutions to transform your business', description: 'From your digital presence to internal operations, we develop the technology your company needs with the same technical standards in every delivery.', custom: 'A solution built for you', customText: 'Does your need fall outside these categories? Tell us about the challenge and we will design a solution together.', talk: 'Discuss your project' },
+    'pt-BR': { title: 'Soluções para transformar seu negócio', description: 'Da presença digital à operação interna: desenvolvemos a tecnologia que a sua empresa precisa, com o mesmo padrão técnico em cada entrega.', custom: 'Projeto sob medida', customText: 'Sua necessidade não se encaixa em uma categoria? Conte o desafio e desenhamos a solução com você.', talk: 'Conversar sobre o projeto' },
+    es: { title: 'Soluciones para transformar su negocio', description: 'Desde la presencia digital hasta las operaciones internas, desarrollamos la tecnología que su empresa necesita con el mismo rigor técnico en cada entrega.', custom: 'Una solución a medida', customText: '¿Su necesidad no encaja en estas categorías? Cuéntenos el desafío y diseñaremos juntos la solución.', talk: 'Hablemos de su proyecto' },
+  }[locale];
   return (
     <Section id="solucoes" aria-labelledby="solucoes-title">
       <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
         <SectionHeading
           id="solucoes-title"
-          eyebrow="Soluções"
-          title="Soluções para transformar seu negócio"
-          description="Da presença digital à operação interna: desenvolvemos a tecnologia que a sua empresa precisa, com o mesmo padrão técnico em cada entrega."
+          eyebrow={ui.solutions}
+          title={copy.title}
+          description={copy.description}
         />
       </div>
 
       <ul className="mt-14 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {services.map((service, index) => (
+        {services.map((baseService, index) => {
+          const service = translatedService(baseService, locale);
+          return (
           <Reveal as="li" key={service.slug} delay={(index % 4) * 70}>
             <Link
-              href={`/solucoes/${service.slug}/`}
+              href={`${prefix}/solucoes/${service.slug}/`}
               className="card card-hover group relative flex h-full flex-col overflow-hidden p-6 sm:p-7"
-              aria-label={`${service.title}: ver detalhes`}
+              aria-label={`${service.title}: ${ui.details}`}
             >
               <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-brand/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
               <div className="flex items-center justify-between">
@@ -43,12 +54,13 @@ export function Services() {
                 ))}
               </ul>
               <span className="mt-auto flex items-center gap-1.5 pt-7 text-sm font-medium text-brand-soft">
-                Ver detalhes
+                {ui.details}
                 <Icon name="arrowRight" size={15} className="transition-transform duration-200 group-hover:translate-x-1" />
               </span>
             </Link>
           </Reveal>
-        ))}
+          );
+        })}
 
         <Reveal as="li" delay={210}>
           <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-brand/25 bg-gradient-to-br from-brand/20 via-brand/[0.06] to-transparent p-6 sm:p-7">
@@ -56,13 +68,13 @@ export function Services() {
               <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand text-white">
                 <Icon name="code" size={21} />
               </span>
-              <h3 className="mt-6 text-xl font-semibold tracking-tight text-fg">Projeto sob medida</h3>
+              <h3 className="mt-6 text-xl font-semibold tracking-tight text-fg">{copy.custom}</h3>
               <p className="mt-3 text-sm leading-relaxed text-muted">
-                Sua necessidade não se encaixa em uma categoria? Conte o desafio e desenhamos a solução com você.
+                {copy.customText}
               </p>
             </div>
-            <Link href="/#contato" className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-fg">
-              Conversar sobre o projeto
+            <Link href={`${prefix}/#contato`} className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-fg">
+              {copy.talk}
               <Icon name="arrowRight" size={15} />
             </Link>
           </div>
